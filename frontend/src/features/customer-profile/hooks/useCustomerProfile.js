@@ -55,10 +55,10 @@ export function useCustomerProfile(memberId) {
         setProfile((prev) => ({ ...prev, avatar_url: newAvatarUrl }));
       }
       setMessage('Đã cập nhật ảnh đại diện thành công!');
-      setTimeout(() => setMessage(null), 3000);
+      setTimeout(() => setMessage(null), 2000);
     } catch (err) {
       setError(err.message || 'Lỗi khi cập nhật ảnh đại diện.');
-      setTimeout(() => setError(null), 3000);
+      setTimeout(() => setError(null), 2000);
     } finally {
       setSaving(false);
     }
@@ -75,12 +75,12 @@ export function useCustomerProfile(memberId) {
       await profileService.updateProfile(memberId, formData);
 
       setMessage('Lưu thay đổi hồ sơ cá nhân thành công!');
-      setTimeout(() => setMessage(null), 4000);
+      setTimeout(() => setMessage(null), 2000);
       await fetchProfile();
     } catch (err) {
       console.error('Lỗi khi lưu thông tin:', err);
       setError(err.message || 'Lỗi hệ thống khi lưu thay đổi.');
-      setTimeout(() => setError(null), 4000);
+      setTimeout(() => setError(null), 2000);
     } finally {
       setSaving(false);
     }

@@ -168,28 +168,27 @@ export default function MachineTable({
                   {/* Hardware & BootROM */}
                   <td className="py-4 px-4 max-w-[340px]">
                     <div className="flex flex-col gap-1.5 max-w-[320px]">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {/* CPU Badge */}
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2 py-0.5 bg-slate-200 text-slate-900 border border-slate-300 rounded-md shadow-2xs shrink-0">
-                          <Cpu className="w-3 h-3 text-slate-700" />
+                      <div className="flex items-center gap-2 flex-wrap text-[11px] font-mono font-medium text-slate-700">
+                        {/* CPU */}
+                        <span className="inline-flex items-center gap-1">
+                          <Cpu className="w-3 h-3 text-slate-500" />
                           {m.cpu}
                         </span>
-
-                        {/* GPU Badge */}
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-extrabold px-2 py-0.5 bg-sky-100 text-sky-950 border border-sky-300 rounded-md shadow-2xs shrink-0">
-                          <span className="w-1.5 h-1.5 rounded-full bg-sky-600"></span>
+                        <span className="text-slate-400">•</span>
+                        {/* GPU */}
+                        <span className="inline-flex items-center gap-1 font-bold">
                           {m.gpu}
                         </span>
-
-                        {/* RAM Badge */}
-                        <span className="inline-flex items-center gap-1 text-[11px] font-mono font-bold px-2 py-0.5 bg-indigo-100 text-indigo-950 border border-indigo-300 rounded-md shadow-2xs shrink-0">
+                        <span className="text-slate-400">•</span>
+                        {/* RAM */}
+                        <span className="inline-flex items-center gap-1">
                           {m.ram}
                         </span>
                       </div>
 
                       {/* Hardware Spec Description */}
                       {m.specDescription && (
-                        <div className="text-[10px] text-slate-500 font-medium truncate" title={m.specDescription}>
+                        <div className="text-[10px] text-slate-600 font-semibold truncate" title={m.specDescription}>
                           {m.specDescription}
                         </div>
                       )}

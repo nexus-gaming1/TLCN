@@ -90,7 +90,7 @@ export default function RankRewardsWidget({ profile }) {
                 : 'Ưu đãi giờ chơi & tích điểm hội viên'}
             </span>
           </div>
-          <span className="font-mono text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Active</span>
+          <span className="font-mono text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Active</span>
         </div>
 
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs">
@@ -98,7 +98,7 @@ export default function RankRewardsWidget({ profile }) {
             <Zap className="w-4 h-4 text-cyan-500 shrink-0" />
             <span>Tốc độ mạng ưu tiên trạm Cloud</span>
           </div>
-          <span className="font-mono text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Active</span>
+          <span className="font-mono text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Active</span>
         </div>
 
         <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/60 text-xs">
@@ -106,7 +106,7 @@ export default function RankRewardsWidget({ profile }) {
             <ShieldCheck className="w-4 h-4 text-indigo-500 shrink-0" />
             <span>Bảo vệ phiên chơi &amp; bảo mật tài khoản</span>
           </div>
-          <span className="font-mono text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Active</span>
+          <span className="font-mono text-[10px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-full">Active</span>
         </div>
       </div>
     </div>

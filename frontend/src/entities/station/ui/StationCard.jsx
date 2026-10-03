@@ -48,104 +48,86 @@ export default function StationCard({ station, onClick }) {
         <div
             onClick={() => onClick && onClick(station)}
             title={tooltipText}
-            className="cursor-pointer group rounded-xl p-3 bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-sky-500 transition-all duration-200 flex flex-col justify-between aspect-square"
+            className="cursor-pointer group rounded-xl p-3 bg-white border border-slate-200/80 shadow-sm hover:shadow hover:border-sky-300 transition-all duration-200 flex flex-col justify-between w-40"
         >
-            {/* Top Header: ID & Type Icon */}
-            <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-black text-slate-900" title={`Mã số máy: ${station.id}`}>
-                    {station.id}
-                </span>
-                <span
-                    className={`w-5.5 h-5.5 rounded-md ${typeDef.bg} ${typeDef.text} flex items-center justify-center border ${typeDef.border} shadow-2xs`}
-                    title={`Trạng thái: ${typeDef.label}`}
-                >
-                    <IconComponent className="w-3.5 h-3.5 shrink-0" />
-                </span>
-            </div>
+            <div className="flex flex-col gap-2">
+                {/* Top Row: ID & Icon */}
+                <div className="flex justify-between items-start gap-2">
+                    <span className="font-mono text-sm font-black text-slate-900" title={`Mã số máy: ${station.id}`}>
+                        {station.id}
+                    </span>
+                    <button 
+                        className="p-1 -mt-1 -mr-1 rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
+                        title="Thao tác"
+                        onClick={(e) => { e.stopPropagation(); onClick && onClick(station); }}
+                    >
+                        <IconComponent className="w-4 h-4" strokeWidth={2.5} />
+                    </button>
+                </div>
 
-            {/* Middle Content: User & Game or Centered Status for Non-Active Sessions */}
-            {isNonSession ? (
-                <div className="my-auto py-1 text-center flex flex-col items-center justify-center">
+                {/* Status Row */}
+                <div className="flex items-center gap-1.5">
                     {isOffline ? (
-                        <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs text-[11px] font-mono font-extrabold uppercase tracking-wide"
-                            title="Máy đã tắt nguồn"
-                        >
-                            <Power className="w-3 h-3 text-slate-500 shrink-0" />
-                            TẮT NGUỒN
-                        </span>
+                        <>
+                            <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0"></span>
+                            <span className="text-[12px] font-bold text-slate-600">Tắt nguồn</span>
+                        </>
                     ) : isMaint ? (
-                        <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-950 border border-rose-300 shadow-2xs text-[11px] font-mono font-extrabold uppercase tracking-wide"
-                            title="Máy đang trong quá trình bảo trì kỹ thuật"
-                        >
-                            <Wrench className="w-3 h-3 text-rose-700 shrink-0" />
-                            BẢO TRÌ
-                        </span>
+                        <>
+                            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                            <span className="text-[12px] font-bold text-rose-600">Bảo trì</span>
+                        </>
                     ) : isLocked ? (
-                        <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs text-[11px] font-mono font-extrabold uppercase tracking-wide"
-                            title="Máy hiện đang tạm khóa"
-                        >
-                            <Lock className="w-3 h-3 text-amber-700 shrink-0" />
-                            TẠM KHÓA
-                        </span>
+                        <>
+                            <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                            <span className="text-[12px] font-bold text-amber-600">Tạm khóa</span>
+                        </>
+                    ) : isOnlineReady ? (
+                        <>
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                            <span className="text-[12px] font-bold text-emerald-600">Sẵn sàng</span>
+                        </>
                     ) : (
-                        <span
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-950 border border-emerald-300 shadow-2xs text-[11px] font-mono font-extrabold uppercase tracking-wide"
-                            title="Máy trống, sẵn sàng cho khách nạp giờ"
-                        >
-                            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-                            SẴN SÀNG
-                        </span>
+                        <>
+                            <span className="w-2 h-2 rounded-full bg-sky-500 shrink-0"></span>
+                            <span className="text-[12px] font-bold text-sky-600">Đang chơi</span>
+                        </>
                     )}
                 </div>
-            ) : (
-                <div className="my-auto py-1 min-w-0">
-                    <p
-                        className="text-xs font-extrabold text-slate-900 truncate leading-tight"
-                        title={`Tên người dùng: ${station.user}`}
-                    >
-                        {station.user}
-                    </p>
-                    <p
-                        className="text-[11px] text-slate-600 truncate font-bold mt-0.5"
-                        title={`Ứng dụng/Game: ${station.game || 'League of Legends'}`}
-                    >
-                        {station.game || 'League of Legends'}
-                    </p>
-                </div>
-            )}
+            </div>
 
-            {/* Bottom Row: Micro-UI Tags for Active Sessions */}
+            {/* Bottom Row / Middle: User Info (Only if active session) */}
             {!isNonSession && (
-                <div className="flex items-center justify-between pt-2 border-t border-slate-100 gap-1">
-                    {/* Time Tag */}
-                    <span
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-extrabold bg-amber-100 text-amber-950 border border-amber-300 shadow-2xs shrink-0"
-                        title={`Thời gian đã chơi: ${station.time || '0h 0m'}`}
-                    >
-                        <Clock className="w-2.5 h-2.5 text-amber-800 shrink-0" />
-                        {station.time || '0h 0m'}
-                    </span>
-
-                    {/* Telemetry Tag */}
-                    <span
-                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-900 border border-slate-300 shadow-2xs truncate"
-                        title={`Thông số thiết bị: ${station.telemetry || station.latency || 'Hoạt động bình thường'}`}
-                    >
-                        {station.latency ? (
-                            <>
-                                <Wifi className="w-2.5 h-2.5 text-sky-700 shrink-0" />
-                                {station.latency}
-                            </>
-                        ) : (
-                            <>
-                                <Thermometer className="w-2.5 h-2.5 text-slate-600 shrink-0" />
-                                {station.telemetry ? station.telemetry.split('•')[0].trim() : '38°C'}
-                            </>
-                        )}
-                    </span>
+                <div className="mt-3 pt-3 border-t border-slate-100 flex-1 flex flex-col justify-end">
+                    <div className="flex flex-col gap-2">
+                        <div className="flex flex-col min-w-0">
+                            <p className="text-xs font-extrabold text-slate-900 truncate leading-tight" title={`Tên người dùng: ${station.user}`}>
+                                {station.user}
+                            </p>
+                            <p className="text-[10px] text-slate-500 truncate font-semibold mt-0.5" title={`Ứng dụng/Game: ${station.game || 'League of Legends'}`}>
+                                {station.game || 'League of Legends'}
+                            </p>
+                        </div>
+                        <div className="flex items-center justify-between gap-1">
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-extrabold bg-amber-50 text-amber-700 border border-amber-200/60 shrink-0">
+                                <Clock className="w-3 h-3 shrink-0" strokeWidth={2.5} />
+                                {station.time || '0h 0m'}
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-50 text-slate-700 border border-slate-200 truncate">
+                                {station.latency ? (
+                                    <>
+                                        <Wifi className="w-3 h-3 shrink-0 text-sky-600" strokeWidth={2.5} />
+                                        {station.latency}
+                                    </>
+                                ) : (
+                                    <>
+                                        <Thermometer className="w-3 h-3 shrink-0 text-slate-500" strokeWidth={2.5} />
+                                        {station.telemetry ? station.telemetry.split('•')[0].trim() : '38°C'}
+                                    </>
+                                )}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

@@ -106,8 +106,8 @@ export default function MachineKpiCards({
           <div
             key={c.id}
             onClick={() => onSelectStatus && onSelectStatus(isSelected ? 'all' : c.id)}
-            className={`${c.bgColor} p-4 sm:p-5 rounded-2xl flex flex-col justify-between shadow-xs hover:shadow-md transition-all cursor-pointer border ${
-              isSelected ? 'ring-2 ring-sky-600 border-sky-600' : 'border-slate-200/80'
+            className={`bg-white p-4 sm:p-5 rounded-lg flex flex-col justify-between shadow-flat hover:shadow-sm transition-all cursor-pointer border ${
+              isSelected ? 'ring-2 ring-sky-600 border-sky-600' : 'border-slate-200'
             }`}
           >
             {/* Card Header */}

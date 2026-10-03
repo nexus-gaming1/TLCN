@@ -6,15 +6,15 @@ export default function Sidebar({ activeNav = 'grid', setActiveNav, bootromStatu
     const navigate = useNavigate();
 
     const navItems = [
-        { id: 'grid', label: 'Sơ Đồ Phòng Máy', icon: LayoutGrid, path: '/admin' },
-        { id: 'members', label: 'Quản Lý Hội Viên', icon: UserCheck, path: '/admin/members' },
-        { id: 'hardware', label: 'Quản Lý Danh Sách Máy', icon: Cpu, path: '/admin/machines' },
-        { id: 'config', label: 'Cấu Hình Máy', icon: Sliders, path: '/admin/config' },
-        { id: 'promotions', label: 'Quản Lý Khuyến Mãi', icon: Tag, path: '/admin/promotions' },
-        { id: 'transactions', label: 'Quản Lý Giao Dịch', icon: Receipt, path: '/admin/transactions' },
-        { id: 'billing', label: 'Nạp Giờ & Dịch Vụ F&B', icon: CreditCard },
-        { id: 'games', label: 'Kho Game & BootROM', icon: Gamepad2 },
-        { id: 'reports', label: 'Báo Cáo Doanh Thu', icon: BarChart3 },
+        { id: 'grid', label: 'Sơ đồ phòng máy', icon: LayoutGrid, path: '/admin' },
+        { id: 'members', label: 'Hội viên', icon: UserCheck, path: '/admin/members' },
+        { id: 'hardware', label: 'Danh sách máy', icon: Cpu, path: '/admin/machines' },
+        { id: 'config', label: 'Cấu hình máy', icon: Sliders, path: '/admin/config' },
+        { id: 'promotions', label: 'Khuyến mãi', icon: Tag, path: '/admin/promotions' },
+        { id: 'transactions', label: 'Giao dịch', icon: Receipt, path: '/admin/transactions' },
+        { id: 'billing', label: 'Nạp giờ & Dịch vụ F&B', icon: CreditCard },
+        { id: 'games', label: 'Kho game & BootROM', icon: Gamepad2 },
+        { id: 'reports', label: 'Báo cáo doanh thu', icon: BarChart3 },
     ];
 
     const handleNavClick = (item, e) => {
@@ -46,30 +46,12 @@ export default function Sidebar({ activeNav = 'grid', setActiveNav, bootromStatu
                             }`}
                         >
                             <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? 'text-sky-600' : 'text-slate-500'}`} strokeWidth={2.2} />
-                            <span>{item.label}</span>
+                            <span className="truncate">{item.label}</span>
                         </a>
                     );
                 })}
             </nav>
 
-            <div className="px-3 pt-3 pb-1 border-t border-slate-100 space-y-1.5">
-                <a
-                    href="#"
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-semibold text-[14px] transition-all"
-                >
-                    <Settings className="w-4.5 h-4.5 text-slate-500 shrink-0" strokeWidth={2.2} />
-                    <span>Cấu Hình Hệ Thống</span>
-                </a>
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span className="font-mono text-[11px] text-slate-600 font-medium uppercase">BootROM Host</span>
-                    </div>
-                    <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-100/60 px-1.5 py-0.5 rounded">
-                        {bootromStatus}
-                    </span>
-                </div>
-            </div>
         </aside>
     );
 }

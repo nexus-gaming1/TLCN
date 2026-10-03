@@ -26,18 +26,12 @@ export default function CustomerHeader({ user, onLogout }) {
   return (
     <header className="fixed top-0 left-[17.5rem] right-0 h-16 bg-white/90 backdrop-blur-md z-40 flex items-center justify-between px-8 border-b border-slate-200/80 text-slate-800 shadow-xs">
       <div className="flex items-center gap-2 text-xs font-mono">
-        <span className="text-slate-400 uppercase tracking-wider font-semibold">PLATFORM</span>
+        <span className="text-slate-400 uppercase tracking-wider font-semibold">HỆ THỐNG</span>
         <span className="text-slate-300">/</span>
-        <span className="text-cyan-600 font-extrabold uppercase tracking-wider">CUSTOMER PORTAL</span>
+        <span className="text-cyan-600 font-extrabold uppercase tracking-wider">CỔNG DỊCH VỤ</span>
       </div>
 
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-xs">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="font-mono text-[11px] uppercase tracking-wider font-bold">
-            ● US-EAST GRID ACTIVE
-          </span>
-        </div>
 
         {/* User Profile Dropdown Container */}
         <div className="relative" ref={dropdownRef}>

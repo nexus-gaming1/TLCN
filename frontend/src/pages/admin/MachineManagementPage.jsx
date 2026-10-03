@@ -46,8 +46,8 @@ export default function MachineManagementPage({ user, onLogout }) {
   const [pageSize, setPageSize] = useState(10);
 
   // Helper with safe try/catch/finally to re-fetch live machine fleet list & zones from MySQL CSDL
-  const refreshMachineList = async () => {
-    setLoading(true);
+  const refreshMachineList = async (showLoading = true) => {
+    if (showLoading) setLoading(true);
     try {
       const [machinesData, zonesData] = await Promise.all([
         machineService.getMachines(),
@@ -62,7 +62,7 @@ export default function MachineManagementPage({ user, onLogout }) {
     } catch (error) {
       console.error('Lỗi khi nạp lại danh sách máy trạm:', error.message);
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -206,7 +206,7 @@ export default function MachineManagementPage({ user, onLogout }) {
         })
       );
       setSelectedIds([]);
-      await refreshMachineList();
+      await refreshMachineList(false);
     } catch (error) {
       alert(error.message || errorMessage);
     }
@@ -252,7 +252,7 @@ export default function MachineManagementPage({ user, onLogout }) {
       try {
         await machineService.deleteMachine(computerId);
         setSelectedIds((prev) => prev.filter((id) => id !== machineId));
-        await refreshMachineList();
+        await refreshMachineList(false);
       } catch (error) {
         alert(error.message || 'Lỗi khi xóa máy trạm');
       }
@@ -338,29 +338,9 @@ export default function MachineManagementPage({ user, onLogout }) {
 
       {/* Main Content */}
       <div className="pl-[240px]">
-        <main className="relative pt-16 min-h-screen bg-slate-50/50 w-full px-6 py-6 pb-24 flex flex-col justify-between">
+        <main className="relative pt-16 min-h-screen bg-slate-100 w-full px-6 py-6 pb-24 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
-            {/* Top Breadcrumb & Page Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-xs text-slate-600 font-semibold">
-                  <span className="flex items-center gap-1 hover:text-sky-600 transition-colors cursor-pointer">
-                    <span className="material-symbols-outlined text-[16px] text-slate-500">home</span>
-                    Cơ Sở Hạ Tầng
-                  </span>
-                  <span className="text-slate-400 font-bold">/</span>
-                  <span>Phòng Máy &amp; Thiết Bị</span>
-                  <span className="text-slate-400 font-bold">/</span>
-                  <span className="text-slate-900 font-extrabold">Danh Sách Máy Trạm</span>
-                </div>
-                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2 mt-1">
-                  Quản Lý Danh Sách Máy Trạm
-                </h1>
-                <p className="text-xs text-slate-600 max-w-3xl font-medium">
-                  Hệ thống giám sát, phân bổ phân khu phần cứng và điều phối {metrics.totalMachines} trạm máy theo thời gian thực.
-                </p>
-              </div>
-            </div>
+
 
             {/* KPI Summary Cards */}
             <MachineKpiCards

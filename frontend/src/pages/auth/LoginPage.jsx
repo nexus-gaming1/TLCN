@@ -39,21 +39,7 @@ export default function LoginPage({ onLoginSuccess }) {
         </a>
 
         <div className="flex items-center space-x-3 text-xs">
-          <div className="hidden sm:flex items-center space-x-1.5 bg-slate-100 px-3.5 py-1.5 rounded-full border border-slate-200 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-            <span className="font-semibold text-xs text-slate-800">VIE / VNĐ</span>
-          </div>
-          <a className="inline-flex items-center text-slate-700 hover:text-brand-600 font-medium transition-colors" href="#">
-            <span>Trở về trang chủ</span>
-            <svg className="w-3.5 h-3.5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-              ></path>
-            </svg>
-          </a>
+          {/* Header items removed as requested */}
         </div>
       </header>
 
