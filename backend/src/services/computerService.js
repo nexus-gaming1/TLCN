@@ -1,6 +1,7 @@
 const db = require('../models');
 const { formatStationDTO } = require('../utils/stationFormatter');
 const { ComputerStatus } = require('../constants/enums');
+const { SessionType } = require('../constants/enums');
 
 
 /**
@@ -99,7 +100,25 @@ class ComputerService {
       if (!computer) return null;
 
       if (updateData.status) {
-        await computer.updateStatus(updateData.status);
+        const transaction = await db.sequelize.transaction();
+        try {
+          const previousStatus = computer.status;
+          computer.status = updateData.status;
+          await computer.save({ transaction });
+
+          if (previousStatus !== updateData.status) {
+            await db.ComputerStatusLog.create({
+              computer_id: computer.computer_id,
+              status: updateData.status,
+              session_type: SessionType.SYSTEM
+            }, { transaction });
+          }
+
+          await transaction.commit();
+        } catch (error) {
+          await transaction.rollback();
+          throw error;
+        }
       }
 
       if (updateData.zone_id) computer.zone_id = updateData.zone_id;

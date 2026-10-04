@@ -12,7 +12,9 @@ public enum IpcAction
     Ping,
     Pong,
     UiReady,
-    ClientLogin
+    ClientLogin,
+    LoginResult,
+    LegacyClientLogin
 }
 
 public class IpcMessage
@@ -22,6 +24,9 @@ public class IpcMessage
 
     [JsonPropertyName("username")]
     public string? Username { get; set; }
+
+    [JsonPropertyName("password")]
+    public string? Password { get; set; }
 
     [JsonPropertyName("status")]
     public string? Status { get; set; }
@@ -34,10 +39,12 @@ public class IpcMessage
 
     [JsonPropertyName("machineId")]
     public string? MachineId { get; set; }
+
+    [JsonPropertyName("success")]
+    public bool? Success { get; set; }
 }
 
 public static class IpcConstants
 {
     public const string PipeName = "NetClient_Ipc_Pipe";
 }
-

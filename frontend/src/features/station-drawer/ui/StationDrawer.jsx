@@ -11,9 +11,9 @@ export default function StationDrawer({ station, isOpen, onClose, onAction, onSw
     console.log('Station Data:', station);
 const currentMachine = Object.values(machines).find(
     machine => machine.localIp === station?.ip
+    && machine.macAddress === station?.mac_address
 );
 
-    console.log('Current Machine:', currentMachine.performance.cpuUsage);
     const currentStatusUpper = String(station.status || '').toUpperCase();
     const isOffline = currentStatusUpper === 'OFFLINE';
     const isOnline = currentStatusUpper === 'ONLINE' || currentStatusUpper === 'READY';

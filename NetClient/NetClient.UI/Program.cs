@@ -30,15 +30,19 @@ internal static class Program
         ipcClient.OnSetUsername += user => overlay.SetUsername(user);
         ipcClient.OnSetStatus += (status, machineId) => overlay.SetStatus(status, machineId);
         ipcClient.OnShowNotification += (msg, title) => overlay.ShowNotification(msg, title);
+        ipcClient.OnLoginResult += (success, message) => overlay.ShowLoginResult(success, message);
 
         // Wire fake login from LockOverlay to IPC Service
-        overlay.OnLoginRequested += async username =>
+        overlay.OnLoginRequested += async (username, password) =>
         {
             try
             {
-                await ipcClient.SendLoginAsync(username);
+                await ipcClient.SendLoginAsync(username, password);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                overlay.ShowLoginResult(false, $"Không thể gửi yêu cầu đăng nhập: {ex.Message}");
+            }
         };
 
         // Start background IPC client loop

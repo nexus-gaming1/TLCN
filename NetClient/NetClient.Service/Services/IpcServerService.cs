@@ -20,6 +20,7 @@ public class IpcServerService : BackgroundService
 
     public event Action? ClientConnected;
     public event Action? ClientDisconnected;
+    public event Func<string, string, Task>? LoginRequested;
 
     public IpcServerService(ILogger<IpcServerService> logger, SessionService sessionService)
     {
@@ -91,7 +92,7 @@ public class IpcServerService : BackgroundService
 
                     if (!string.IsNullOrWhiteSpace(line))
                     {
-                        HandleIncomingMessage(line);
+                        await HandleIncomingMessageAsync(line);
                     }
                 }
             }
@@ -164,7 +165,7 @@ public class IpcServerService : BackgroundService
         }
     }
 
-    private void HandleIncomingMessage(string json)
+    private async Task HandleIncomingMessageAsync(string json)
     {
         try
         {
@@ -182,10 +183,25 @@ public class IpcServerService : BackgroundService
             }
             else if (msg.Action == IpcAction.ClientLogin && !string.IsNullOrWhiteSpace(msg.Username))
             {
-                _logger.LogInformation("IPC received ClientLogin from UI for user: {User}", msg.Username);
+                if (string.IsNullOrWhiteSpace(msg.Password))
+                {
+                    await SendLoginResultAsync(false, "Vui lòng nhập mật khẩu.");
+                    return;
+                }
+
+                if (LoginRequested == null)
+                {
+                    await SendLoginResultAsync(false, "Dịch vụ xác thực chưa sẵn sàng.");
+                    return;
+                }
+
+                await LoginRequested.Invoke(msg.Username, msg.Password);
+            }
+            else if (msg.Action == IpcAction.LegacyClientLogin && !string.IsNullOrWhiteSpace(msg.Username))
+            {
+                _logger.LogInformation("IPC received legacy local login for user: {User}", msg.Username);
                 _sessionService.Login(msg.Username);
-                _ = SetUsernameAsync(msg.Username, CancellationToken.None);
-                _ = HideOverlayAsync(CancellationToken.None);
+                await SetUsernameAsync(msg.Username);
             }
         }
         catch (Exception ex)
@@ -232,5 +248,12 @@ public class IpcServerService : BackgroundService
 
     public Task ShowNotificationAsync(string message, string? title = null, CancellationToken ct = default)
         => SendMessageAsync(new IpcMessage { Action = IpcAction.ShowNotification, Message = message, Title = title }, ct);
-}
 
+    public Task SendLoginResultAsync(bool success, string? message, CancellationToken ct = default)
+        => SendMessageAsync(new IpcMessage
+        {
+            Action = IpcAction.LoginResult,
+            Success = success,
+            Message = message
+        }, ct);
+}

@@ -144,3 +144,9 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
+# Visual Studio
+NetClient/.vs/
+
+# .NET build output
+NetClient/**/bin/
+NetClient/**/obj/

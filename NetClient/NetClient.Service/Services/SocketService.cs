@@ -15,6 +15,7 @@ public class SocketService : BackgroundService
     private readonly CommandService _commandService;
     private readonly PerformanceMonitor _performanceMonitor;
     private readonly IpcServerService _ipcServerService;
+    private readonly AuthApiService _authApiService;
 
     private SocketIO? _client;
     private System.Threading.Timer? _heartbeatTimer;
@@ -28,7 +29,8 @@ public class SocketService : BackgroundService
         SessionService sessionService,
         CommandService commandService,
         PerformanceMonitor performanceMonitor,
-        IpcServerService ipcServerService)
+        IpcServerService ipcServerService,
+        AuthApiService authApiService)
     {
         _logger = logger;
         _configuration = configuration;
@@ -36,6 +38,7 @@ public class SocketService : BackgroundService
         _commandService = commandService;
         _performanceMonitor = performanceMonitor;
         _ipcServerService = ipcServerService;
+        _authApiService = authApiService;
 
         _serverUrl = _configuration["Server:Url"] ?? "http://127.0.0.1:3000";
         if (!int.TryParse(_configuration["Client:HeartbeatIntervalSeconds"], out _heartbeatIntervalSeconds) || _heartbeatIntervalSeconds <= 0)
@@ -45,7 +48,7 @@ public class SocketService : BackgroundService
 
         // Subscribe to local session state changes
         _sessionService.StatusChanged += OnLocalStatusChanged;
-        _sessionService.UserLoggedIn += OnLocalUserLoggedIn;
+        _ipcServerService.LoginRequested += AuthenticateLocalLoginAsync;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -134,7 +137,7 @@ public class SocketService : BackgroundService
                 _logger.LogInformation("Received 'command' event: {Command}", payload.Command);
                 var ack = await _commandService.ExecuteCommandAsync(payload);
                 await _client.EmitAsync("command:ack", [ack]);
-            }
+            }   
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error handling 'command' event");
@@ -318,27 +321,46 @@ public class SocketService : BackgroundService
         });
     }
 
-    private void OnLocalUserLoggedIn(string username)
+    private async Task AuthenticateLocalLoginAsync(string username, string password)
     {
-        if (_client == null || !_client.Connected) return;
-
-        _ = Task.Run(async () =>
+        try
         {
-            try
+            var result = await _authApiService.LoginAsync(username, password);
+            if (!result.Success || string.IsNullOrWhiteSpace(result.Username))
+            {
+                await _ipcServerService.SendLoginResultAsync(false, result.Error);
+                return;
+            }
+
+            if (!_sessionService.Login(result.Username))
+            {
+                await _ipcServerService.SendLoginResultAsync(false, "Không thể khởi tạo phiên làm việc.");
+                return;
+            }
+
+            await _ipcServerService.SetUsernameAsync(result.Username);
+            await _ipcServerService.HideOverlayAsync();
+            await _ipcServerService.SendLoginResultAsync(true, null);
+
+            if (_client != null && _client.Connected)
             {
                 await _client.EmitAsync("login:ack", [new LoginAck
                 {
                     MachineId = _sessionService.MachineId,
-                    Username = username,
+                    Username = result.Username,
                     Success = true
                 }]);
-                _logger.LogInformation("Emitted login:ack for local user login: {User}", username);
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to emit login:ack for local user login");
-            }
-        });
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Backend authentication request failed");
+            await _ipcServerService.SendLoginResultAsync(false, "Không thể kết nối đến máy chủ.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error while authenticating local login");
+            await _ipcServerService.SendLoginResultAsync(false, "Đăng nhập thất bại.");
+        }
     }
 }
-

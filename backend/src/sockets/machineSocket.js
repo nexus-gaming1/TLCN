@@ -1,8 +1,11 @@
 const machineStore = require('../stores/machineStore');
 const Computer = require('../models/Computer');
+const db = require('../models');
+const { Op } = require('sequelize');
 const HEARTBEAT_TIMEOUT_MS = 15000;
 const HEARTBEAT_CHECK_INTERVAL_MS = 5000;
 const ComputerStatus = require('../constants/enums').ComputerStatus;
+const { recordStatusChange } = require('../services/computerStatusLogService');
 function registerMachineSocket(io) {
 
     function broadcastUpdate() {
@@ -16,11 +19,23 @@ function registerMachineSocket(io) {
     // Heartbeat Timeout Checker (Interval)
     // Quá 15s không nhận heartbeat hợp lệ -> OFFLINE
     // ========================================
-    const timeoutInterval = setInterval(() => {
+    const timeoutInterval = setInterval(async () => {
         try {
             const timedOutMachines = machineStore.checkHeartbeatTimeout(HEARTBEAT_TIMEOUT_MS);
             if (timedOutMachines.length > 0) {
                 for (const m of timedOutMachines) {
+                    const computer = await findComputer(m);
+                    if (computer) {
+                        const previousStatus = computer.status;
+                        computer.status = ComputerStatus.OFFLINE;
+                        await computer.save();
+                        await recordStatusChange(
+                            computer,
+                            previousStatus,
+                            ComputerStatus.OFFLINE,
+                            null
+                        );
+                    }
                     console.log(
                         `[Socket.IO] Machine ${m.machineId} timed out (no heartbeat for > ${HEARTBEAT_TIMEOUT_MS / 1000}s). Status set to OFFLINE.`
                     );
@@ -34,6 +49,18 @@ function registerMachineSocket(io) {
 
     if (timeoutInterval.unref) {
         timeoutInterval.unref();
+    }
+
+    async function findComputer(machine) {
+        if (!machine) return null;
+        return Computer.findOne({
+            where: {
+                [Op.or]: [
+                    { ip_address: machine.localIp },
+                    { mac_address: machine.macAddress }
+                ]
+            }
+        });
     }
 
     io.on('connection', (socket) => {
@@ -75,8 +102,15 @@ function registerMachineSocket(io) {
                 }
             });
             if (computer) {
+                const previousStatus = computer.status;
                 computer.status = data.status || ComputerStatus.ONLINE;
                 await computer.save();
+                await recordStatusChange(
+                    computer,
+                    previousStatus,
+                    computer.status,
+                    null
+                );
             }
             socket.join(
                 `machine:${data.machineId}`
@@ -128,17 +162,17 @@ function registerMachineSocket(io) {
                 socket.id,
                 data
             );
-            const computer = await Computer.findOne({
-                where: {
-                    [Op.or]: [
-                        { ip_address: data.localIp },
-                        { mac_address: data.macAddress }
-                    ]
-                }
-            });
+            const computer = await findComputer(updated);
             if (computer) {
+                const previousStatus = computer.status;
                 computer.status = data.status || ComputerStatus.ONLINE;
                 await computer.save();
+                await recordStatusChange(
+                    computer,
+                    previousStatus,
+                    computer.status,
+                    null
+                );
             }
 
             if (updated) {
@@ -177,17 +211,28 @@ function registerMachineSocket(io) {
                     machine.currentUser =
                         data.username;
                     machine.lastStatusChange = new Date().toISOString();
-                    const computer = await Computer.findOne({
-                        where: {
-                            [Op.or]: [
-                                { ip_address: data.localIp },
-                                { mac_address: data.macAddress }
-                            ]
-                        }
-                    });
+                    const computer = await findComputer(machine);
                     if (computer) {
+                        const previousStatus = computer.status;
                         computer.status = ComputerStatus.IN_USE;
                         await computer.save();
+                        const user = await db.User.findOne({
+                            where: { username: data.username },
+                            attributes: ['user_id'],
+                            include: [{
+                                model: db.Member,
+                                as: 'memberProfile',
+                                attributes: ['member_id'],
+                                required: false
+                            }]
+                        });
+                        const memberId = user?.memberProfile?.member_id || null;
+                        await recordStatusChange(
+                            computer,
+                            previousStatus,
+                            ComputerStatus.IN_USE,
+                            memberId
+                        );
                     }
                     broadcastUpdate();
                 }
@@ -217,17 +262,17 @@ function registerMachineSocket(io) {
 
                 // Chỉ cho phép cập nhật nếu ACK gửi từ đúng socket hiện tại của machine
                 if (machine && machine.socketId === socket.id) {
-                    const computer = await Computer.findOne({
-                        where: {
-                            [Op.or]: [
-                                { ip_address: data.localIp },
-                                { mac_address: data.macAddress }
-                            ]
-                        }
-                    });
+                    const computer = await findComputer(machine);
                     if (computer) {
+                        const previousStatus = computer.status;
                         computer.status = ComputerStatus.ONLINE;
                         await computer.save();
+                        await recordStatusChange(
+                            computer,
+                            previousStatus,
+                            ComputerStatus.ONLINE,
+                            null
+                        );
                     }
                     machine.status = ComputerStatus.ONLINE;
                     machine.currentUser = null;
@@ -277,17 +322,17 @@ function registerMachineSocket(io) {
                     `[Socket.IO] Machine marked OFFLINE: ` +
                     `${disconnected.machineId}`
                 );
-                const computer = await Computer.findOne({
-                    where: {
-                        [Op.or]: [
-                            { ip_address: disconnected.machine.localIp },
-                            { mac_address: disconnected.machine.macAddress }
-                        ]
-                    }
-                }); 
+                const computer = await findComputer(disconnected.machine);
                 if (computer) {
+                    const previousStatus = computer.status;
                     computer.status = ComputerStatus.OFFLINE;
                     await computer.save();
+                    await recordStatusChange(
+                        computer,
+                        previousStatus,
+                        ComputerStatus.OFFLINE,
+                        null
+                    );
                 }
                 broadcastUpdate();
             }

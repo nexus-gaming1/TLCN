@@ -213,8 +213,6 @@ D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\Newtonsoft
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\SocketIOClient.dll
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\SocketIOClient.Common.dll
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\SocketIOClient.Serializer.dll
-D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\System.CodeDom.dll
-D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\System.Diagnostics.EventLog.dll
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\System.Management.dll
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\System.ServiceProcess.ServiceController.dll
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\xunit.assert.dll
@@ -285,7 +283,6 @@ D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\zh-Hans\Mi
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\zh-Hant\Microsoft.TestPlatform.CommunicationUtilities.resources.dll
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\zh-Hant\Microsoft.TestPlatform.CrossPlatEngine.resources.dll
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\zh-Hant\Microsoft.VisualStudio.TestPlatform.Common.resources.dll
-D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\runtimes\win\lib\net10.0\System.Diagnostics.EventLog.dll
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\runtimes\win\lib\net10.0\System.Management.dll
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\runtimes\win\lib\net10.0\System.ServiceProcess.ServiceController.dll
 D:\TLCN\TLCN\TLCN\NetClient\NetClient.Tests\bin\Debug\net10.0-windows\NetClient.Service.dll

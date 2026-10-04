@@ -15,6 +15,8 @@ public class SessionService
 
     public MachineStatus CurrentStatus { get; private set; } = MachineStatus.ONLINE;
     public string? CurrentUser { get; private set; }
+    public string? Password { get; private set; }
+
     public string MachineId { get; }
     public string Hostname { get; }
 

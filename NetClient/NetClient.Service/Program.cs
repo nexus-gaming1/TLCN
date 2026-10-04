@@ -39,6 +39,7 @@ public class Program
             {
                 // Core Domain Services
                 services.AddSingleton<SessionService>();
+                services.AddSingleton<AuthApiService>();
                 services.AddSingleton<PerformanceMonitor>();
                 services.AddSingleton<CommandService>();
 
@@ -54,4 +55,3 @@ public class Program
         await host.RunAsync();
     }
 }
-
