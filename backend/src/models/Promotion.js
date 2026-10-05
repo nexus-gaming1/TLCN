@@ -79,5 +79,20 @@ module.exports = (sequelize, DataTypes) => {
         timestamps: false 
     });
 
+    Promotion.associate = (models) => {
+        Promotion.belongsToMany(models.Member, {
+            through: 'member_promotion',
+            foreignKey: 'promotion_id',
+            otherKey: 'member_id',
+            timestamps: false
+        });
+        if (models.ServiceOrder) {
+            Promotion.hasMany(models.ServiceOrder, { foreignKey: 'promotion_id' });
+        }
+        if (models.FinancialTransaction) {
+            Promotion.hasMany(models.FinancialTransaction, { foreignKey: 'promotion_id' });
+        }
+    };
+
     return Promotion;
 };
