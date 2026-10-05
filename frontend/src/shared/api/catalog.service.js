@@ -113,7 +113,7 @@ class CatalogService {
    */
   async adjustItemStock(id, quantityDelta) {
     try {
-      const response = await apiClient.patch(`/catalog/items/${id}/stock`, { quantityDelta });
+      const response = await apiClient.patch(`/catalog/items/${id}/stock`, { quantity: quantityDelta });
       return response.data;
     } catch (error) {
       console.error('Lỗi khi điều chỉnh tồn kho:', error);
