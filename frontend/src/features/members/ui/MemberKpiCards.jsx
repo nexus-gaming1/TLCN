@@ -5,8 +5,7 @@ export default function MemberKpiCards({ totalMembers = 3420, activePlaying = 84
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {/* Card 1: Total Members */}
-      <div className="relative overflow-hidden bg-white p-5 rounded-2xl shadow-xs hover:shadow-md border border-slate-200/90 transition-all flex flex-col justify-between group before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-cyan-500 before:to-blue-600">
-        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-sky-500/10 rounded-full blur-xl group-hover:bg-sky-500/20 transition-colors"></div>
+      <div className="bg-white p-5 rounded-lg shadow-flat border border-slate-200 transition-all flex flex-col justify-between group">
         <div className="flex items-start justify-between">
           <div>
             <span className="font-mono text-[11px] uppercase tracking-wider text-slate-700 font-bold">TỔNG HỘI VIÊN</span>
@@ -30,8 +29,7 @@ export default function MemberKpiCards({ totalMembers = 3420, activePlaying = 84
       </div>
 
       {/* Card 2: Active Playing */}
-      <div className="relative overflow-hidden bg-white p-5 rounded-2xl shadow-xs hover:shadow-md border border-slate-200/90 transition-all flex flex-col justify-between group before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-indigo-500 before:to-violet-600">
-        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-500/10 rounded-full blur-xl group-hover:bg-indigo-500/20 transition-colors"></div>
+      <div className="bg-white p-5 rounded-lg shadow-flat border border-slate-200 transition-all flex flex-col justify-between group">
         <div className="flex items-start justify-between">
           <div>
             <span className="font-mono text-[11px] uppercase tracking-wider text-slate-700 font-bold">ĐANG CHƠI TRỰC TUYẾN</span>
@@ -57,8 +55,7 @@ export default function MemberKpiCards({ totalMembers = 3420, activePlaying = 84
       </div>
 
       {/* Card 3: VIP Pool */}
-      <div className="relative overflow-hidden bg-white p-5 rounded-2xl shadow-xs hover:shadow-md border border-slate-200/90 transition-all flex flex-col justify-between group before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-amber-400 before:to-yellow-500">
-        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/10 rounded-full blur-xl group-hover:bg-amber-500/20 transition-colors"></div>
+      <div className="bg-white p-5 rounded-lg shadow-flat border border-slate-200 transition-all flex flex-col justify-between group">
         <div className="flex items-start justify-between">
           <div>
             <span className="font-mono text-[11px] uppercase tracking-wider text-slate-700 font-bold">HỘI VIÊN VIP / DIAMOND</span>
@@ -80,8 +77,7 @@ export default function MemberKpiCards({ totalMembers = 3420, activePlaying = 84
       </div>
 
       {/* Card 4: Shift Revenue Deposit */}
-      <div className="relative overflow-hidden bg-white p-5 rounded-2xl shadow-xs hover:shadow-md border border-slate-200/90 transition-all flex flex-col justify-between group before:absolute before:top-0 before:left-0 before:right-0 before:h-1 before:bg-gradient-to-r before:from-emerald-500 before:to-teal-600">
-        <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-colors"></div>
+      <div className="bg-white p-5 rounded-lg shadow-flat border border-slate-200 transition-all flex flex-col justify-between group">
         <div className="flex items-start justify-between">
           <div>
             <span className="font-mono text-[11px] uppercase tracking-wider text-slate-700 font-bold">NẠP GIỜ CA HIỆN TẠI</span>

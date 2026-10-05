@@ -49,7 +49,7 @@ export default function Header({ user, searchQuery, setSearchQuery, metrics, onL
     const m = metrics || { totalStations: 120, localCount: 56, cloudCount: 28, readyCount: 28, maintCount: 8, shiftRevenue: 14850000 };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between gap-4">
+        <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white border-b border-slate-300 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] px-6 flex items-center justify-between gap-4">
             <div className="flex items-center gap-6 flex-shrink-0">
                 <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-sm shadow-sky-200">
@@ -61,42 +61,15 @@ export default function Header({ user, searchQuery, setSearchQuery, metrics, onL
                     </div>
                 </div>
 
-                {/* Quick Metrics Ribbon */}
-                <div className="hidden xl:flex items-center gap-2 pl-4 border-l border-slate-200">
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200/60">
-                        <span className="font-mono text-[11px] text-slate-500 uppercase font-semibold">Tổng:</span>
-                        <span className="font-mono text-xs text-slate-800 font-bold">{m.totalStations} máy</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50/70 border border-amber-200/60">
-                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
-                        <span className="font-mono text-[11px] text-amber-700 font-semibold uppercase">Tại quán:</span>
-                        <span className="font-mono text-xs text-amber-900 font-bold">{m.localCount}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50/80 border border-sky-200/60">
-                        <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span>
-                        <span className="font-mono text-[11px] text-sky-700 font-semibold uppercase">Cloud Remote:</span>
-                        <span className="font-mono text-xs text-sky-900 font-bold">{m.cloudCount}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50/70 border border-emerald-200/60">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                        <span className="font-mono text-[11px] text-emerald-700 font-semibold uppercase">Sẵn sàng:</span>
-                        <span className="font-mono text-xs text-emerald-900 font-bold">{m.readyCount}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50/70 border border-rose-200/60">
-                        <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                        <span className="font-mono text-[11px] text-rose-700 font-semibold uppercase">Bảo trì:</span>
-                        <span className="font-mono text-xs text-rose-900 font-bold">{m.maintCount}</span>
-                    </div>
-                </div>
             </div>
 
             {/* Central Global Search */}
             {setSearchQuery && (
                 <div className="flex-1 max-w-md hidden md:block">
                     <div className="relative flex items-center">
-                        <Search className="w-4 h-4 absolute left-3 text-slate-400" />
+                        <Search className="w-4 h-4 absolute left-3 text-slate-500" strokeWidth={2.5} />
                         <input
-                            className="w-full h-9 pl-9 pr-4 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
+                            className="w-full h-9 pl-9 pr-4 bg-slate-100 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all"
                             placeholder="Tìm kiếm máy (ESP-01, VIP-..), hội viên, IP..."
                             type="text"
                             value={searchQuery || ''}
@@ -108,23 +81,14 @@ export default function Header({ user, searchQuery, setSearchQuery, metrics, onL
 
             {/* Actions & User Profile */}
             <div className="flex items-center gap-3 flex-shrink-0">
-                {m.shiftRevenue !== undefined && (
-                    <div className="hidden lg:flex flex-col items-end px-3 py-1 bg-emerald-50/80 border border-emerald-200/60 rounded-lg">
-                        <span className="font-mono text-[10px] text-emerald-700 font-semibold tracking-wider uppercase">DOANH THU CA TRỰC</span>
-                        <span className="font-mono text-xs text-emerald-800 font-extrabold">{m.shiftRevenue ? m.shiftRevenue.toLocaleString() : '14.850.000'} đ</span>
-                    </div>
-                )}
+
                 <button
-                    className="relative p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-200/70 transition-colors"
+                    className="relative p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-300 transition-colors"
                     title="Thông báo hệ thống">
-                    <Bell className="w-4 h-4 text-slate-600" />
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+                    <Bell className="w-4 h-4 text-slate-700" strokeWidth={2.5} />
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full shadow-sm"></span>
                 </button>
-                <button
-                    className="p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-500 hover:text-slate-800 border border-slate-200/70 transition-colors"
-                    title="Cài đặt bố cục">
-                    <Sliders className="w-4 h-4 text-slate-600" />
-                </button>
+
 
                 {/* Admin Profile Dropdown Container */}
                 <div className="relative pl-2 border-l border-slate-200" ref={profileDropdownRef}>
@@ -138,11 +102,11 @@ export default function Header({ user, searchQuery, setSearchQuery, metrics, onL
                             {user?.full_name ? user.full_name.substring(0, 2).toUpperCase() : 'AD'}
                         </div>
                         <div className="hidden sm:flex flex-col text-left">
-                            <span className="text-xs font-bold text-slate-800 leading-tight group-hover:text-sky-700 transition-colors">
+                            <span className="text-[13px] font-extrabold text-slate-900 leading-tight group-hover:text-sky-700 transition-colors">
                                 {user?.full_name || 'Quản Trị Viên'}
                             </span>
-                            <span className="font-mono text-[10px] text-purple-600 leading-tight font-semibold flex items-center gap-1">
-                                <ShieldCheck className="w-3 h-3 inline text-purple-600" /> {user?.role || 'ADMIN'}
+                            <span className="font-mono text-[10px] text-purple-700 leading-tight font-bold flex items-center gap-1 mt-0.5">
+                                <ShieldCheck className="w-3 h-3 inline text-purple-700" strokeWidth={2.5} /> {user?.role || 'ADMIN'}
                             </span>
                         </div>
                         <ChevronDown className={`w-3.5 h-3.5 text-slate-400 group-hover:text-slate-600 transition-transform duration-200 ${isProfileOpen ? 'rotate-180' : ''}`} />

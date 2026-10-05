@@ -49,7 +49,6 @@ const runMigrations = async () => {
 
     // 2. members: points -> point
     await ensureColumn('members', 'points', 'point', 'INT NOT NULL DEFAULT 0');
-    await ensureColumn('members', null, 'id_number', 'VARCHAR(50) NULL');
     await ensureColumn('members', null, 'phone', 'VARCHAR(20) NULL');
 
     // 3. pricing_plan: price -> price_per_hour

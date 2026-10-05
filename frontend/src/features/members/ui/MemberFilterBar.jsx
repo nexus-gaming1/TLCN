@@ -17,14 +17,14 @@ export default function MemberFilterBar({
   const setSelectedStatus = onStatusChange;
 
   return (
-    <div className="bg-white p-3.5 rounded-2xl shadow-xs border border-slate-200/90 space-y-3">
+    <div className="bg-white p-3.5 rounded-lg shadow-flat border border-slate-200 space-y-3">
       {/* Top Search & Actions Row */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         {/* Search Input */}
         <div className="relative flex-1 max-w-xl">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
-            className="w-full pl-10 pr-12 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all font-medium"
+            className="w-full pl-10 pr-12 py-2 text-xs bg-slate-50 border border-slate-200 rounded-md text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 transition-all font-medium"
             placeholder="Tìm kiếm theo Tên, Username, SĐT, ID hội viên (UID-xxxx)..."
             type="text"
             value={searchQuery || ''}
@@ -39,14 +39,14 @@ export default function MemberFilterBar({
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <button
             type="button"
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200/70 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200/70 text-slate-700 rounded-md text-xs font-semibold transition-colors"
           >
             <Download className="w-4 h-4 text-slate-600" />
             <span>Xuất Báo Cáo</span>
           </button>
           <button
             type="button"
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200/70 text-slate-700 rounded-xl text-xs font-semibold transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200/70 text-slate-700 rounded-md text-xs font-semibold transition-colors"
           >
             <Printer className="w-4 h-4 text-slate-600" />
             <span className="hidden sm:inline">In Danh Sách</span>
@@ -54,7 +54,7 @@ export default function MemberFilterBar({
           <button
             type="button"
             onClick={onOpenCreateModal}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white rounded-xl text-xs font-bold shadow-md shadow-sky-500/20 hover:shadow-sky-500/35 transition-all transform hover:-translate-y-0.5 border border-cyan-300/40 relative overflow-hidden group"
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 via-sky-600 to-blue-700 hover:from-cyan-500 hover:to-blue-600 text-white rounded-md text-xs font-bold shadow-flat shadow-sky-500/20 hover:shadow-sky-500/35 transition-all transform hover:-translate-y-0.5 border border-cyan-300/40 relative overflow-hidden group"
           >
             <UserPlus className="w-4 h-4 text-cyan-100" />
             <span className="tracking-wide">+ Thêm Hội Viên Mới</span>

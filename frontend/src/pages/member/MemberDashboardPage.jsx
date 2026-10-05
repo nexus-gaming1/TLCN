@@ -57,12 +57,12 @@ export default function MemberDashboardPage({ user, onLogout }) {
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
                         <Wallet className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Tài khoản chính: <strong className="text-emerald-400 font-mono">{parseFloat(memberInfo.real_balance || 500000).toLocaleString()}đ</strong></span>
+                        <span>Tài khoản chính: <strong className="text-emerald-400 font-mono">{parseFloat(memberInfo.real_balance || 0).toLocaleString('vi-VN')}đ</strong></span>
                     </div>
 
                     <div className="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-lg border border-slate-700">
                         <Award className="w-3.5 h-3.5 text-amber-400" />
-                        <span>Hạng: <strong className="text-amber-300 font-bold">{memberInfo.MembershipRank?.name || 'Vàng'}</strong></span>
+                        <span>Hạng: <strong className="text-amber-300 font-bold">{memberInfo.MembershipRank?.name || 'Đồng'}</strong></span>
                     </div>
 
                     <div className="flex items-center gap-2 text-slate-300">

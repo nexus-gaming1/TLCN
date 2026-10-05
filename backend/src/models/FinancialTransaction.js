@@ -38,6 +38,9 @@ module.exports = (sequelize) => {
   FinancialTransaction.associate = (models) => {
     FinancialTransaction.belongsTo(models.Member, { foreignKey: 'used_by', as: 'memberInfo' });
     FinancialTransaction.belongsTo(models.User, { foreignKey: 'processed_by', as: 'processedBy' });
+    if (models.Promotion) {
+      FinancialTransaction.belongsTo(models.Promotion, { foreignKey: 'promotion_id' });
+    }
   };
 
   return FinancialTransaction;

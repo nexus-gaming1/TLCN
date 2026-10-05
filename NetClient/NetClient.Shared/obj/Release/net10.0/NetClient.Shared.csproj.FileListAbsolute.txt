@@ -1,0 +1,12 @@
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\bin\Release\net10.0\NetClient.Shared.deps.json
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\bin\Release\net10.0\NetClient.Shared.dll
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\bin\Release\net10.0\NetClient.Shared.pdb
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\obj\Release\net10.0\NetClient.Shared.GeneratedMSBuildEditorConfig.editorconfig
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\obj\Release\net10.0\NetClient.Shared.AssemblyInfoInputs.cache
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\obj\Release\net10.0\NetClient.Shared.AssemblyInfo.cs
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\obj\Release\net10.0\NetClient.Shared.csproj.CoreCompileInputs.cache
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\obj\Release\net10.0\NetClient.Shared.sourcelink.json
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\obj\Release\net10.0\NetClient.Shared.dll
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\obj\Release\net10.0\refint\NetClient.Shared.dll
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\obj\Release\net10.0\NetClient.Shared.pdb
+D:\TLCN\TLCN\TLCN\NetClient\NetClient.Shared\obj\Release\net10.0\ref\NetClient.Shared.dll

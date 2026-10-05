@@ -1,0 +1,7 @@
+D:\TLCN\TLCN\TLCN\NetClient\publish\UI\NetClient.UI.exe
+D:\TLCN\TLCN\TLCN\NetClient\publish\UI\NetClient.UI.dll
+D:\TLCN\TLCN\TLCN\NetClient\publish\UI\NetClient.UI.deps.json
+D:\TLCN\TLCN\TLCN\NetClient\publish\UI\NetClient.UI.runtimeconfig.json
+D:\TLCN\TLCN\TLCN\NetClient\publish\UI\NetClient.UI.pdb
+D:\TLCN\TLCN\TLCN\NetClient\publish\UI\NetClient.Shared.dll
+D:\TLCN\TLCN\TLCN\NetClient\publish\UI\NetClient.Shared.pdb

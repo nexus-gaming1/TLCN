@@ -22,10 +22,16 @@ class ProfileDto {
   /**
    * Format DB model into UI Profile Response DTO object
    */
-  static toResponse(member) {
+  static toResponse(member, allRanks = []) {
     if (!member) return null;
     const user = member.userInfo || {};
     const rank = member.MembershipRank || {};
+
+    const rankLevel = Number(rank.rank_level || 1);
+    const requiredPoint = Number(rank.required_point || 0);
+
+    // Find next rank in tier hierarchy
+    const nextRank = allRanks.find((r) => Number(r.rank_level) === rankLevel + 1) || null;
 
     const dynamicUid = ProfileDto.generateUid(member.member_id);
 
@@ -40,7 +46,16 @@ class ProfileDto {
       rank: {
         rank_id: Number(member.rank_id || 1),
         name: rank.name || DEFAULT_RANK_NAME,
-        discount_percent: parseFloat(rank.discount_percent || 0)
+        rank_level: rankLevel,
+        required_point: requiredPoint,
+        discount_percent: parseFloat(rank.discount_percent || 0),
+        next_rank: nextRank ? {
+          rank_id: Number(nextRank.rank_id),
+          name: nextRank.name,
+          rank_level: Number(nextRank.rank_level),
+          required_point: Number(nextRank.required_point),
+          discount_percent: parseFloat(nextRank.discount_percent || 0)
+        } : null
       },
       balances: {
         real_balance: parseFloat(member.real_balance || 0),

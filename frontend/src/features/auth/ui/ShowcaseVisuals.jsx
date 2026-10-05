@@ -13,10 +13,10 @@ export default function ShowcaseVisuals() {
       <div className="relative w-full max-w-2xl h-[92%] rounded-3xl overflow-hidden border border-white/80 shadow-2xl bg-white/40 flex flex-col justify-between p-4">
         
         {/* The Provided 3D Controller Image with Depth Stacking */}
-        <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 z-0 overflow-hidden">
           <img 
             alt="An elegant, bright 3D abstract illustration of a futuristic sleek white gaming controller" 
-            className="w-full h-full object-cover object-center transform scale-105 transition-transform duration-700 hover:scale-100" 
+            className="w-full h-full max-w-full max-h-full block object-cover object-center transform scale-105 transition-transform duration-700 hover:scale-100" 
             src="https://lh3.googleusercontent.com/aida-public/AB6AXuBuU7HiZdJkBG0F05r9trJOE76GC2QBo_Wm1lYr3gBZ7LC4r-wc_LkAsjS-FOMAXpyB4IiIjy0HBijII_5CFEU8mDkfV1-btA00sv7erQkgpMjkZQZb64VBQSMBBM4hr5TKR9m79VPZB_dPXTWT8W1FB3t5djkItZevYZgqqn8_WCf-liLBgWvmyAq-ImOiqGb0BPGsM-yu8sFNY6HnyRDcYNDR78Y6nwT0j17FuwlH60KGOKj0N1U" 
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-white/30 pointer-events-none"></div>

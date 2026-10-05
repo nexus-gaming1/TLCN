@@ -1,0 +1,20 @@
+{
+  "name": "netclient-backend",
+  "version": "1.0.0",
+  "description": "Realtime Socket.IO and REST API Backend for NetClient Agent",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": ["netclient", "socket.io", "express", "cyber-cafe"],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "socket.io": "^4.8.3"
+  }
+}
+

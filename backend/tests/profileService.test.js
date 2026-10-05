@@ -48,6 +48,15 @@ class MockMemberRepository {
   async saveMember(memberInstance) {
     return memberInstance;
   }
+
+  async findAllRanks() {
+    return [
+      { rank_id: 1, name: 'Đồng', required_point: 0, rank_level: 1, discount_percent: 0.00 },
+      { rank_id: 2, name: 'Bạc', required_point: 500, rank_level: 2, discount_percent: 5.00 },
+      { rank_id: 3, name: 'Vàng', required_point: 1500, rank_level: 3, discount_percent: 10.00 },
+      { rank_id: 4, name: 'Kim Cương', required_point: 3000, rank_level: 4, discount_percent: 15.00 }
+    ];
+  }
 }
 
 async function runTests() {

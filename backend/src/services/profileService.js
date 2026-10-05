@@ -21,11 +21,12 @@ class ProfileService {
     if (!member) {
       throw new Error(`Không tìm thấy hồ sơ hội viên với ID ${memberId}`);
     }
-    return ProfileDto.toResponse(member);
+    const allRanks = await this.memberRepository.findAllRanks();
+    return ProfileDto.toResponse(member, allRanks);
   }
 
   /**
-   * Update customer basic profile details (Gamer Tag, Phone, DOB, etc.)
+   * Update customer basic profile details (Phone, Full Name, etc.)
    */
   async updateProfileInfo(memberId, updatePayload) {
     const validation = ProfileDto.validateUpdate(updatePayload);
@@ -54,7 +55,8 @@ class ProfileService {
 
     // Re-fetch updated record with associations
     const updatedMember = await this.memberRepository.findById(memberId);
-    return ProfileDto.toResponse(updatedMember);
+    const allRanks = await this.memberRepository.findAllRanks();
+    return ProfileDto.toResponse(updatedMember, allRanks);
   }
 
   /**
@@ -70,7 +72,8 @@ class ProfileService {
     await this.memberRepository.saveUser(member.userInfo);
 
     const updatedMember = await this.memberRepository.findById(memberId);
-    return ProfileDto.toResponse(updatedMember);
+    const allRanks = await this.memberRepository.findAllRanks();
+    return ProfileDto.toResponse(updatedMember, allRanks);
   }
 }
 

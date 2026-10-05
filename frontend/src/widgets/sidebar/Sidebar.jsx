@@ -46,30 +46,12 @@ export default function Sidebar({ activeNav = 'grid', setActiveNav, bootromStatu
                             }`}
                         >
                             <Icon className={`w-4.5 h-4.5 shrink-0 ${isActive ? 'text-sky-600' : 'text-slate-500'}`} strokeWidth={2.2} />
-                            <span>{item.label}</span>
+                            <span className="truncate">{item.label}</span>
                         </a>
                     );
                 })}
             </nav>
 
-            <div className="px-3 pt-3 pb-1 border-t border-slate-100 space-y-1.5">
-                <a
-                    href="#"
-                    className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-700 hover:bg-slate-50 hover:text-slate-900 font-semibold text-[14px] transition-all"
-                >
-                    <Settings className="w-4.5 h-4.5 text-slate-500 shrink-0" strokeWidth={2.2} />
-                    <span>Cấu Hình Hệ Thống</span>
-                </a>
-                <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-200/70 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        <span className="font-mono text-[11px] text-slate-600 font-medium uppercase">BootROM Host</span>
-                    </div>
-                    <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-100/60 px-1.5 py-0.5 rounded">
-                        {bootromStatus}
-                    </span>
-                </div>
-            </div>
         </aside>
     );
 }

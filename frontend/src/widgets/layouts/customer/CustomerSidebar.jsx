@@ -12,10 +12,10 @@ export default function CustomerSidebar({ activeTab, onTabChange }) {
   const location = useLocation();
 
   const navItems = [
-    { id: 'profile', label: 'Profile', icon: User, path: '/customer/profile' },
-    { id: 'security', label: 'Security', icon: Shield, path: '/customer/security' },
-    { id: 'transactions', label: 'Transactions', icon: Receipt, path: '/customer/transactions' },
-    { id: 'rewards', label: 'Rewards', icon: Award, path: '/customer/rewards' }
+    { id: 'profile', label: 'Hồ sơ cá nhân', icon: User, path: '/customer/profile' },
+    { id: 'security', label: 'Bảo mật', icon: Shield, path: '/customer/security' },
+    { id: 'transactions', label: 'Lịch sử giao dịch', icon: Receipt, path: '/customer/transactions' },
+    { id: 'rewards', label: 'Điểm thưởng', icon: Award, path: '/customer/rewards' }
   ];
 
   const handleNavClick = (item) => {
@@ -54,11 +54,10 @@ export default function CustomerSidebar({ activeTab, onTabChange }) {
                 key={item.id}
                 type="button"
                 onClick={() => handleNavClick(item)}
-                className={`flex items-center gap-3.5 px-4 py-2.5 rounded-xl transition-all duration-200 text-left font-semibold text-sm cursor-pointer ${
-                  isActive
+                className={`flex items-center gap-3.5 px-4 py-2.5 rounded-xl transition-all duration-200 text-left font-semibold text-sm cursor-pointer ${isActive
                     ? 'bg-cyan-500/10 text-cyan-700 font-bold border-l-4 border-cyan-500 shadow-xs'
                     : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 border-l-4 border-transparent'
-                }`}
+                  }`}
               >
                 <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-600' : 'text-slate-400'}`} />
                 <span>{item.label}</span>
@@ -68,19 +67,7 @@ export default function CustomerSidebar({ activeTab, onTabChange }) {
         </nav>
       </div>
 
-      {/* Light Telemetry Node Card */}
-      <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center gap-3">
-        <div className="w-8 h-8 rounded-xl bg-cyan-50 border border-cyan-100 flex items-center justify-center text-cyan-600 shrink-0">
-          <Radio className="w-4 h-4 animate-pulse" />
-        </div>
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-            <span className="font-mono text-xs font-bold text-slate-800">0.4ms • 240 FPS Node</span>
-          </div>
-          <span className="text-[10px] text-slate-400 font-mono">Ultra Low Latency Node</span>
-        </div>
-      </div>
+
     </aside>
   );
 }

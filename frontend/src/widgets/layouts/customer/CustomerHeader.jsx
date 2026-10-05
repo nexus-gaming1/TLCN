@@ -26,18 +26,12 @@ export default function CustomerHeader({ user, onLogout }) {
   return (
     <header className="fixed top-0 left-[17.5rem] right-0 h-16 bg-white/90 backdrop-blur-md z-40 flex items-center justify-between px-8 border-b border-slate-200/80 text-slate-800 shadow-xs">
       <div className="flex items-center gap-2 text-xs font-mono">
-        <span className="text-slate-400 uppercase tracking-wider font-semibold">PLATFORM</span>
+        <span className="text-slate-400 uppercase tracking-wider font-semibold">HỆ THỐNG</span>
         <span className="text-slate-300">/</span>
-        <span className="text-cyan-600 font-extrabold uppercase tracking-wider">CUSTOMER PORTAL</span>
+        <span className="text-cyan-600 font-extrabold uppercase tracking-wider">CỔNG DỊCH VỤ</span>
       </div>
 
       <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-xs">
-          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="font-mono text-[11px] uppercase tracking-wider font-bold">
-            ● US-EAST GRID ACTIVE
-          </span>
-        </div>
 
         {/* User Profile Dropdown Container */}
         <div className="relative" ref={dropdownRef}>
@@ -47,9 +41,9 @@ export default function CustomerHeader({ user, onLogout }) {
             className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-slate-100 transition-all cursor-pointer group focus:outline-none"
             title="Tùy chọn tài khoản khách hàng"
           >
-            <div className="w-8.5 h-8.5 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 shadow-sm flex items-center justify-center text-white shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-8.5 h-8.5 rounded-full overflow-hidden shrink-0 bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 shadow-sm flex items-center justify-center text-white relative group-hover:scale-105 transition-transform">
               {user?.avatar_url ? (
-                <img src={user.avatar_url} alt="User Avatar" className="w-full h-full rounded-full object-cover" />
+                <img src={user.avatar_url} alt="User Avatar" className="w-full h-full max-w-full max-h-full rounded-full object-cover block" />
               ) : (
                 <User className="w-4.5 h-4.5 text-white" />
               )}
@@ -71,9 +65,9 @@ export default function CustomerHeader({ user, onLogout }) {
             <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
               {/* Header Info Inside Dropdown */}
               <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 shadow-xs shrink-0">
+                <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 bg-gradient-to-tr from-cyan-500 to-blue-600 p-0.5 shadow-xs relative">
                   {user?.avatar_url ? (
-                    <img src={user.avatar_url} alt="Avatar" className="w-full h-full rounded-full object-cover" />
+                    <img src={user.avatar_url} alt="Avatar" className="w-full h-full max-w-full max-h-full rounded-full object-cover block" />
                   ) : (
                     <User className="w-5 h-5 text-white m-auto" />
                   )}

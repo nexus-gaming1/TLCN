@@ -68,11 +68,11 @@ class MemberRepository {
     });
   }
   /**
-   * Fetch all computer zones from database
+   * Fetch all membership ranks from database ordered by rank_level
    */
-  async findAllComputerZones() {
-    return await this.models.ComputerZone.findAll({
-      order: [['zone_id', 'ASC']]
+  async findAllRanks() {
+    return await this.models.MembershipRank.findAll({
+      order: [['rank_level', 'ASC']]
     });
   }
 }

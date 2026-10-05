@@ -165,7 +165,7 @@ export default function ManageConfigPage({ user, onLogout }) {
   };
 
   return (
-    <div className="bg-slate-50/50 font-sans text-slate-900 antialiased min-h-screen">
+    <div className="bg-slate-100 font-sans text-slate-900 antialiased min-h-screen">
       {/* Shared Header Widget */}
       <Header
         user={user}
@@ -179,32 +179,9 @@ export default function ManageConfigPage({ user, onLogout }) {
 
       {/* Main Content Area */}
       <div className="pl-[240px]">
-        <main className="relative pt-16 min-h-screen bg-slate-50/50 w-full px-6 py-6 pb-24 flex flex-col justify-between">
+        <main className="relative pt-16 min-h-screen bg-slate-100 w-full px-6 py-6 pb-24 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
-            {/* Page Header & Breadcrumbs */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-xs text-slate-600 font-semibold">
-                  <span className="flex items-center gap-1 hover:text-sky-600 transition-colors cursor-pointer">
-                    <span className="material-symbols-outlined text-[16px] text-slate-500">home</span>
-                    Cơ Sở Hạ Tầng
-                  </span>
-                  <span className="text-slate-400 font-bold">/</span>
-                  <span>Phòng Máy &amp; Thiết Bị</span>
-                  <span className="text-slate-400 font-bold">/</span>
-                  <span className="text-slate-900 font-extrabold">Cấu Hình Máy</span>
-                </div>
-                <h1 className="text-xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2 mt-1">
-                  Quản Lý Cấu Hình Phần Cứng &amp; BootROM
-                  <span className="bg-sky-100 text-sky-900 font-mono text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                    Hardware OS v4.6
-                  </span>
-                </h1>
-                <p className="text-xs text-slate-600 max-w-3xl font-medium">
-                  Giám sát chi tiết thông số chip CPU, card GPU, bộ nhớ RAM và điều phối hạ tầng BootROM SAN 10Gbps thời gian thực.
-                </p>
-              </div>
-            </div>
+
 
             {/* Telemetry Summary Bento Grid */}
             <HardwareKpiBento metrics={metrics} />

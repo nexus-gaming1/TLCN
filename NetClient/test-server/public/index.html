@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Cafe Management System - NetClient Backend</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0e17;
+      --bg-card: #131a27;
+      --bg-card-hover: #1a2436;
+      --border-color: #212e44;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-cyan: #06b6d4;
+      --accent-emerald: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-purple: #8b5cf6;
+      --accent-blue: #3b82f6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    header {
+      background: linear-gradient(180deg, #161e2e 0%, var(--bg-primary) 100%);
+      border-bottom: 1px solid var(--border-color);
+      padding: 1.25rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: #fff;
+      box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+    }
+
+    .brand-text h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      background: linear-gradient(90deg, #fff, var(--text-muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-card);
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn:hover {
+      background: var(--bg-card-hover);
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      border: none;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.5);
+      opacity: 0.95;
+    }
+
+    .btn-danger {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: var(--accent-rose);
+    }
+
+    .btn-danger:hover {
+      background: rgba(244, 63, 94, 0.3);
+    }
+
+    /* Stats Overview */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      padding: 1.5rem 2rem 0.5rem 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .stat-info span {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .stat-info strong {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-top: 0.25rem;
+      display: block;
+    }
+
+    .stat-badge {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .badge-online { background-color: var(--accent-emerald); box-shadow: 0 0 8px var(--accent-emerald); }
+    .badge-inuse { background-color: var(--accent-cyan); box-shadow: 0 0 8px var(--accent-cyan); }
+    .badge-locked { background-color: var(--accent-amber); box-shadow: 0 0 8px var(--accent-amber); }
+    .badge-offline { background-color: var(--accent-rose); box-shadow: 0 0 8px var(--accent-rose); }
+
+    /* Main Container */
+    main {
+      padding: 1.5rem 2rem 3rem 2rem;
+      flex: 1;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Machine Grid */
+    .machine-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .machine-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .machine-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--text-muted);
+    }
+
+    .machine-card.status-ONLINE::before { background: var(--accent-emerald); }
+    .machine-card.status-IN_USE::before { background: var(--accent-cyan); }
+    .machine-card.status-LOCKED::before { background: var(--accent-amber); }
+    .machine-card.status-OFFLINE::before { background: var(--accent-rose); }
+
+    .machine-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(6, 182, 212, 0.4);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .machine-id {
+      font-weight: 800;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pill-ONLINE { background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald); border: 1px solid rgba(16, 185, 129, 0.3); }
+    .pill-IN_USE { background: rgba(6, 182, 212, 0.15); color: var(--accent-cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
+    .pill-LOCKED { background: rgba(245, 158, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+    .pill-OFFLINE { background: rgba(244, 63, 94, 0.15); color: var(--accent-rose); border: 1px solid rgba(244, 63, 94, 0.3); }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .info-label { color: var(--text-muted); }
+    .info-value { font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+
+    /* Performance Gauges */
+    .perf-metrics {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+      padding: 0.75rem;
+      margin: 0.75rem 0;
+    }
+
+    .metric-group {
+      margin-bottom: 0.5rem;
+    }
+
+    .metric-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .metric-head {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent-cyan);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+    }
+
+    .progress-fill.high { background: var(--accent-rose); }
+    .progress-fill.med { background: var(--accent-amber); }
+
+    /* Card Actions */
+    .card-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      background: var(--bg-card);
+      border: 1px dashed var(--border-color);
+      border-radius: 16px;
+      grid-column: 1 / -1;
+    }
+
+    .empty-state h3 {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+
+    .modal-header {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      background: #0d131f;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.9rem;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">NC</div>
+      <div class="brand-text">
+        <h1>NETCLIENT ADMIN</h1>
+        <p>Cyber Cafe Realtime Management Console</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" onclick="openBroadcastModal()">📢 Thông Báo Toàn Máy</button>
+    </div>
+  </header>
+
+  <!-- Overview Stats -->
+  <div class="stats-bar">
+    <div class="stat-card">
+      <div class="stat-info">
+        <span>Tổng Máy Trạm</span>
+        <strong id="stat-total">0</strong>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-info">
+        <span>Sẵn Sàng (Online)</span>
+        <strong id="stat-online" style="color: var(--accent-emerald);">0</strong>
+      </div>
+      <div class="stat-badge badge-online"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-info">
+        <span>Đang Sử Dụng (In Use)</span>
+        <strong id="stat-inuse" style="color: var(--accent-cyan);">0</strong>
+      </div>
+      <div class="stat-badge badge-inuse"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-info">
+        <span>Đã Khóa (Locked)</span>
+        <strong id="stat-locked" style="color: var(--accent-amber);">0</strong>
+      </div>
+      <div class="stat-badge badge-locked"></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-info">
+        <span>Ngoại Tuyến (Offline)</span>
+        <strong id="stat-offline" style="color: var(--accent-rose);">0</strong>
+      </div>
+      <div class="stat-badge badge-offline"></div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <main>
+    <div class="section-title">
+      <span>Danh Sách Máy Trạm (Realtime)</span>
+      <span style="font-size: 0.8rem; color: var(--text-muted);" id="connection-status">🟡 Đang kết nối Socket.IO...</span>
+    </div>
+
+    <div class="machine-grid" id="machine-grid">
+      <div class="empty-state">
+        <h3>Chưa có máy trạm nào kết nối tới Server</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+          Hãy khởi chạy <code>NetClient.Service</code> trên máy khách để bắt đầu giám sát.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Login Modal -->
+  <div class="modal-overlay" id="loginModal">
+    <div class="modal">
+      <div class="modal-header">Mở Phiên Đăng Nhập Máy <span id="loginMachineId"></span></div>
+      <div class="form-group">
+        <label>Tên tài khoản người chơi / Khách</label>
+        <input type="text" class="form-control" id="loginUsernameInput" placeholder="Ví dụ: player1" value="vinh">
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('loginModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="submitLogin()">Đăng Nhập Máy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification Modal -->
+  <div class="modal-overlay" id="notifModal">
+    <div class="modal">
+      <div class="modal-header">Gửi Thông Báo Tới Máy <span id="notifMachineId"></span></div>
+      <div class="form-group">
+        <label>Tiêu đề thông báo</label>
+        <input type="text" class="form-control" id="notifTitleInput" value="Thông báo phòng Net">
+      </div>
+      <div class="form-group">
+        <label>Nội dung thông báo</label>
+        <textarea class="form-control" id="notifMsgInput" rows="3">Máy của bạn còn 10 phút sử dụng.</textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal('notifModal')">Hủy</button>
+        <button class="btn btn-primary" onclick="submitNotification()">Gửi Thông Báo</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let currentTargetMachineId = null;
+
+    socket.on("connect", () => {
+      document.getElementById("connection-status").textContent = "🟢 Socket.IO Realtime Active";
+      fetchMachines();
+    });
+
+    socket.on("disconnect", () => {
+      document.getElementById("connection-status").textContent = "🔴 Mất kết nối Server";
+    });
+
+    // Realtime update triggers from backend
+    socket.on("machine:updated", () => fetchMachines());
+    socket.on("machines:list", (machines) => renderMachines(machines));
+
+    async function fetchMachines() {
+      try {
+        const res = await fetch("/api/machines");
+        const machines = await res.json();
+        renderMachines(machines);
+      } catch (err) {
+        console.error("Failed to fetch machines:", err);
+      }
+    }
+
+    function renderMachines(machines) {
+      const grid = document.getElementById("machine-grid");
+      const list = Object.values(machines);
+
+      // Update stats
+      document.getElementById("stat-total").textContent = list.length;
+      document.getElementById("stat-online").textContent = list.filter(m => m.status === "ONLINE").length;
+      document.getElementById("stat-inuse").textContent = list.filter(m => m.status === "IN_USE").length;
+      document.getElementById("stat-locked").textContent = list.filter(m => m.status === "LOCKED").length;
+      document.getElementById("stat-offline").textContent = list.filter(m => m.status === "OFFLINE").length;
+
+      if (list.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <h3>Chưa có máy trạm nào kết nối tới Server</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.5rem;">
+              Khởi chạy NetClient.Service để tự động xuất hiện tại đây.
+            </p>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = list.map(m => {
+        const cpu = m.performance?.cpuUsage ?? 0;
+        const ram = m.performance?.ramUsage ?? 0;
+        const disk = m.performance?.diskUsage ?? 0;
+        
+        return `
+          <div class="machine-card status-${m.status}">
+            <div class="card-header">
+              <div class="machine-id">💻 ${m.machineId}</div>
+              <div class="status-pill pill-${m.status}">${m.status}</div>
+            </div>
+
+            <div class="info-row">
+              <span class="info-label">IP Nội Bộ:</span>
+              <span class="info-value">${m.localIp || 'N/A'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Tên Host:</span>
+              <span class="info-value">${m.hostname || 'N/A'}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Người Dùng Hiện Tại:</span>
+              <span class="info-value" style="color: var(--accent-cyan);">${m.currentUser || m.windowsUser || 'Chưa Đăng Nhập'}</span>
+            </div>
+
+            <div class="perf-metrics">
+              <div class="metric-group">
+                <div class="metric-head">
+                  <span>CPU Usage</span>
+                  <span>${cpu}%</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill ${cpu > 80 ? 'high' : cpu > 50 ? 'med' : ''}" style="width: ${cpu}%"></div>
+                </div>
+              </div>
+
+              <div class="metric-group">
+                <div class="metric-head">
+                  <span>RAM Usage</span>
+                  <span>${ram}% (${m.performance?.ramUsedGb || 0}GB)</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill ${ram > 80 ? 'high' : ram > 50 ? 'med' : ''}" style="width: ${ram}%"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              ${m.status === 'IN_USE' 
+                ? `<button class="btn btn-danger" onclick="sendLogout('${m.machineId}')">🔒 Đăng Xuất</button>`
+                : `<button class="btn btn-primary" onclick="openLoginModal('${m.machineId}')">🔑 Đăng Nhập</button>`
+              }
+              <button class="btn" onclick="openNotifModal('${m.machineId}')">💬 Gửi Tin</button>
+              <button class="btn" onclick="sendCommand('${m.machineId}', 'RESTART')">🔄 Reset</button>
+              <button class="btn btn-danger" onclick="sendCommand('${m.machineId}', 'SHUTDOWN')">⚡ Tắt Máy</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openLoginModal(machineId) {
+      currentTargetMachineId = machineId;
+      document.getElementById("loginMachineId").textContent = machineId;
+      document.getElementById("loginModal").classList.add("active");
+    }
+
+    function openNotifModal(machineId) {
+      currentTargetMachineId = machineId;
+      document.getElementById("notifMachineId").textContent = machineId;
+      document.getElementById("notifModal").classList.add("active");
+    }
+
+    function openBroadcastModal() {
+      openNotifModal("ALL");
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("active");
+    }
+
+    async function submitLogin() {
+      const username = document.getElementById("loginUsernameInput").value;
+      if (!username) return alert("Vui lòng nhập tên tài khoản");
+      
+      await fetch(`/api/machines/${currentTargetMachineId}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username })
+      });
+
+      closeModal("loginModal");
+    }
+
+    async function sendLogout(machineId) {
+      if (!confirm(`Bạn có chắc muốn đăng xuất máy ${machineId}?`)) return;
+      await fetch(`/api/machines/${machineId}/logout`, { method: "POST" });
+    }
+
+    async function sendCommand(machineId, command) {
+      if (!confirm(`Bạn có chắc muốn thực thi ${command} cho máy ${machineId}?`)) return;
+      await fetch(`/api/machines/${machineId}/command`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command })
+      });
+    }
+
+    async function submitNotification() {
+      const title = document.getElementById("notifTitleInput").value;
+      const message = document.getElementById("notifMsgInput").value;
+
+      if (currentTargetMachineId === "ALL") {
+        await fetch(`/api/commands/broadcast`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "notification", title, message })
+        });
+      } else {
+        await fetch(`/api/machines/${currentTargetMachineId}/notification`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, message })
+        });
+      }
+
+      closeModal("notifModal");
+    }
+
+    fetchMachines();
+  </script>
+</body>
+</html>

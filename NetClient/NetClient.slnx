@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="NetClient.Service/NetClient.Service.csproj" />
+  <Project Path="NetClient.Shared/NetClient.Shared.csproj" />
+  <Project Path="NetClient.Tests/NetClient.Tests.csproj" />
+  <Project Path="NetClient.UI/NetClient.UI.csproj" />
+</Solution>
