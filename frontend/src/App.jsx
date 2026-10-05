@@ -13,6 +13,7 @@ import TransactionManagementPage from './pages/admin/TransactionManagementPage';
 import StaffDashboardPage from './pages/staff/StaffDashboardPage';
 import CustomerDashboardPage from './pages/customer/CustomerDashboardPage';
 import CustomerProfilePage from './pages/customer/CustomerProfilePage';
+import ServiceCatalogPage from './pages/admin/ServiceCatalogPage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -127,6 +128,11 @@ const CustomerProfileWrapper = () => {
   return <CustomerProfilePage user={currentUser} onLogout={logout} />;
 };
 
+const ServiceCatalogWrapper = () => {
+  const { currentUser, logout } = useAuth();
+  return <ServiceCatalogPage user={currentUser} onLogout={logout} />;
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -177,6 +183,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
                 <TransactionManagementWrapper />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/catalog"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <ServiceCatalogWrapper />
               </ProtectedRoute>
             }
           />

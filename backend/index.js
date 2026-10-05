@@ -18,6 +18,7 @@ const transactionRoutes = require('./src/routes/transactionRoutes');
 const { initSocket } = require('./src/sockets');
 const healthRoutes = require('./src/routes/healthRoutes');
 const profileRoutes = require('./src/routes/profileRoutes');
+const serviceCatalogRoutes = require('./src/routes/serviceCatalogRoutes');
 
 const errorHandler = require('./src/middleware/errorHandler');
 const computerSocketService = require('./src/services/computerSocketService');
@@ -46,6 +47,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/computers', computerRoutes);
 app.use('/api/promotions', promotionRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/catalog', serviceCatalogRoutes);
 
 // Centralized Error Handler
 app.use(errorHandler);

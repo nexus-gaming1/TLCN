@@ -1,20 +1,20 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutGrid, UserCheck, CreditCard, Cpu, Gamepad2, BarChart3, Settings, Sliders, Tag, Receipt } from 'lucide-react';
+import { LayoutGrid, UserCheck, CreditCard, Cpu, Gamepad2, BarChart3, Settings, Sliders, Tag, Receipt, Coffee} from 'lucide-react';
 
 export default function Sidebar({ activeNav = 'grid', setActiveNav, bootromStatus = 'ONLINE' }) {
     const navigate = useNavigate();
 
     const navItems = [
-        { id: 'grid', label: 'Sơ đồ phòng máy', icon: LayoutGrid, path: '/admin' },
-        { id: 'members', label: 'Hội viên', icon: UserCheck, path: '/admin/members' },
-        { id: 'hardware', label: 'Danh sách máy', icon: Cpu, path: '/admin/machines' },
-        { id: 'config', label: 'Cấu hình máy', icon: Sliders, path: '/admin/config' },
-        { id: 'promotions', label: 'Khuyến mãi', icon: Tag, path: '/admin/promotions' },
-        { id: 'transactions', label: 'Giao dịch', icon: Receipt, path: '/admin/transactions' },
-        { id: 'billing', label: 'Nạp giờ & Dịch vụ F&B', icon: CreditCard },
-        { id: 'games', label: 'Kho game & BootROM', icon: Gamepad2 },
-        { id: 'reports', label: 'Báo cáo doanh thu', icon: BarChart3 },
+        { id: 'grid', label: 'Sơ Đồ Phòng Máy', icon: LayoutGrid, path: '/admin' },
+        { id: 'members', label: 'Quản Lý Hội Viên', icon: UserCheck, path: '/admin/members' },
+        { id: 'hardware', label: 'Quản Lý Danh Sách Máy', icon: Cpu, path: '/admin/machines' },
+        { id: 'config', label: 'Cấu Hình Máy', icon: Sliders, path: '/admin/config' },
+        { id: 'promotions', label: 'Quản Lý Khuyến Mãi', icon: Tag, path: '/admin/promotions' },
+        { id: 'transactions', label: 'Quản Lý Giao Dịch', icon: Receipt, path: '/admin/transactions' },
+        { id: 'catalog', label: 'Quản Lý Dịch Vụ (F&B)', icon: Coffee, path: '/admin/catalog' },
+        { id: 'games', label: 'Kho Game & BootROM', icon: Gamepad2 },
+        { id: 'reports', label: 'Báo Cáo Doanh Thu', icon: BarChart3 },
     ];
 
     const handleNavClick = (item, e) => {
