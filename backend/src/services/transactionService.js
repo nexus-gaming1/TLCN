@@ -1,5 +1,6 @@
 const db = require('../models');
 const { TransactionType, TransactionCategory } = require('../constants/enums');
+const { Op } = require('sequelize');
 
 /**
  * TransactionService
@@ -10,46 +11,113 @@ class TransactionService {
   /**
    * Lấy danh sách giao dịch kèm thông tin Member & User + Tính toán các chỉ số KPI Tài Chính
    */
-  async getAllTransactions() {
+  async getAllTransactions(params = {}) {
     try {
-      const transactions = await db.FinancialTransaction.findAll({
-        include: [
-          {
-            model: db.Member,
-            as: 'memberInfo',
-            include: [
-              {
-                model: db.User,
-                as: 'userInfo',
-                attributes: ['user_id', 'username', 'full_name']
-              },
-              {
-                model: db.MembershipRank,
-                attributes: ['rank_id', 'name']
-              }
-            ]
-          },
-          {
-            model: db.User,
-            as: 'processedBy',
-            attributes: ['user_id', 'username', 'full_name']
-          }
-        ],
-        order: [['transaction_id', 'DESC']]
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        category,
+        paymentMethod,
+        status,
+        dateRange
+      } = params;
+
+      const offset = (parseInt(page) - 1) * parseInt(limit);
+      const whereClause = {};
+
+      if (category && category !== 'all') whereClause.category = category;
+      if (paymentMethod && paymentMethod !== 'all') whereClause.payment_method = paymentMethod;
+      if (status && status !== 'all') whereClause.status = status;
+
+      if (dateRange && dateRange !== 'all') {
+        const now = new Date();
+        const start = new Date();
+        if (dateRange === 'today') {
+          start.setHours(0, 0, 0, 0);
+        } else if (dateRange === '7days') {
+          start.setDate(now.getDate() - 7);
+        } else if (dateRange === '30days') {
+          start.setDate(now.getDate() - 30);
+        }
+        whereClause.created_at = { [Op.gte]: start };
+      }
+
+      const includeQuery = [
+        {
+          model: db.Member,
+          as: 'memberInfo',
+          include: [
+            {
+              model: db.User,
+              as: 'userInfo',
+              attributes: ['user_id', 'username', 'full_name']
+            },
+            {
+              model: db.MembershipRank,
+              attributes: ['rank_id', 'name']
+            }
+          ]
+        },
+        {
+          model: db.User,
+          as: 'processedBy',
+          attributes: ['user_id', 'username', 'full_name']
+        }
+      ];
+
+      // We cannot easily filter includes inside findAndCountAll without `subQuery: false` and duplicating logic.
+      // But we can pull all rows matching basic where, then filter in JS if search text exists.
+      // Actually, since we want full backend pagination, we must use sequelize.
+      // To simplify for search:
+      if (search) {
+        const q = `%${search}%`;
+        const searchOr = [];
+        
+        // Match Transaction ID if possible
+        const matchTxn = String(search).match(/txn-0*(\d+)/i);
+        if (matchTxn) {
+          searchOr.push({ transaction_id: parseInt(matchTxn[1]) });
+        } else if (!isNaN(parseInt(search))) {
+          searchOr.push({ transaction_id: parseInt(search) });
+        }
+        
+        searchOr.push({ '$memberInfo.phone$': { [Op.like]: q } });
+        searchOr.push({ '$memberInfo.userInfo.full_name$': { [Op.like]: q } });
+        
+        whereClause[Op.or] = searchOr;
+      }
+
+      const { count, rows } = await db.FinancialTransaction.findAndCountAll({
+        where: whereClause,
+        include: includeQuery,
+        order: [['transaction_id', 'DESC']],
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        subQuery: false // Important for $nested.includes$
       });
 
-      // Calculate 4 Financial KPI Cards
+      // Calculate 4 Financial KPI Cards (Always based on TODAY)
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayTxns = await db.FinancialTransaction.findAll({
+        where: {
+          created_at: { [Op.gte]: todayStart },
+          status: 'COMPLETED'
+        }
+      });
+
       let totalRevenueToday = 0;
       let pcTimeRevenue = 0;
       let foodServiceRevenue = 0;
-      const successCount = transactions.length;
+      const successCount = todayTxns.length;
 
-      transactions.forEach((t) => {
+      todayTxns.forEach((t) => {
         const amt = parseFloat(t.amount || 0);
         const type = (t.type || '').toUpperCase();
         const cat = (t.category || '').toUpperCase();
 
-        if (type === TransactionType.INCOME) {
+        if (type === TransactionType.INCOME || cat === TransactionCategory.MEMBER_TOPUP || cat === TransactionCategory.SERVICE_SALE) {
           totalRevenueToday += amt;
           if (cat === TransactionCategory.MEMBER_TOPUP) {
             pcTimeRevenue += amt;
@@ -62,24 +130,21 @@ class TransactionService {
         }
       });
 
-      const totalTxnCount = transactions.length || 1;
-      const successRate = 100.0;
-
       const metrics = {
         totalRevenueToday,
         pcTimeRevenue: Math.round(pcTimeRevenue),
         pcTimePercent: totalRevenueToday > 0 ? Number(((pcTimeRevenue / totalRevenueToday) * 100).toFixed(1)) : 66.5,
         foodServiceRevenue: Math.round(foodServiceRevenue),
         foodServicePercent: totalRevenueToday > 0 ? Number(((foodServiceRevenue / totalRevenueToday) * 100).toFixed(1)) : 33.5,
-        successRate,
+        successRate: 100.0,
         successCount,
         pendingCount: 0,
-        totalTxnCount
+        totalTxnCount: successCount || 1
       };
 
-      const formattedTransactions = transactions.map((t) => {
-        const userObj = t.memberInfo ? t.memberInfo.userInfo : null;
-        const rankObj = t.memberInfo ? t.memberInfo.MembershipRank : null;
+      const formattedTransactions = rows.map((t) => {
+        const userObj = t.memberInfo && t.memberInfo.userInfo ? t.memberInfo.userInfo : null;
+        const rankObj = t.memberInfo && t.memberInfo.MembershipRank ? t.memberInfo.MembershipRank : null;
         const staffObj = t.processedBy;
 
         return {
@@ -88,8 +153,8 @@ class TransactionService {
           type: t.type || TransactionType.INCOME,
           category: t.category || TransactionCategory.MEMBER_TOPUP,
           amount: parseFloat(t.amount || 0),
-          paymentMethod: 'CASH',
-          status: 'SUCCESS',
+          paymentMethod: t.payment_method || 'CASH',
+          status: t.status || 'COMPLETED',
           memberId: t.used_by,
           memberName: userObj ? userObj.full_name : 'Khách Vãng Lai',
           username: userObj ? userObj.username : 'guest',
@@ -104,6 +169,9 @@ class TransactionService {
 
       return {
         transactions: formattedTransactions,
+        total: count,
+        page: parseInt(page),
+        totalPages: Math.ceil(count / parseInt(limit)),
         metrics
       };
     } catch (error) {

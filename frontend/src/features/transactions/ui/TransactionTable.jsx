@@ -9,11 +9,12 @@ export default function TransactionTable({
     transactions = [],
     loading = false,
     onSelectReceipt,
-    onRefundTransaction
+    onRefundTransaction,
+    page = 1,
+    totalPages = 1,
+    onPageChange
 }) {
     const [copiedId, setCopiedId] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
 
     const handleCopy = (code, id) => {
         navigator.clipboard.writeText(code);
@@ -25,6 +26,7 @@ export default function TransactionTable({
     const renderCategoryBadge = (category) => {
         const cat = (category || '').toUpperCase();
         switch (cat) {
+            case 'MEMBER_TOPUP':
             case 'TOPUP':
             case 'NẠP GIỜ CHƠI':
             case 'PC TIME':
@@ -34,6 +36,7 @@ export default function TransactionTable({
                         <span>Nạp Giờ Chơi</span>
                     </span>
                 );
+            case 'SERVICE_SALE':
             case 'SERVICE_FOOD':
             case 'DỊCH VỤ F&B':
             case 'ẨM THỰC F&B':
@@ -43,6 +46,7 @@ export default function TransactionTable({
                         <span>Dịch Vụ F&B</span>
                     </span>
                 );
+            case 'COMBO_PURCHASE':
             case 'NIGHT_COMBO':
             case 'COMBO ĐÊM':
                 return (
@@ -57,6 +61,13 @@ export default function TransactionTable({
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-mono text-xs font-semibold">
                         <Gamepad2 className="w-3.5 h-3.5" />
                         <span>Giờ + F&B</span>
+                    </span>
+                );
+            case 'REFUND':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-mono text-xs font-semibold">
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Hoàn Tiền</span>
                     </span>
                 );
             default:
@@ -153,11 +164,8 @@ export default function TransactionTable({
         return { time, date };
     };
 
-    // Pagination calculations
-    const totalItems = transactions.length;
-    const totalPages = Math.ceil(totalItems / pageSize) || 1;
-    const startIndex = (currentPage - 1) * pageSize;
-    const paginatedItems = transactions.slice(startIndex, startIndex + pageSize);
+    // Server-side pagination means we just render what we get
+    const paginatedItems = transactions;
 
     return (
         <div className="bg-surface-container-lowest rounded-xl shadow-xs border border-outline-variant/30 overflow-hidden flex flex-col">
@@ -169,7 +177,9 @@ export default function TransactionTable({
                             <th className="py-3 px-4 font-semibold">Thời Gian</th>
                             <th className="py-3 px-4 font-semibold">Hội Viên / Khách Hàng</th>
                             <th className="py-3 px-4 font-semibold">Khoản Mục</th>
-                            <th className="py-3 px-4 font-semibold text-right">Số Tiền</th>
+                            <th className="py-3 px-4 font-semibold">
+                                <div className="flex justify-end w-full">Số Tiền</div>
+                            </th>
                             <th className="py-3 px-4 font-semibold">Phương Thức</th>
                             <th className="py-3 px-4 font-semibold text-center">Trạng Thái</th>
                             <th className="py-3 px-4 font-semibold text-center">Thao Tác</th>
@@ -196,12 +206,13 @@ export default function TransactionTable({
                             </tr>
                         ) : (
                             paginatedItems.map((txn) => {
+                                const rowId = txn.transaction_id || txn.id;
                                 const { time, date } = formatDateTime(txn.created_at || txn.createdAt);
-                                const txnCode = txn.txn_code || `TXN-${String(txn.transaction_id || txn.id).padStart(5, '0')}`;
-                                const isCopied = copiedId === (txn.transaction_id || txn.id);
+                                const txnCode = txn.txn_code || `TXN-${String(rowId).padStart(5, '0')}`;
+                                const isCopied = copiedId === rowId;
 
                                 return (
-                                    <tr key={txn.transaction_id || txn.id} className="hover:bg-slate-50/80 transition-colors">
+                                    <tr key={rowId} className="hover:bg-slate-50/80 transition-colors">
                                         {/* Mã GD */}
                                         <td className="py-3.5 px-4 whitespace-nowrap">
                                             <div className="flex items-center gap-1.5">
@@ -209,7 +220,7 @@ export default function TransactionTable({
                                                     {txnCode}
                                                 </span>
                                                 <button
-                                                    onClick={() => handleCopy(txnCode, txn.transaction_id || txn.id)}
+                                                    onClick={() => handleCopy(txnCode, rowId)}
                                                     className="text-slate-400 hover:text-sky-600 transition-colors p-0.5"
                                                     title="Sao chép mã TXN"
                                                 >
@@ -262,12 +273,14 @@ export default function TransactionTable({
                                         </td>
 
                                         {/* Số Tiền */}
-                                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                                            <span className={`font-mono text-base font-bold ${
-                                                txn.type === 'REFUND' ? 'text-purple-600' : 'text-sky-700'
-                                            }`}>
-                                                {txn.type === 'REFUND' ? '-' : '+'}{formatCurrency(txn.amount)}
-                                            </span>
+                                        <td className="py-3.5 px-4 whitespace-nowrap">
+                                            <div className="flex justify-end w-full">
+                                                <span className={`font-mono text-base font-semibold tracking-wide ${
+                                                    (txn.type === 'EXPENSE' || txn.category === 'REFUND') ? 'text-rose-600' : 'text-emerald-600'
+                                                }`}>
+                                                    {(txn.type === 'EXPENSE' || txn.category === 'REFUND') ? '-' : '+'}{formatCurrency(txn.amount)}
+                                                </span>
+                                            </div>
                                         </td>
 
                                         {/* Phương Thức */}
@@ -297,7 +310,7 @@ export default function TransactionTable({
                                                 >
                                                     <Printer className="w-4 h-4" />
                                                 </button>
-                                                {txn.status === 'completed' && txn.type !== 'REFUND' && onRefundTransaction && (
+                                                {['completed', 'thành công', 'success'].includes(String(txn.status || '').toLowerCase()) && txn.type !== 'REFUND' && onRefundTransaction && (
                                                     <button
                                                         onClick={() => onRefundTransaction(txn)}
                                                         className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white flex items-center justify-center transition-colors"
@@ -317,49 +330,29 @@ export default function TransactionTable({
             </div>
 
             {/* Pagination Footer */}
-            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
-                <div className="flex items-center gap-3">
-                    <span>
-                        Hiển thị <span className="font-semibold text-slate-900">{totalItems === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + pageSize, totalItems)}</span> của <span className="font-semibold text-slate-900">{totalItems}</span> giao dịch
-                    </span>
-                    <span className="text-slate-300">•</span>
-                    <div className="flex items-center gap-1.5">
-                        <span>Số dòng mỗi trang:</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="bg-white text-slate-800 text-xs rounded px-2 py-1 focus:outline-none border border-slate-300 font-medium"
+            {totalPages > 1 && (
+                <div className="px-4 py-3 bg-slate-50 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+                    <div className="flex items-center gap-1 font-mono ml-auto">
+                        <button
+                            onClick={() => onPageChange(Math.max(1, page - 1))}
+                            disabled={page === 1}
+                            className="px-2.5 py-1 rounded bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 border border-slate-300 transition-colors"
                         >
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                        </select>
+                            Trước
+                        </button>
+                        <span className="px-3 py-1 font-semibold text-slate-800">
+                            {page} / {totalPages}
+                        </span>
+                        <button
+                            onClick={() => onPageChange(Math.min(totalPages, page + 1))}
+                            disabled={page === totalPages}
+                            className="px-2.5 py-1 rounded bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 border border-slate-300 transition-colors"
+                        >
+                            Sau
+                        </button>
                     </div>
                 </div>
-
-                <div className="flex items-center gap-1 font-mono">
-                    <button
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="px-2.5 py-1 rounded bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 border border-slate-300 transition-colors"
-                    >
-                        Trước
-                    </button>
-                    <span className="px-3 py-1 font-semibold text-slate-800">
-                        {currentPage} / {totalPages}
-                    </span>
-                    <button
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="px-2.5 py-1 rounded bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 border border-slate-300 transition-colors"
-                    >
-                        Sau
-                    </button>
-                </div>
-            </div>
+            )}
         </div>
     );
 }

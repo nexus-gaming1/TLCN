@@ -7,10 +7,13 @@ const transactionService = require('../services/transactionService');
 class TransactionController {
   async getTransactions(req, res, next) {
     try {
-      const data = await transactionService.getAllTransactions();
+      const data = await transactionService.getAllTransactions(req.query);
       return res.json({
         status: 'success',
         data: data.transactions,
+        total: data.total,
+        page: data.page,
+        totalPages: data.totalPages,
         metrics: data.metrics,
         message: 'Lấy sổ cái giao dịch thành công'
       });

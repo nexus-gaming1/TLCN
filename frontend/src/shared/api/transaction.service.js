@@ -9,19 +9,22 @@ class TransactionService {
   /**
    * Lấy tất cả giao dịch tài chính & metrics từ CSDL MySQL
    */
-  async getTransactions() {
+  async getTransactions(params = {}) {
     try {
-      const response = await apiClient.get('/transactions');
+      const response = await apiClient.get('/transactions', { params });
       if (response && response.status === 'success') {
         const transactionsList = Array.isArray(response.data)
           ? response.data
           : [];
         return {
           transactions: transactionsList,
+          total: response.total || 0,
+          page: response.page || 1,
+          totalPages: response.totalPages || 1,
           metrics: response.metrics || null
         };
       }
-      return { transactions: [], metrics: null };
+      return { transactions: [], metrics: null, total: 0, page: 1, totalPages: 1 };
     } catch (error) {
       console.error('Lỗi khi tải giao dịch từ backend API /api/transactions:', error);
       return { transactions: [], metrics: null };

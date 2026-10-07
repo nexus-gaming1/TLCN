@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Calendar, Filter, RefreshCw, RotateCcw, PlusCircle } from 'lucide-react';
+import { Search, Calendar, Filter, RefreshCw, RotateCcw, PlusCircle, Download } from 'lucide-react';
 
 export default function TransactionFilterBar({
     filters,
@@ -7,6 +7,7 @@ export default function TransactionFilterBar({
     onResetFilters,
     onRefresh,
     onOpenCreateModal,
+    onExportExcel,
     loading
 }) {
     return (
@@ -18,8 +19,8 @@ export default function TransactionFilterBar({
                     type="text"
                     value={filters.search || ''}
                     onChange={(e) => onFilterChange('search', e.target.value)}
-                    placeholder="Tìm kiếm mã TXN-..., tên khách hàng, SĐT, số máy trạm..."
-                    className="w-full pl-10 pr-10 py-2 bg-surface-container-low rounded-lg text-on-surface font-body-md text-sm placeholder-on-surface-variant focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all border border-outline-variant/20"
+                    placeholder="Tìm mã giao dịch, khách hàng, SĐT..."
+                    className="w-full min-w-[240px] pl-10 pr-10 py-2 bg-surface-container-low rounded-lg text-on-surface font-body-md text-sm placeholder-on-surface-variant focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all border border-outline-variant/20"
                 />
                 <span className="absolute right-3 text-[11px] font-mono bg-surface-container-high px-1.5 py-0.5 rounded text-on-surface-variant">
                     ⌘K
@@ -44,71 +45,61 @@ export default function TransactionFilterBar({
                 </div>
 
                 {/* Transaction Category */}
-                <div className="relative flex items-center bg-surface-container-low rounded-lg px-3 py-1.5 border border-outline-variant/20">
-                    <span className="text-xs text-on-surface-variant mr-1.5">Khoản mục:</span>
+                <div className="relative flex items-center bg-surface-container-low rounded-lg px-2 py-1.5 border border-outline-variant/20">
                     <select
                         value={filters.category || 'all'}
                         onChange={(e) => onFilterChange('category', e.target.value)}
-                        className="bg-transparent text-xs font-semibold text-on-surface focus:outline-none cursor-pointer pr-1"
+                        className="bg-transparent text-xs font-semibold text-on-surface focus:outline-none cursor-pointer"
                     >
-                        <option value="all">Tất cả</option>
-                        <option value="Nạp Giờ Chơi">Nạp Giờ Chơi</option>
-                        <option value="Dịch Vụ F&B">Dịch Vụ F&B</option>
-                        <option value="Combo Đêm">Combo Đêm</option>
-                        <option value="Khác">Khác</option>
+                        <option value="all">Khoản mục (Tất cả)</option>
+                        <option value="MEMBER_TOPUP">Nạp Giờ Chơi</option>
+                        <option value="SERVICE_SALE">Dịch Vụ F&B</option>
+                        <option value="COMBO_PURCHASE">Combo Đêm</option>
+                        <option value="REFUND">Hoàn Tiền</option>
+                        <option value="OTHER">Khác</option>
                     </select>
                 </div>
 
                 {/* Payment Method */}
-                <div className="relative flex items-center bg-surface-container-low rounded-lg px-3 py-1.5 border border-outline-variant/20">
-                    <span className="text-xs text-on-surface-variant mr-1.5">Phương thức:</span>
+                <div className="relative flex items-center bg-surface-container-low rounded-lg px-2 py-1.5 border border-outline-variant/20">
                     <select
                         value={filters.paymentMethod || 'all'}
                         onChange={(e) => onFilterChange('paymentMethod', e.target.value)}
-                        className="bg-transparent text-xs font-semibold text-on-surface focus:outline-none cursor-pointer pr-1"
+                        className="bg-transparent text-xs font-semibold text-on-surface focus:outline-none cursor-pointer"
                     >
-                        <option value="all">Tất cả</option>
-                        <option value="cash">Tiền mặt (Cash)</option>
-                        <option value="vietqr">VietQR Pro</option>
-                        <option value="pos">Thẻ POS / Card</option>
-                        <option value="momo">Ví MoMo</option>
+                        <option value="all">Phương thức (Tất cả)</option>
+                        <option value="CASH">Tiền mặt</option>
+                        <option value="VIETQR">VietQR</option>
+                        <option value="POS">Thẻ POS</option>
+                        <option value="MOMO">Ví MoMo</option>
                     </select>
                 </div>
 
                 {/* Status Filter */}
-                <div className="relative flex items-center bg-surface-container-low rounded-lg px-3 py-1.5 border border-outline-variant/20">
-                    <span className="text-xs text-on-surface-variant mr-1.5">Trạng thái:</span>
+                <div className="relative flex items-center bg-surface-container-low rounded-lg px-2 py-1.5 border border-outline-variant/20">
                     <select
                         value={filters.status || 'all'}
                         onChange={(e) => onFilterChange('status', e.target.value)}
-                        className="bg-transparent text-xs font-semibold text-on-surface focus:outline-none cursor-pointer pr-1"
+                        className="bg-transparent text-xs font-semibold text-on-surface focus:outline-none cursor-pointer"
                     >
-                        <option value="all">Tất cả</option>
-                        <option value="completed">Thành công</option>
-                        <option value="pending">Đang xử lý</option>
-                        <option value="failed">Thất bại</option>
-                        <option value="refunded">Hoàn tiền</option>
+                        <option value="all">Trạng thái (Tất cả)</option>
+                        <option value="COMPLETED">Thành công</option>
+                        <option value="PENDING">Đang xử lý</option>
+                        <option value="FAILED">Thất bại</option>
+                        <option value="REFUNDED">Hoàn tiền</option>
                     </select>
                 </div>
 
-                {/* Refresh & Reset Buttons */}
-                <div className="flex items-center gap-1.5 ml-auto lg:ml-0">
-                    <button
-                        onClick={onRefresh}
-                        disabled={loading}
-                        className="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors border border-outline-variant/20 disabled:opacity-50"
-                        title="Làm mới dữ liệu"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-primary' : ''}`} />
-                    </button>
-                    <button
-                        onClick={onResetFilters}
-                        className="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-error hover:bg-error-container/30 transition-colors border border-outline-variant/20"
-                        title="Xóa bộ lọc"
-                    >
-                        <RotateCcw className="w-4 h-4" />
-                    </button>
-                </div>
+                <div className="w-px h-6 bg-outline-variant/30 hidden lg:block mx-1"></div>
+
+                <button
+                    onClick={onExportExcel}
+                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors border border-emerald-200/50 text-xs font-semibold ml-auto lg:ml-0"
+                    title="Xuất Báo Cáo Excel"
+                >
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline">Xuất Excel</span>
+                </button>
             </div>
         </div>
     );

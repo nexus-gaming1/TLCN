@@ -24,8 +24,8 @@ export default function TransactionKpiCards({ metrics }) {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Tổng Doanh Thu Hôm Nay
             </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 font-mono">
-              {totalRevenue.toLocaleString()} <span className="text-sm font-bold text-slate-500">₫</span>
+            <span className="flex items-baseline gap-1 text-2xl font-black text-slate-900 mt-1 font-mono">
+              {totalRevenue.toLocaleString()} <span className="text-base font-bold text-slate-400">₫</span>
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center">
@@ -51,8 +51,8 @@ export default function TransactionKpiCards({ metrics }) {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Doanh Thu Nạp Giờ (PC Time)
             </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 font-mono">
-              {pcTimeRevenue.toLocaleString()} <span className="text-sm font-bold text-slate-500">₫</span>
+            <span className="flex items-baseline gap-1 text-2xl font-black text-slate-900 mt-1 font-mono">
+              {pcTimeRevenue.toLocaleString()} <span className="text-base font-bold text-slate-400">₫</span>
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center">
@@ -79,8 +79,8 @@ export default function TransactionKpiCards({ metrics }) {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Dịch Vụ Ẩm Thực (F&amp;B)
             </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 font-mono">
-              {foodServiceRevenue.toLocaleString()} <span className="text-sm font-bold text-slate-500">₫</span>
+            <span className="flex items-baseline gap-1 text-2xl font-black text-slate-900 mt-1 font-mono">
+              {foodServiceRevenue.toLocaleString()} <span className="text-base font-bold text-slate-400">₫</span>
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center">

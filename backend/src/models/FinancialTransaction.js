@@ -1,5 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
-const { TransactionType, TransactionCategory } = require('../constants/enums');
+const { TransactionType, TransactionCategory, PaymentMethodEnum, TransactionStatusEnum } = require('../constants/enums');
 
 class FinancialTransaction extends Model {
   record() {
@@ -23,6 +23,8 @@ module.exports = (sequelize) => {
     type: { type: DataTypes.ENUM(...Object.values(TransactionType)), allowNull: false },
     category: { type: DataTypes.ENUM(...Object.values(TransactionCategory)), allowNull: false },
     amount: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
+    payment_method: { type: DataTypes.ENUM(...Object.values(PaymentMethodEnum)), defaultValue: PaymentMethodEnum.CASH },
+    status: { type: DataTypes.ENUM(...Object.values(TransactionStatusEnum)), defaultValue: TransactionStatusEnum.COMPLETED },
     description: { type: DataTypes.TEXT },
     used_by: { type: DataTypes.INTEGER, allowNull: false },
     processed_by: { type: DataTypes.INTEGER }

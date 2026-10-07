@@ -476,10 +476,60 @@ const seedData = async (db) => {
       ]);
     }
 
+    // 12. Seed Financial Transactions
+    if (db.FinancialTransaction) {
+      await safeSeed(db.FinancialTransaction, [
+        {
+          transaction_id: 1,
+          type: TransactionType.INCOME,
+          category: TransactionCategory.MEMBER_TOPUP,
+          amount: 100000.00,
+          payment_method: 'CASH',
+          status: 'COMPLETED',
+          description: 'Nạp tiền giờ chơi tại quầy',
+          used_by: 2,
+          processed_by: 1
+        },
+        {
+          transaction_id: 2,
+          type: TransactionType.INCOME,
+          category: TransactionCategory.SERVICE_SALE,
+          amount: 35000.00,
+          payment_method: 'VIETQR',
+          status: 'COMPLETED',
+          description: 'Mua Mì Trứng Bò Hầm',
+          used_by: 3,
+          processed_by: 1
+        },
+        {
+          transaction_id: 3,
+          type: TransactionType.EXPENSE,
+          category: TransactionCategory.REFUND,
+          amount: 35000.00,
+          payment_method: 'CASH',
+          status: 'REFUNDED',
+          description: 'Hoàn tiền dịch vụ',
+          used_by: 3,
+          processed_by: 1
+        },
+        {
+          transaction_id: 4,
+          type: TransactionType.INCOME,
+          category: TransactionCategory.COMBO_PURCHASE,
+          amount: 50000.00,
+          payment_method: 'MOMO',
+          status: 'COMPLETED',
+          description: 'Mua Combo Xuyên Đêm',
+          used_by: 5,
+          processed_by: 3
+        }
+      ]);
+    }
+
     console.log('✅ Database Seeding Completed Successfully.');
   } catch (error) {
     console.error('❌ Database Seeding Error:', error);
   }
 };
 
-module.exports = seedData;
+module.exports = seedData;
