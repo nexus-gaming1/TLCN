@@ -57,31 +57,13 @@ export default function HardwareSpecsTable({
             {specs.length} THIẾT BỊ
           </span>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            className="p-1.5 rounded-lg hover:bg-slate-200/70 text-slate-600 transition-colors"
-            title="Làm mới dữ liệu"
-            onClick={() => alert('Đã cập nhật dữ liệu cấu hình phần cứng mới nhất!')}
-          >
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          <button
-            type="button"
-            className="p-1.5 rounded-lg hover:bg-slate-200/70 text-slate-600 transition-colors"
-            title="Tùy chỉnh cột hiển thị"
-            onClick={() => alert('Tính năng tùy chỉnh cột hiển thị đang kích hoạt.')}
-          >
-            <Columns className="w-4 h-4" />
-          </button>
-        </div>
       </div>
 
       {/* Scrollable High-Density Table Body */}
       <div className="w-full overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[1050px]">
           <thead>
-            <tr className="bg-slate-100/90 text-slate-700 text-[11px] uppercase tracking-wider select-none border-b border-slate-200 font-extrabold">
+            <tr className="bg-slate-100 text-slate-700 text-[11px] uppercase tracking-wider select-none border-b-2 border-slate-300 font-extrabold">
               <th className="py-3 px-4 w-12 text-center">
                 <input
                   type="checkbox"
@@ -98,14 +80,14 @@ export default function HardwareSpecsTable({
               <th className="py-3 px-4 font-extrabold text-slate-800 text-right pr-6 min-w-[120px]">Thao Tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
+          <tbody className="divide-y divide-slate-200 text-xs font-medium text-slate-800">
             {specs.map((item) => {
               const isSelected = selectedIds.includes(item.id);
 
               return (
                 <tr
                   key={item.id}
-                  className={`hover:bg-slate-50/80 transition-colors group ${
+                  className={`hover:bg-slate-100 transition-colors group ${
                     isSelected ? 'bg-sky-50/70' : ''
                   }`}
                 >
@@ -144,14 +126,14 @@ export default function HardwareSpecsTable({
                   {/* CPU */}
                   <td className="py-3.5 px-4">
                     <div className="flex items-start gap-2.5">
-                      <div className="p-1.5 rounded-md bg-sky-50 text-sky-600 border border-sky-200/80 shrink-0 mt-0.5">
+                      <div className="text-slate-500 shrink-0 mt-0.5">
                         <Cpu className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-bold text-slate-900 leading-tight">
+                        <span className="font-extrabold text-slate-900 leading-tight">
                           {item.cpu.model}
                         </span>
-                        <span className="font-mono text-[11px] text-slate-500 font-normal mt-0.5">
+                        <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5">
                           {item.cpu.specs}
                         </span>
                       </div>
@@ -161,14 +143,14 @@ export default function HardwareSpecsTable({
                   {/* RAM */}
                   <td className="py-3.5 px-4">
                     <div className="flex items-start gap-2.5">
-                      <div className="p-1.5 rounded-md bg-purple-50 text-purple-600 border border-purple-200/80 shrink-0 mt-0.5">
+                      <div className="text-slate-500 shrink-0 mt-0.5">
                         <MemoryStick className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-bold text-slate-900 leading-tight">
+                        <span className="font-extrabold text-slate-900 leading-tight">
                           {item.ram.capacity}
                         </span>
-                        <span className="font-mono text-[11px] text-slate-500 font-normal mt-0.5">
+                        <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5">
                           {item.ram.specs}
                         </span>
                       </div>
@@ -178,14 +160,14 @@ export default function HardwareSpecsTable({
                   {/* GPU */}
                   <td className="py-3.5 px-4">
                     <div className="flex items-start gap-2.5">
-                      <div className="p-1.5 rounded-md bg-indigo-50 text-indigo-600 border border-indigo-200/80 shrink-0 mt-0.5">
+                      <div className="text-slate-500 shrink-0 mt-0.5">
                         <Gamepad2 className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col">
                         <span className="font-extrabold text-slate-900 leading-tight">
                           {item.gpu.model}
                         </span>
-                        <span className="font-mono text-[11px] text-slate-500 font-normal mt-0.5">
+                        <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5">
                           {item.gpu.edition}
                         </span>
                       </div>
@@ -195,14 +177,14 @@ export default function HardwareSpecsTable({
                   {/* Storage / BootROM */}
                   <td className="py-3.5 px-4">
                     <div className="flex items-start gap-2.5">
-                      <div className="p-1.5 rounded-md bg-emerald-50 text-emerald-600 border border-emerald-200/80 shrink-0 mt-0.5">
+                      <div className="text-slate-500 shrink-0 mt-0.5">
                         <HardDrive className="w-4 h-4" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="font-bold text-slate-900 leading-tight">
+                        <span className="font-extrabold text-slate-900 leading-tight">
                           {item.storage.type}
                         </span>
-                        <span className="font-mono text-[11px] text-slate-500 font-normal mt-0.5 truncate max-w-[200px]" title={item.storage.specs}>
+                        <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5 truncate max-w-[200px]" title={item.storage.specs}>
                           {item.storage.specs}
                         </span>
                       </div>

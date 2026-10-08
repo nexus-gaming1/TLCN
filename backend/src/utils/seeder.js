@@ -416,6 +416,65 @@ const seedData = async (db) => {
         { component_id: 26, category: 'gear', name: 'Bộ Peripherals Standard Cyber Gaming' }
       ]);
     }
+    // Seed Promotions
+    if (db.Promotion) {
+      await safeSeed(db.Promotion, [
+        {
+          promotion_id: 1,
+          code: 'WELCOME_NEXUS',
+          name: 'Tân Thủ Giảm Giá 50%',
+          description: 'Khuyến mãi đặc biệt dành riêng cho hội viên mới. Giảm 50% thời gian chơi.',
+          discount_type: 'PERCENTAGE',
+          discount_value: 50.00,
+          max_discount_amount: 50000.00,
+          min_deposit_amount: 50000.00,
+          start_date: new Date(new Date().setDate(new Date().getDate() - 10)),
+          end_date: new Date(new Date().setDate(new Date().getDate() + 30)),
+          schedule_note: 'Áp dụng mọi khung giờ',
+          target_audience: 'NEWBIE',
+          status: 'ACTIVE',
+          budget_spent: 1250000.00,
+          total_budget: 10000000.00,
+          is_active: true
+        },
+        {
+          promotion_id: 2,
+          code: 'NIGHT_OWL',
+          name: 'Combo Xuyên Đêm (22h - 6h)',
+          description: 'Nạp 30K chơi thoải mái từ 22h đêm đến 6h sáng hôm sau.',
+          discount_type: 'COMBO',
+          discount_value: 30000.00,
+          max_discount_amount: null,
+          min_deposit_amount: null,
+          start_date: new Date(new Date().setDate(new Date().getDate() - 5)),
+          end_date: new Date(new Date().setDate(new Date().getDate() + 15)),
+          schedule_note: 'Chỉ áp dụng từ 22h đến 6h sáng',
+          target_audience: 'ALL',
+          status: 'ACTIVE',
+          budget_spent: 3500000.00,
+          total_budget: 15000000.00,
+          is_active: true
+        },
+        {
+          promotion_id: 3,
+          code: 'FNB_15',
+          name: 'Giảm 15% Nước Uống',
+          description: 'Giảm 15% cho tất cả thức uống pha chế tại quầy.',
+          discount_type: 'FOOD_BEVERAGE',
+          discount_value: 15.00,
+          max_discount_amount: 20000.00,
+          min_deposit_amount: null,
+          start_date: new Date(new Date().setDate(new Date().getDate() - 15)),
+          end_date: new Date(new Date().setDate(new Date().getDate() - 1)),
+          schedule_note: 'Áp dụng buổi chiều (14h - 17h)',
+          target_audience: 'ALL',
+          status: 'ENDED',
+          budget_spent: 5000000.00,
+          total_budget: 5000000.00,
+          is_active: false
+        }
+      ]);
+    }
 
     console.log('✅ Database Seeding Completed Successfully.');
   } catch (error) {

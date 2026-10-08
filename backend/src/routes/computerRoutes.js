@@ -14,8 +14,6 @@ router.get('/machinestore',
     computerController.getMachines);
 router.patch('/:id/status', computerController.changeStatus);
 router.post('/:id/switch', computerController.switchStation);
-
-
 router.get('/specs', computerController.getHardwareSpecs);
 router.post('/specs', computerController.createHardwareSpec);
 router.put('/specs/:id', computerController.updateHardwareSpec);

@@ -64,10 +64,10 @@ export default function WalletBalanceWidget({ balances }) {
       </div>
 
       {/* Bottom Action Buttons */}
-      <div className="grid grid-cols-2 gap-2.5 pt-1">
+      <div className="flex items-center gap-3 pt-1">
         <button
           type="button"
-          className="w-full py-2.5 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
+          className="flex-1 h-10 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
           <span>+ Nạp Giờ Chơi</span>
@@ -75,7 +75,7 @@ export default function WalletBalanceWidget({ balances }) {
 
         <button
           type="button"
-          className="w-full py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 border border-slate-200 transition-all cursor-pointer"
+          className="flex-1 h-10 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex items-center justify-center gap-1.5 border border-slate-200 transition-all cursor-pointer"
         >
           <History className="w-4 h-4 text-slate-500" />
           <span>Lịch sử</span>

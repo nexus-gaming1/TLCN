@@ -80,8 +80,8 @@ export default function MemberTable({
   const isAllSelected = members.length > 0 && selectedIds.length === members.length;
 
   return (
-    <div className="w-full bg-white rounded-xl shadow-xs border border-slate-200/90 flex flex-col">
-      <div className="w-full overflow-x-auto rounded-xl">
+    <div className="w-full bg-white rounded-lg shadow-flat border border-slate-200 flex flex-col">
+      <div className="w-full overflow-x-auto rounded-lg">
         <table className="w-full text-left border-collapse" id="memberFleetTable">
           <thead>
             <tr className="bg-slate-100/90 text-slate-800 text-[11px] uppercase tracking-wider border-b border-slate-200 font-extrabold select-none">

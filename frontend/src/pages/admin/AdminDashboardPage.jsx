@@ -29,6 +29,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
         setToastMessage({ text, isError });
         setTimeout(() => setToastMessage(null), 3500);
     };
+<<<<<<< HEAD
 const {
         data: machines = {},
         isLoading,
@@ -36,13 +37,18 @@ const {
     } = useMachines();
     const loadDashboardData = useCallback(async () => {
         setLoading(true);
+=======
+
+    const loadDashboardData = useCallback(async (showLoading = true) => {
+        if (showLoading) setLoading(true);
+>>>>>>> main
         const data = await dashboardService.getOverview();
         if (data) {
             setOverviewData(data);
             const flatStations = (data.zones || []).flatMap((z) => z.stations || []);
             setAllStationsList(flatStations);
         }
-        setLoading(false);
+        if (showLoading) setLoading(false);
     }, []);
   useMachineSocket();
 
@@ -115,10 +121,10 @@ const {
         try {
             await machineService.changeStatus(computerId, newStatus);
             showGlobalToast(`Đã gửi lệnh điều khiển (${newStatus}) tới máy ID #${computerId} thành công!`);
-            await loadDashboardData();
+            await loadDashboardData(false);
         } catch (error) {
             showGlobalToast(error.message || 'Lỗi khi gửi lệnh điều khiển trạm máy', true);
-            await loadDashboardData();
+            await loadDashboardData(false);
         }
     };
 
@@ -128,7 +134,7 @@ const {
         try {
             await machineService.switchStation(fromId, toId, memberId);
             showGlobalToast(`Đã chuyển phiên chơi từ máy ID #${fromId} sang máy ID #${toId} thành công!`);
-            await loadDashboardData();
+            await loadDashboardData(false);
         } catch (error) {
             showGlobalToast(error.message || 'Lỗi khi thực hiện chuyển trạm máy', true);
         }
@@ -139,7 +145,7 @@ const {
         try {
             const res = await machineService.wakeOnLan();
             showGlobalToast(res.message || 'Đã gửi gói tin Wake-on-LAN thành công!');
-            await loadDashboardData();
+            await loadDashboardData(false);
         } catch (error) {
             showGlobalToast(error.message || 'Lỗi khi phát lệnh Wake-on-LAN', true);
         }

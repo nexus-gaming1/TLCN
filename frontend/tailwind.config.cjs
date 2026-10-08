@@ -15,7 +15,7 @@ module.exports = {
         '8.5': '2.125rem',
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+        sans: ['"Inter"', 'sans-serif'],
       },
       colors: {
         brand: {
@@ -41,6 +41,7 @@ module.exports = {
         'glow-cyan': '0 0 25px -5px rgba(6, 182, 212, 0.35)',
         'glow-cyan-sm': '0 0 15px -3px rgba(6, 182, 212, 0.25)',
         'glass': '0 8px 32px 0 rgba(148, 163, 184, 0.18)',
+        'flat': '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
       }
     },
   },

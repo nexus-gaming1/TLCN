@@ -76,11 +76,11 @@ export default function HardwareKpiBento({ metrics = {} }) {
         return (
           <div
             key={c.id}
-            className="bg-white rounded-xl p-4 sm:p-5 shadow-xs border border-slate-200/90 flex flex-col justify-between hover:shadow-md transition-all duration-200 group"
+            className="bg-white rounded-lg p-4 sm:p-5 shadow-flat border border-slate-200 flex flex-col justify-between hover:shadow-sm transition-all duration-200 group"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col space-y-1 min-w-0">
-                <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-400 font-bold">
+                <span className="font-mono text-[10px] sm:text-[11px] uppercase tracking-wider text-slate-600 font-medium">
                   {c.label}
                 </span>
                 <span className="text-lg sm:text-xl font-extrabold text-slate-900 truncate">

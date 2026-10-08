@@ -53,6 +53,9 @@ module.exports = (sequelize) => {
     ServiceOrder.hasMany(models.ServiceOrderItem, { foreignKey: 'order_id', onDelete: 'CASCADE' });
     ServiceOrder.belongsToMany(models.ServiceItem, { through: models.ServiceOrderItem, foreignKey: 'order_id' });
     ServiceOrder.hasOne(models.ComboTime, { foreignKey: 'order_id', onDelete: 'CASCADE' });
+    if (models.Promotion) {
+      ServiceOrder.belongsTo(models.Promotion, { foreignKey: 'promotion_id' });
+    }
   };
 
   return ServiceOrder;

@@ -41,7 +41,7 @@ export default function LoginForm({ onSuccess }) {
   };
 
   return (
-    <form className="space-y-4" data-purpose="credential-form" onSubmit={handleSubmit}>
+    <form className="flex flex-col items-start w-full space-y-4" data-purpose="credential-form" onSubmit={handleSubmit}>
       {errorMsg && (
         <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2.5 shadow-xs animate-fadeIn">
           <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
@@ -50,7 +50,7 @@ export default function LoginForm({ onSuccess }) {
       )}
 
       {/* Username / Phone Field */}
-      <div>
+      <div className="w-full">
         <label className="block text-xs font-bold text-slate-900 mb-1.5" htmlFor="identity_input">
           Tên đăng nhập / Số điện thoại
         </label>
@@ -66,7 +66,7 @@ export default function LoginForm({ onSuccess }) {
             </svg>
           </div>
           <input
-            className="block w-full pl-10 pr-4 py-2.5 sm:text-xs text-slate-900 placeholder-slate-500 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition shadow-sm"
+            className="block w-full h-10 pl-10 pr-4 sm:text-xs text-slate-900 placeholder-slate-500 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition shadow-sm"
             id="identity_input"
             name="identity"
             placeholder="vd: nexus_pro hoặc 0912xxxxxx"
@@ -80,7 +80,7 @@ export default function LoginForm({ onSuccess }) {
       </div>
 
       {/* Password Field */}
-      <div>
+      <div className="w-full">
         <label className="block text-xs font-bold text-slate-900 mb-1.5" htmlFor="password_input">
           Mật khẩu
         </label>
@@ -96,7 +96,7 @@ export default function LoginForm({ onSuccess }) {
             </svg>
           </div>
           <input
-            className="block w-full pl-10 pr-11 py-2.5 sm:text-xs text-slate-900 placeholder-slate-500 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition shadow-sm"
+            className="block w-full h-10 pl-10 pr-11 sm:text-xs text-slate-900 placeholder-slate-500 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition shadow-sm"
             id="password_input"
             name="password"
             placeholder="••••••••••••"
@@ -140,7 +140,7 @@ export default function LoginForm({ onSuccess }) {
       </div>
 
       {/* Remember Me & Forgot Password */}
-      <div className="flex items-center justify-between pt-1">
+      <div className="flex items-center justify-between w-full pt-1">
         <div className="flex items-center space-x-2.5">
           <input
             className="h-4 w-4 text-brand-600 focus:ring-brand-500 border-slate-300 rounded cursor-pointer"
@@ -163,14 +163,14 @@ export default function LoginForm({ onSuccess }) {
       </div>
 
       {/* Submit Button */}
-      <div className="pt-2">
+      <div className="pt-2 w-full">
         <button
-          className="w-full relative group overflow-hidden rounded-xl p-[1px] font-semibold text-white transition-all shadow-md shadow-brand-500/25 hover:shadow-glow-cyan active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed"
+          className="w-full relative group overflow-hidden rounded-xl p-[1px] font-semibold text-white transition-shadow shadow-md shadow-brand-500/25 hover:shadow-glow-cyan active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed"
           type="submit"
           disabled={loading}
         >
           <span className="absolute inset-0 bg-gradient-to-r from-brand-500 via-sky-500 to-blue-600 group-hover:opacity-95 transition-opacity"></span>
-          <div className="relative flex items-center justify-center space-x-3 px-6 py-3 rounded-[11px] bg-gradient-to-r from-brand-600 to-sky-600 group-hover:from-brand-500 group-hover:to-sky-500 transition-all text-sm font-bold tracking-wide">
+          <div className="relative flex items-center justify-center space-x-3 px-6 py-3 rounded-[11px] bg-gradient-to-r from-brand-600 to-sky-600 group-hover:from-brand-500 group-hover:to-sky-500 transition-colors text-sm font-bold tracking-wide">
             {loading ? (
               <span className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />

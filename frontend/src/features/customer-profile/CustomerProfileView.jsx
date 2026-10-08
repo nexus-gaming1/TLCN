@@ -100,17 +100,23 @@ export default function CustomerProfileView({ user, memberId }) {
 
   return (
     <div className="flex flex-col w-full gap-6">
-      {/* Toast Alert Feedback Messages */}
-      {message && (
-        <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium flex items-center gap-2 shadow-xs animate-fade-in">
-          <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span>{message}</span>
-        </div>
-      )}
-      {error && (
-        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-medium flex items-center gap-2 shadow-xs animate-fade-in">
-          <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-          <span>{error}</span>
+      {/* Global Toast Notification */}
+      {(message || error) && (
+        <div className="fixed bottom-8 right-8 z-[9999] animate-slide-up flex items-center">
+          <div
+            className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl shadow-slate-900/10 border font-medium text-sm ${
+              error
+                ? 'bg-rose-50 border-rose-200 text-rose-800'
+                : 'bg-slate-900 border-slate-800 text-white'
+            }`}
+          >
+            {error ? (
+              <AlertCircle className="w-5 h-5 text-rose-500 shrink-0" />
+            ) : (
+              <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+            )}
+            <span>{error || message}</span>
+          </div>
         </div>
       )}
 

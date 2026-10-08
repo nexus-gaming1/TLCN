@@ -49,7 +49,7 @@ export default function MachineFilterBar({
   };
 
   return (
-    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-xl shadow-xs border border-slate-200/90">
+    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-lg shadow-flat border border-slate-200">
       {/* Left Group: Search Input & Filter Dropdowns */}
       <div className="flex items-center gap-3 flex-wrap flex-1">
         {/* Search Box with Cmd+K / Ctrl+K Auto-Focus */}

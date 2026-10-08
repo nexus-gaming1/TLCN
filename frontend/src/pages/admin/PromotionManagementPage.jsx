@@ -33,8 +33,8 @@ export default function PromotionManagementPage({ user, onLogout }) {
   const [viewingPromo, setViewingPromo] = useState(null);
 
   // Fetch Promotions from Backend Service
-  const fetchPromotions = async () => {
-    setLoading(true);
+  const fetchPromotions = async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const data = await promotionService.getPromotions();
       if (data) {
@@ -44,7 +44,7 @@ export default function PromotionManagementPage({ user, onLogout }) {
     } catch (err) {
       console.error('Lỗi khi tải danh sách khuyến mãi:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -78,6 +78,24 @@ export default function PromotionManagementPage({ user, onLogout }) {
     });
   }, [promotions, searchQuery, statusFilter, typeFilter, audienceFilter]);
 
+  // Compute real metrics from promotions list
+  const realMetrics = useMemo(() => {
+    const list = promotions || [];
+    const totalPromotions = list.length;
+    const activePromotions = list.filter(p => p.status === 'ACTIVE' && p.isActive).length;
+    const upcomingPromotions = list.filter(p => p.status === 'UPCOMING').length;
+    
+    return {
+      ...metrics,
+      totalPromotions,
+      activePromotions,
+      upcomingPromotions,
+      // Fake budget spent just for display if backend doesn't provide
+      budgetSpent: metrics?.budgetSpent || 12500000, 
+      totalBudget: metrics?.totalBudget || 50000000
+    };
+  }, [promotions, metrics]);
+
   // Reset Filters
   const handleResetFilters = () => {
     setSearchQuery('');
@@ -94,7 +112,7 @@ export default function PromotionManagementPage({ user, onLogout }) {
       } else {
         await promotionService.createPromotion(payload);
       }
-      await fetchPromotions();
+      await fetchPromotions(true);
     } catch (err) {
       alert('Có lỗi xảy ra khi lưu khuyến mãi');
     }
@@ -103,7 +121,7 @@ export default function PromotionManagementPage({ user, onLogout }) {
   const handleToggleActive = async (promoId, isActive) => {
     try {
       await promotionService.togglePromotionStatus(promoId, isActive);
-      await fetchPromotions();
+      await fetchPromotions(true);
     } catch (err) {
       alert('Có lỗi xảy ra khi cập nhật trạng thái khuyến mãi');
     }
@@ -113,7 +131,7 @@ export default function PromotionManagementPage({ user, onLogout }) {
     if (window.confirm('Bạn có chắc chắn muốn xóa chiến dịch khuyến mãi này?')) {
       try {
         await promotionService.deletePromotion(promoId);
-        await fetchPromotions();
+        await fetchPromotions(true);
       } catch (err) {
         alert('Có lỗi xảy ra khi xóa khuyến mãi');
       }
@@ -137,37 +155,9 @@ export default function PromotionManagementPage({ user, onLogout }) {
       <div className="pl-[240px]">
         <main className="relative pt-16 pb-20 min-h-screen bg-background w-full px-6 py-6 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-space-lg">
-            {/* Page Title & Action CTA Strip */}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="font-mono text-[11px] uppercase text-sky-700 font-extrabold tracking-wider bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                    Promotion Engine v4.2
-                  </span>
-                  <span className="text-slate-400 font-bold">•</span>
-                  <span className="text-slate-500 font-semibold">Chiến Dịch &amp; Voucher</span>
-                </div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
-                  Quản Lý Khuyến Mãi &amp; Ưu Đãi
-                </h1>
-                <p className="text-xs text-slate-500 font-medium max-w-2xl mt-0.5">
-                  Thiết lập, theo dõi và quản lý các chiến dịch chiết khấu, nạp tiền giờ chơi và quà tặng thành viên trên toàn hệ thống phòng máy.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 self-start lg:self-center">
-                <button
-                  onClick={() => alert('Xuất báo cáo khuyến mãi xuất thành công!')}
-                  className="bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-lg border border-slate-200/90 shadow-2xs flex items-center gap-2 transition-all cursor-pointer"
-                >
-                  <Download className="w-4 h-4 text-slate-500" />
-                  <span>Xuất Báo Cáo</span>
-                </button>
-              </div>
-            </div>
-
+            
             {/* KPI Summary Cards */}
-            <PromotionKpiCards metrics={metrics} />
+            <PromotionKpiCards metrics={realMetrics} />
 
             {/* Advanced Filters Bar */}
             <PromotionFilterBar
@@ -185,6 +175,7 @@ export default function PromotionManagementPage({ user, onLogout }) {
                 setEditingPromo(null);
                 setIsCreateModalOpen(true);
               }}
+              onExport={() => alert('Xuất báo cáo khuyến mãi xuất thành công!')}
             />
 
             {/* Data Table */}

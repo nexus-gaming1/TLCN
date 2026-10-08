@@ -15,5 +15,14 @@ module.exports = (sequelize) => {
     timestamps: false
   });
 
+  HardwareComponent.associate = (models) => {
+    HardwareComponent.belongsToMany(models.HardwareProfile, {
+      through: 'profile_component',
+      foreignKey: 'component_id',
+      otherKey: 'profile_id',
+      timestamps: false
+    });
+  };
+
   return HardwareComponent;
 };
