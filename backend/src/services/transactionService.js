@@ -191,6 +191,22 @@ class TransactionService {
       throw err;
     }
 
+    // Kiểm tra chống trùng lặp giao dịch
+    // Ngăn chặn lỗi SePay bắn webhook 2 lần cho cùng 1 giao dịch gây cộng tiền 2 lần
+    const existingTxn = await db.FinancialTransaction.findOne({
+      where: { txn_code: referenceCode }
+    });
+
+    if (existingTxn) {
+      console.warn(`[SePay] Giao dịch ${referenceCode} đã được xử lý trước đó. Bỏ qua.`);
+      return {
+        message: 'Giao dịch đã được xử lý trước đó',
+        transaction_id: existingTxn.transaction_id,
+        amount_added: 0,
+        status: 'ignored'
+      };
+    }
+
     // 3. Thực hiện sequelize transaction để đảm bảo an toàn CSDL
     return await db.sequelize.transaction(async (t) => {
       // Tìm thông tin hội viên
