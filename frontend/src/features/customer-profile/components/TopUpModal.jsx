@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { X, QrCode, Copy, Check, AlertCircle } from 'lucide-react';
 
  // TopUpModal Component --> là Modal nạp tiền tự động qua mã VietQR cho khách
 export default function TopUpModal({ isOpen, onClose, memberId }) {
   const [selectedAmount, setSelectedAmount] = useState(50000); // Mặc định chọn 50.000đ
   const [copied, setCopied] = useState(false);
+
+  const [qrLoading, setQrLoading] = useState(true);
+  const [qrError, setQrError] = useState(false);
+
+  //Hàm reset khi đổi số tiền 
+  useEffect(() => {
+    setQrLoading(true);
+    setQrError(false);
+  }, [selectedAmount, memberId]);
 
   if (!isOpen) return null;
 
@@ -68,18 +77,35 @@ export default function TopUpModal({ isOpen, onClose, memberId }) {
           {/* QR chuyển khoản  */}
           <div className="flex flex-col items-center justify-center bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
             <div className="bg-white p-2.5 rounded-2xl shadow-sm border border-slate-200/60 mb-2">
+              {/* Hiệu ứng xoay khi đang tải ảnh */}
+              {qrLoading && !qrError && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center space-y-2">
+                  <div className="w-8 h-8 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+                  <span className="text-[10px] text-slate-400 font-medium">Đang tạo mã QR...</span>
+                </div>
+              )}
+              {/* Khi server VietQR bị sập hoặc mất mạng */}
+              {qrError ? (
+                <div className="text-center p-4">
+                  <AlertCircle className="w-8 h-8 text-rose-400 mx-auto mb-2" />
+                  <span className="text-xs text-slate-500">Không thể tải mã QR lúc này. Vui lòng chuyển khoản thủ công.</span>
+                </div>
+              ): (
               <img
-                src={qrUrl}
-                alt="Mã VietQR Thanh Toán"
-                className="w-56 h-56 object-contain rounded-xl block"
-              />
+                  src={qrUrl}
+                  alt="Mã VietQR Thanh Toán"
+                  className={`w-full h-full object-contain rounded-xl ${qrLoading ? 'opacity-0' : 'opacity-100 transition-opacity duration-300'}`}
+                  onLoad={() => setQrLoading(false)}
+                  onError={() => { setQrLoading(false); setQrError(true); }}
+                />
+              )}
             </div>
             <div className="flex flex-col items-center gap-0.5 text-center">
               <span className="text-xs font-extrabold text-slate-800">
-                TON HOANG CAM - Vietcombank (VCB)
+                NEXUS CYBER - TON HOANG CAM
               </span>
-              <span className="text-[11px] font-mono text-slate-500">
-                STK: <strong className="text-slate-800">1040682932</strong>
+              <span className="text-[12px] font-mono text-slate-500">
+                Vietcombank (VCB) - STK: <strong className="text-slate-800">1040682932</strong>
               </span>
             </div>
           </div>
