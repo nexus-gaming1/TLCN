@@ -156,6 +156,86 @@ class TransactionService {
       throw error;
     }
   }
+
+  // Hàm bóc tách member_id từ nội dung chuyển khoản bằng Regex
+  parseMemberIdFromContent(content) {
+    if (!content || typeof content !== 'string') return null;
+    const match = content.match(/NEXUS[-_\s]*(\d+)/i);
+    if (match && match[1]) {
+      const memberId = parseInt(match[1], 10);
+      return isNaN(memberId) ? null : memberId;
+    }
+    return null;
+  }
+
+   //Xử lý webhook SePay nạp tiền tự động
+   //Đảm bảo tính nguyên tử ACID bằng Sequelize Transaction
+  async processSePayWebhook(webhookData) {
+    // 1. Bóc tách dữ liệu từ payload của SePay
+    const content = webhookData.content || webhookData.description || webhookData.code || '';
+    const rawAmount = webhookData.transferAmount !== undefined ? webhookData.transferAmount : webhookData.amount;
+    const amount = parseFloat(rawAmount || 0);
+    const referenceCode = webhookData.referenceCode || webhookData.id || webhookData.referenceNumber || `SEPAY-${Date.now()}`;
+
+    if (isNaN(amount) || amount <= 0) {
+      const err = new Error('Số tiền chuyển khoản không hợp lệ (phải > 0)');
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 2. Phân tích bóc tách member_id
+    const memberId = this.parseMemberIdFromContent(content);
+    if (!memberId) {
+      const err = new Error(`Không tìm thấy cú pháp mã hội viên NEXUS hợp lệ trong nội dung: "${content}"`);
+      err.statusCode = 400;
+      throw err;
+    }
+
+    // 3. Thực hiện sequelize transaction để đảm bảo an toàn CSDL
+    return await db.sequelize.transaction(async (t) => {
+      // Tìm thông tin hội viên
+      const member = await db.Member.findByPk(memberId, {
+        include: [{ model: db.User, as: 'userInfo' }],
+        transaction: t
+      });
+
+      if (!member) {
+        const err = new Error(`Hội viên #${memberId} không tồn tại trong hệ thống`);
+        err.statusCode = 404;
+        throw err;
+      }
+
+      // Cộng tiền real_balance và điểm thưởng (1,000 đ = 1 point)
+      member.real_balance = parseFloat(member.real_balance || 0) + amount;
+      member.point = (member.point || 0) + Math.floor(amount / 1000);
+      await member.save({ transaction: t });
+
+      // Lưu log vào bảng FinancialTransaction
+      const newTxn = await db.FinancialTransaction.create({
+        type: TransactionType.INCOME,
+        category: TransactionCategory.MEMBER_TOPUP,
+        amount: amount,
+        description: `[SePay Auto Topup] Tự động nạp ${amount.toLocaleString('vi-VN')}đ cho hội viên #${memberId} (${member.userInfo ? member.userInfo.full_name : ''})`,
+        used_by: memberId,
+        processed_by: null, // Hệ thống tự động xử lý
+        payment_method: 'BANK_TRANSFER',
+        status: 'SUCCESS',
+        txn_code: referenceCode,
+        notes: content,
+        created_at: new Date()
+      }, { transaction: t });
+
+      return {
+        transaction_id: newTxn.transaction_id,
+        member_id: member.member_id,
+        username: member.userInfo ? member.userInfo.username : '',
+        full_name: member.userInfo ? member.userInfo.full_name : '',
+        amount_added: amount,
+        new_real_balance: parseFloat(member.real_balance),
+        points_added: Math.floor(amount / 1000)
+      };
+    });
+  }
 }
 
 module.exports = new TransactionService();
