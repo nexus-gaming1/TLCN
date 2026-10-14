@@ -1,5 +1,5 @@
-import React from 'react';
 import { Layers, CheckCircle2, Clock, DollarSign, Sparkles } from 'lucide-react';
+import { formatVND } from '../../../shared/utils/formatters';
 
 /**
  * PricingPlanKpiCards (Hiển thị KPI Bảng giá & Giờ vàng)
@@ -10,9 +10,6 @@ export default function PricingPlanKpiCards({ metrics }) {
   const activePlans = metrics?.activePlans || 0;
   const happyHourPlans = metrics?.happyHourPlans || 0;
   const avgRate = Number(metrics?.avgRate || 0);
-
-  const formatVND = (val) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">

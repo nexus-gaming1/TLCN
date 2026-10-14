@@ -1,14 +1,11 @@
-import React from 'react';
-import { X, Layers, Clock, Calendar, CheckCircle, Zap, Shield } from 'lucide-react';
+import { X, Layers, Clock, Calendar, Zap, Shield } from 'lucide-react';
+import { formatVND } from '../../../shared/utils/formatters';
 
 /**
  * PricingPlanDetailModal (Modal Xem Chi Tiết Bảng Giá & Giờ Vàng)
  */
 export default function PricingPlanDetailModal({ isOpen, onClose, plan }) {
   if (!isOpen || !plan) return null;
-
-  const formatVND = (val) =>
-    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 
   const zones = plan.zones || [];
 

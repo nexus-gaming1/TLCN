@@ -1,10 +1,10 @@
 const { Model, DataTypes } = require('sequelize');
 const { SessionType } = require('../constants/enums');
-
 class PricingPlan extends Model {
   calculatePrice(minutes) {
     const validMinutes = Math.max(0, Number(minutes) || 0);
-    const hourlyRate = Math.max(0, parseFloat(this.price_per_hour || 0));
+    const parsedRate = parseFloat(this.price_per_hour);
+    const hourlyRate = !isNaN(parsedRate) && parsedRate > 0 ? parsedRate : 0;
     return Math.round((hourlyRate / 60) * validMinutes);
   }
 
@@ -23,9 +23,17 @@ class PricingPlan extends Model {
     return this.save();
   }
 
-  isApplicable(type, time, zoneId) {
+  isApplicable(type, time, _zoneId) {
     if (!this.is_active) return false;
     if (this.plan_type && this.plan_type !== type) return false;
+    if (this.start_time && this.end_time && time) {
+      if (this.start_time <= this.end_time) {
+        if (time < this.start_time || time > this.end_time) return false;
+      } else {
+        // Khung giờ qua đêm (ví dụ: 22:00:00 -> 06:00:00)
+        if (time < this.start_time && time > this.end_time) return false;
+      }
+    }
     return true;
   }
 }

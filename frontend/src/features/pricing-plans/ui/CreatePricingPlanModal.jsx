@@ -1,18 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Layers, PlusCircle, Clock, Calendar, CheckSquare, Square } from 'lucide-react';
-
-const formatNumberWithCommas = (val) => {
-  if (val === undefined || val === null || val === '') return '';
-  const numStr = String(val).replace(/[^\d]/g, '');
-  if (!numStr) return '';
-  return new Intl.NumberFormat('en-US').format(Number(numStr));
-};
-
-const parseFormattedNumber = (val) => {
-  if (!val) return 0;
-  const cleanNumber = String(val).replace(/[^\d]/g, '');
-  return cleanNumber ? Number(cleanNumber) : 0;
-};
+import { formatNumberWithCommas, parseFormattedNumber } from '../../../shared/utils/formatters';
 
 /**
  * CreatePricingPlanModal (Modal Tạo / Sửa Bảng Giá & Giờ Vàng)

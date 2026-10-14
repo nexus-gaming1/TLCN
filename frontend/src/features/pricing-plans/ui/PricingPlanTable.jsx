@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Eye,
   Edit,
@@ -7,10 +6,9 @@ import {
   Calendar,
   Layers,
   Shield,
-  Zap,
-  CheckCircle2,
-  AlertCircle
+  Zap
 } from 'lucide-react';
+import { formatVND } from '../../../shared/utils/formatters';
 
 /**
  * Badge cho loại phiên (plan_type)
@@ -30,13 +28,6 @@ function PlanTypeBadge({ type }) {
       <span>Chơi Tại Quán</span>
     </span>
   );
-}
-
-/**
- * Format tiền tệ VND
- */
-function formatVND(val) {
-  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 }
 
 /**

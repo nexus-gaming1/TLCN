@@ -17,6 +17,71 @@ function sanitizeTime(t) {
   return s;
 }
 
+/**
+ * Chuẩn hóa và xác thực dữ liệu tên bảng giá
+ */
+function validatePlanName(name) {
+  const trimmed = typeof name === 'string' ? name.trim() : '';
+  if (!trimmed) {
+    throw new Error('Tên bảng giá không được để trống');
+  }
+  if (trimmed.length > 100) {
+    throw new Error('Tên bảng giá không được vượt quá 100 ký tự');
+  }
+  return trimmed;
+}
+
+/**
+ * Chuẩn hóa và xác thực đơn giá mỗi giờ
+ */
+function validatePricePerHour(price, isCreation = true) {
+  if (price === undefined || price === null || price === '') {
+    throw new Error('Giá cước mỗi giờ là bắt buộc');
+  }
+  const parsed = Number(price);
+  if (isNaN(parsed) || parsed < 0) {
+    throw new Error(
+      isCreation
+        ? 'Giá cước mỗi giờ phải là một số không âm hợp lệ'
+        : 'Giá cước mỗi giờ cập nhật phải là số không âm hợp lệ'
+    );
+  }
+  return parsed;
+}
+
+/**
+ * Xác thực tính đồng bộ của khung giờ
+ */
+function validateTimeRange(startTime, endTime) {
+  const sanitizedStart = sanitizeTime(startTime);
+  const sanitizedEnd = sanitizeTime(endTime);
+  if ((sanitizedStart && !sanitizedEnd) || (!sanitizedStart && sanitizedEnd)) {
+    throw new Error('Khung giờ bắt đầu và kết thúc phải được cấu hình đồng bộ');
+  }
+  return { start: sanitizedStart, end: sanitizedEnd };
+}
+
+/**
+ * Đồng bộ liên kết khu vực máy (ComputerZone) với PricingPlan (Khử trùng lặp ID)
+ */
+async function syncZoneAssociations(pricingPlanId, zoneIds, transaction) {
+  if (!Array.isArray(zoneIds)) return;
+
+  await db.ZonePricingPlan.destroy({
+    where: { pricing_plan_id: pricingPlanId },
+    transaction
+  });
+
+  const uniqueZoneIds = [...new Set(zoneIds.map(Number))].filter((zid) => !isNaN(zid) && zid > 0);
+  if (uniqueZoneIds.length > 0) {
+    const zoneAssociations = uniqueZoneIds.map((zoneId) => ({
+      zone_id: zoneId,
+      pricing_plan_id: pricingPlanId
+    }));
+    await db.ZonePricingPlan.bulkCreate(zoneAssociations, { transaction });
+  }
+}
+
 class PricingPlanService {
   /**
    * Lấy danh sách tất cả bảng giá + thống kê KPI metrics
@@ -47,9 +112,13 @@ class PricingPlanService {
       const totalCount = plans.length;
       const activePlans = plans.filter((p) => p.is_active);
       const activeCount = activePlans.length;
+      
+      // Chỉ tính các bảng giá giờ vàng đang hoạt động
       const happyHourCount = activePlans.filter((p) => Boolean(p.start_time && p.end_time)).length;
-      const totalHourlyRate = activePlans.reduce((sum, p) => sum + Number(p.price_per_hour || 0), 0);
-      const avgRate = activeCount > 0 ? Math.round(totalHourlyRate / activeCount) : 0;
+      
+      // Mức giá trung bình tính trên các bảng giá đang áp dụng
+      const totalActiveRate = activePlans.reduce((sum, p) => sum + Number(p.price_per_hour || 0), 0);
+      const avgRate = activeCount > 0 ? Math.round(totalActiveRate / activeCount) : 0;
 
       const metrics = {
         totalPlans: totalCount,
@@ -107,29 +176,9 @@ class PricingPlanService {
         zone_ids = []
       } = planData;
 
-      const trimmedName = typeof name === 'string' ? name.trim() : '';
-      if (!trimmedName) {
-        throw new Error('Tên bảng giá không được để trống');
-      }
-      if (trimmedName.length > 100) {
-        throw new Error('Tên bảng giá không được vượt quá 100 ký tự');
-      }
-
-      if (price_per_hour === undefined || price_per_hour === null || price_per_hour === '') {
-        throw new Error('Giá cước mỗi giờ là bắt buộc');
-      }
-      const parsedPrice = Number(price_per_hour);
-      if (isNaN(parsedPrice) || parsedPrice < 0) {
-        throw new Error('Giá cước mỗi giờ phải là một số không âm hợp lệ');
-      }
-
-      const sanitizedStartTime = sanitizeTime(start_time);
-      const sanitizedEndTime = sanitizeTime(end_time);
-
-      // Kiểm tra tính đồng bộ của khung giờ
-      if ((sanitizedStartTime && !sanitizedEndTime) || (!sanitizedStartTime && sanitizedEndTime)) {
-        throw new Error('Khung giờ bắt đầu và kết thúc phải được cấu hình đồng bộ');
-      }
+      const trimmedName = validatePlanName(name);
+      const parsedPrice = validatePricePerHour(price_per_hour, true);
+      const { start: sanitizedStartTime, end: sanitizedEndTime } = validateTimeRange(start_time, end_time);
 
       const newPlan = await db.PricingPlan.create(
         {
@@ -147,14 +196,7 @@ class PricingPlanService {
 
       // Gán liên kết với ComputerZone nếu có (đã khử trùng lặp ID)
       if (Array.isArray(zone_ids) && zone_ids.length > 0) {
-        const uniqueZoneIds = [...new Set(zone_ids.map(Number))].filter((id) => !isNaN(id) && id > 0);
-        if (uniqueZoneIds.length > 0) {
-          const zoneAssociations = uniqueZoneIds.map((zoneId) => ({
-            zone_id: zoneId,
-            pricing_plan_id: newPlan.pricing_plan_id
-          }));
-          await db.ZonePricingPlan.bulkCreate(zoneAssociations, { transaction });
-        }
+        await syncZoneAssociations(newPlan.pricing_plan_id, zone_ids, transaction);
       }
 
       await transaction.commit();
@@ -190,32 +232,12 @@ class PricingPlanService {
         zone_ids
       } = updateData;
 
-      let validatedName = plan.name;
-      if (name !== undefined) {
-        const trimmed = typeof name === 'string' ? name.trim() : '';
-        if (!trimmed) {
-          throw new Error('Tên bảng giá không được để trống');
-        }
-        if (trimmed.length > 100) {
-          throw new Error('Tên bảng giá không được vượt quá 100 ký tự');
-        }
-        validatedName = trimmed;
-      }
+      const validatedName = name !== undefined ? validatePlanName(name) : plan.name;
+      const validatedPrice = price_per_hour !== undefined ? validatePricePerHour(price_per_hour, false) : plan.price_per_hour;
 
-      let validatedPrice = plan.price_per_hour;
-      if (price_per_hour !== undefined) {
-        const parsed = Number(price_per_hour);
-        if (isNaN(parsed) || parsed < 0) {
-          throw new Error('Giá cước mỗi giờ cập nhật phải là số không âm hợp lệ');
-        }
-        validatedPrice = parsed;
-      }
-
-      const finalStartTime = start_time !== undefined ? sanitizeTime(start_time) : plan.start_time;
-      const finalEndTime = end_time !== undefined ? sanitizeTime(end_time) : plan.end_time;
-      if ((finalStartTime && !finalEndTime) || (!finalStartTime && finalEndTime)) {
-        throw new Error('Khung giờ bắt đầu và kết thúc phải được cấu hình đồng bộ');
-      }
+      const checkStart = start_time !== undefined ? start_time : plan.start_time;
+      const checkEnd = end_time !== undefined ? end_time : plan.end_time;
+      const { start: finalStartTime, end: finalEndTime } = validateTimeRange(checkStart, checkEnd);
 
       await plan.update(
         {
@@ -231,21 +253,9 @@ class PricingPlanService {
         { transaction }
       );
 
-      // Cập nhật lại zone nếu danh sách zone_ids được truyền lên (khử trùng lặp)
+      // Cập nhật lại zone nếu danh sách zone_ids được truyền lên
       if (Array.isArray(zone_ids)) {
-        await db.ZonePricingPlan.destroy({
-          where: { pricing_plan_id: id },
-          transaction
-        });
-
-        const uniqueZoneIds = [...new Set(zone_ids.map(Number))].filter((zid) => !isNaN(zid) && zid > 0);
-        if (uniqueZoneIds.length > 0) {
-          const zoneAssociations = uniqueZoneIds.map((zoneId) => ({
-            zone_id: zoneId,
-            pricing_plan_id: id
-          }));
-          await db.ZonePricingPlan.bulkCreate(zoneAssociations, { transaction });
-        }
+        await syncZoneAssociations(id, zone_ids, transaction);
       }
 
       await transaction.commit();
