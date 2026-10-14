@@ -13,7 +13,7 @@ const authRoutes = require('./src/routes/authRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const memberRoutes = require('./src/routes/memberRoutes');
 const computerRoutes = require('./src/routes/computerRoutes');
-const promotionRoutes = require('./src/routes/promotionRoutes');
+const pricingPlanRoutes = require('./src/routes/pricingPlanRoutes');
 const transactionRoutes = require('./src/routes/transactionRoutes');
 const { initSocket } = require('./src/sockets');
 const healthRoutes = require('./src/routes/healthRoutes');
@@ -45,7 +45,8 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/members', memberRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/computers', computerRoutes);
-app.use('/api/promotions', promotionRoutes);
+app.use('/api/pricing-plans', pricingPlanRoutes);
+app.use('/api/promotions', pricingPlanRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/catalog', serviceCatalogRoutes);
 

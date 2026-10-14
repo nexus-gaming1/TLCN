@@ -68,14 +68,6 @@ module.exports = (sequelize) => {
     Member.hasMany(models.ComputerStatusLog, { foreignKey: 'member_id' });
     Member.hasMany(models.ServiceOrder, { foreignKey: 'used_by' });
     Member.hasMany(models.FinancialTransaction, { foreignKey: 'used_by' });
-    if (models.Promotion) {
-      Member.belongsToMany(models.Promotion, {
-        through: 'member_promotion',
-        foreignKey: 'member_id',
-        otherKey: 'promotion_id',
-        timestamps: false
-      });
-    }
   };
 
   return Member;

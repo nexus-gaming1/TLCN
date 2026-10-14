@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit, HardDrive, Cpu, AlertTriangle, CheckCircle, PowerOff, Wrench } from 'lucide-react';
+import { Eye, Edit, Trash2, HardDrive, Cpu, AlertTriangle, CheckCircle, PowerOff, Wrench } from 'lucide-react';
 
 /**
  * Status Badge Helper
@@ -71,12 +71,35 @@ export default function MachineTable({
   const isAllSelected = machines.length > 0 && selectedIds.length === machines.length;
 
   return (
-    <div className="w-full bg-white rounded-xl shadow-xs border border-slate-200/90 flex flex-col">
-      <div className="w-full overflow-x-auto rounded-xl">
-        <table className="w-full text-left border-collapse" id="machineFleetTable">
+    <div className="w-full flex flex-col">
+      {/* Table Header Micro-Action Strip — đồng bộ trang Giao Dịch & Cấu Hình Máy */}
+      <div className="px-5 py-3.5 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <span className="font-extrabold text-sm text-slate-900">
+            Danh Sách Trạm Máy
+          </span>
+          <span className="font-mono text-[10px] font-extrabold px-2 py-0.5 rounded bg-sky-100 text-sky-800 uppercase tracking-wider">
+            {machines.length} MÁY TRẠM
+          </span>
+        </div>
+
+        {/* Realtime Status */}
+        <div className="hidden sm:flex items-center gap-2 font-mono text-[11px] text-slate-500">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>
+            Trạng thái trạm máy: <strong className="text-emerald-700 font-bold">Trực tiếp (Realtime)</strong>
+          </span>
+        </div>
+      </div>
+
+      <div className="w-full overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[1050px]" id="machineFleetTable">
           <thead>
-            <tr className="bg-slate-100/90 text-slate-800 text-[11px] uppercase tracking-wider select-none border-b border-slate-200 font-extrabold">
-              <th className="w-12 py-3.5 px-4 text-center">
+            <tr className="bg-slate-100 text-slate-700 text-[11px] uppercase tracking-wider select-none border-b-2 border-slate-300 font-extrabold">
+              <th className="w-12 py-3 px-4 text-center">
                 <input
                   type="checkbox"
                   checked={isAllSelected}
@@ -85,15 +108,15 @@ export default function MachineTable({
                   id="selectAllCheckbox"
                 />
               </th>
-              <th className="py-3.5 px-4 font-extrabold text-slate-800 min-w-[200px]">PC ID / IP & MAC Address</th>
-              <th className="py-3.5 px-4 font-extrabold text-slate-800 min-w-[160px]">Phân Khu &amp; Giá Tiền</th>
-              <th className="py-3.5 px-4 font-extrabold text-slate-800 min-w-[300px] max-w-[340px]">Cấu Hình Phần Cứng &amp; BootROM</th>
-              <th className="py-3.5 px-4 font-extrabold text-slate-800 min-w-[200px]">Người Dùng / Phiên Hoạt Động</th>
-              <th className="py-3.5 px-4 font-extrabold text-slate-800 text-center min-w-[170px] whitespace-nowrap">TRẠNG THÁI</th>
-              <th className="py-3.5 px-4 font-extrabold text-slate-800 text-right pr-6 min-w-[150px] whitespace-nowrap">HÀNH ĐỘNG</th>
+              <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[200px]">Mã Máy / Địa Chỉ IP & MAC</th>
+              <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[160px]">Phân Khu &amp; Đơn Giá</th>
+              <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[300px] max-w-[340px]">Cấu Hình Phần Cứng</th>
+              <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[200px]">Hội Viên / Phiên Chơi</th>
+              <th className="py-3 px-4 font-extrabold text-slate-800 text-center min-w-[170px] whitespace-nowrap">Trạng Thái</th>
+              <th className="py-3 px-4 font-extrabold text-slate-800 text-right pr-6 min-w-[130px] whitespace-nowrap">Thao Tác</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
+          <tbody className="divide-y divide-slate-200 text-xs font-medium text-slate-800">
             {machines.map((m) => {
               const isSelected = selectedIds.includes(m.id);
               const statusUpper = String(m.status || '').toUpperCase();
@@ -260,13 +283,13 @@ export default function MachineTable({
                     <StatusBadge status={m.status} statusLabel={m.statusLabel} />
                   </td>
 
-                  {/* Actions */}
-                  <td className="py-4 px-4 text-right pr-6 min-w-[110px] whitespace-nowrap">
+                  {/* Thao Tác */}
+                  <td className="py-3.5 px-4 text-right pr-6 min-w-[130px] whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         type="button"
                         onClick={() => onLiveMirror && onLiveMirror(m.id)}
-                        className="w-8 h-8 rounded-lg text-slate-600 hover:text-sky-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                        className="w-8 h-8 rounded-lg bg-slate-100 text-sky-600 hover:bg-sky-600 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                         title="Xem màn hình từ xa (Live Mirror)"
                       >
                         <Eye className="w-4 h-4" />
@@ -275,10 +298,19 @@ export default function MachineTable({
                       <button
                         type="button"
                         onClick={() => onEdit && onEdit(m)}
-                        className="w-8 h-8 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer"
+                        className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer"
                         title="Chỉnh sửa thông số / Cấu hình"
                       >
                         <Edit className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onDelete && onDelete(m.id)}
+                        className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                        title="Xóa máy trạm"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </td>

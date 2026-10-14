@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
+import Footer from '../../widgets/footer/Footer';
 import TransactionKpiCards from '../../features/transactions/ui/TransactionKpiCards';
 import TransactionFilterBar from '../../features/transactions/ui/TransactionFilterBar';
 import TransactionTable from '../../features/transactions/ui/TransactionTable';
 import CreateTopUpModal from '../../features/transactions/ui/CreateTopUpModal';
 import TransactionDetailDrawer from '../../features/transactions/ui/TransactionDetailDrawer';
 import TransactionService from '../../shared/api/transaction.service';
-import { Download, PlusCircle, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 export default function TransactionManagementPage({ user, onLogout }) {
     const [transactions, setTransactions] = useState([]);
@@ -124,98 +125,66 @@ export default function TransactionManagementPage({ user, onLogout }) {
     };
 
     return (
-        <div className="min-h-screen bg-slate-100 font-sans antialiased text-slate-900">
+        <div className="bg-slate-100 font-sans text-slate-900 antialiased min-h-screen">
             {/* Header Widget */}
             <Header user={user} onLogout={onLogout} />
 
-            {/* Sidebar Widget */}
+            {/* Sidebar Widget with activeNav='transactions' */}
             <Sidebar activeNav="transactions" />
 
-            {/* Main Content Area */}
-            <main className="pl-[240px] pt-16 min-h-screen p-6">
-                <div className="max-w-[1600px] mx-auto space-y-6">
-                    {/* Top Level Page Header */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="flex flex-col">
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-                                    Sổ Cái & Tra Cứu Giao Dịch
-                                </h1>
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-700 font-mono text-[11px] font-semibold uppercase tracking-wider border border-sky-200">
-                                    Audit Stream v2.4
-                                </span>
+            {/* Main Content Area — đồng bộ khoảng cách với ManageConfigPage */}
+            <div className="pl-[240px]">
+                <main className="relative pt-16 min-h-screen bg-slate-100 w-full px-6 py-6 pb-24 flex flex-col justify-between">
+                    <div className="flex flex-col w-full gap-6">
+
+                        {/* Backend Error Banner */}
+                        {error && (
+                            <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-center gap-3">
+                                <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                                <span>{error}</span>
                             </div>
-                            <p className="text-sm text-slate-500 mt-1">
-                                Hệ thống kiểm toán thu chi, nạp tiền giờ chơi, dịch vụ F&B và tra cứu hóa đơn điện tử thời gian thực từ CSDL MySQL.
-                            </p>
-                        </div>
+                        )}
 
-                        {/* Top Right Action Buttons */}
-                        <div className="flex items-center gap-2 self-start md:self-auto">
-                            <button
-                                onClick={handleExportExcel}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 shadow-xs hover:bg-slate-50 transition-all text-sm font-semibold"
-                            >
-                                <Download className="w-4 h-4 text-slate-500" />
-                                <span>Xuất Báo Cáo Excel</span>
-                            </button>
+                        {/* 4 Financial KPI Summary Cards */}
+                        <TransactionKpiCards metrics={metrics} loading={loading} />
 
-                            <button
-                                onClick={() => setIsCreateModalOpen(true)}
-                                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-sky-600 text-white shadow-sm hover:bg-sky-700 transition-all text-sm font-semibold"
-                            >
-                                <PlusCircle className="w-4 h-4" />
-                                <span>+ Nạp Tiền Tại Quầy</span>
-                            </button>
-                        </div>
+                        {/* Table Toolbar: tìm kiếm, bộ lọc, xuất file, nạp tiền */}
+                        <TransactionFilterBar
+                            filters={filters}
+                            onFilterChange={handleFilterChange}
+                            onExport={handleExportExcel}
+                            onOpenCreateModal={() => setIsCreateModalOpen(true)}
+                        />
+
+                        {/* Transaction Data Table */}
+                        <TransactionTable
+                            transactions={filteredTransactions}
+                            loading={loading}
+                            onSelectReceipt={(txn) => setSelectedReceipt(txn)}
+                            onRefundTransaction={handleRefundSubmit}
+                        />
                     </div>
 
-                    {/* Backend Error Banner */}
-                    {error && (
-                        <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-center gap-3">
-                            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-                            <span>{error}</span>
-                        </div>
-                    )}
+                    {/* Shared Footer */}
+                    <Footer />
+                </main>
+            </div>
 
-                    {/* 4 Financial KPI Summary Cards */}
-                    <TransactionKpiCards metrics={metrics} loading={loading} />
+            {/* Create Top Up Modal */}
+            <CreateTopUpModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                onSubmit={handleCreateTopUpSubmit}
+            />
 
-                    {/* Detailed Filter Toolbar */}
-                    <TransactionFilterBar
-                        filters={filters}
-                        onFilterChange={handleFilterChange}
-                        onResetFilters={handleResetFilters}
-                        onRefresh={fetchTransactionsData}
-                        onOpenCreateModal={() => setIsCreateModalOpen(true)}
-                        loading={loading}
-                    />
-
-                    {/* Transaction Data Table */}
-                    <TransactionTable
-                        transactions={filteredTransactions}
-                        loading={loading}
-                        onSelectReceipt={(txn) => setSelectedReceipt(txn)}
-                        onRefundTransaction={handleRefundSubmit}
-                    />
-                </div>
-
-                {/* Create Top Up Modal */}
-                <CreateTopUpModal
-                    isOpen={isCreateModalOpen}
-                    onClose={() => setIsCreateModalOpen(false)}
-                    onSubmit={handleCreateTopUpSubmit}
+            {/* Digital Receipt Detail Drawer */}
+            {selectedReceipt && (
+                <TransactionDetailDrawer
+                    transaction={selectedReceipt}
+                    onClose={() => setSelectedReceipt(null)}
+                    onRefund={handleRefundSubmit}
                 />
-
-                {/* Digital Receipt Detail Drawer */}
-                {selectedReceipt && (
-                    <TransactionDetailDrawer
-                        transaction={selectedReceipt}
-                        onClose={() => setSelectedReceipt(null)}
-                        onRefund={handleRefundSubmit}
-                    />
-                )}
-            </main>
+            )}
         </div>
     );
 }

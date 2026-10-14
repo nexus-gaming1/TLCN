@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Cpu,
   MemoryStick,
@@ -9,12 +9,11 @@ import {
   Trash2,
   RefreshCw,
   Columns,
-  ChevronLeft,
-  ChevronRight,
   Wrench,
   CheckCircle,
   PowerOff
 } from 'lucide-react';
+import Pagination from '../../../shared/ui/Pagination';
 
 /**
  * High-Density Hardware Inventory Table matching manageconfig.html
@@ -27,15 +26,28 @@ export default function HardwareSpecsTable({
 }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(8);
+  const [pageSize, setPageSize] = useState(10);
 
-  const isAllSelected = specs.length > 0 && selectedIds.length === specs.length;
+  // Reset to page 1 if specs changes and currentPage is out of bounds
+  useEffect(() => {
+    const maxPage = Math.max(1, Math.ceil(specs.length / pageSize));
+    if (currentPage > maxPage) {
+      setCurrentPage(1);
+    }
+  }, [specs.length, pageSize, currentPage]);
+
+  const paginatedSpecs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return specs.slice(start, start + pageSize);
+  }, [specs, currentPage, pageSize]);
+
+  const isAllSelected = paginatedSpecs.length > 0 && paginatedSpecs.every((item) => selectedIds.includes(item.id));
 
   const handleToggleSelectAll = () => {
     if (isAllSelected) {
-      setSelectedIds([]);
+      setSelectedIds((prev) => prev.filter((id) => !paginatedSpecs.some((s) => s.id === id)));
     } else {
-      setSelectedIds(specs.map((item) => item.id));
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...paginatedSpecs.map((item) => item.id)])));
     }
   };
 
@@ -55,6 +67,17 @@ export default function HardwareSpecsTable({
           </span>
           <span className="font-mono text-[10px] font-extrabold px-2 py-0.5 rounded bg-sky-100 text-sky-800 uppercase tracking-wider">
             {specs.length} THIẾT BỊ
+          </span>
+        </div>
+
+        {/* Realtime SAN Sync Heartbeat */}
+        <div className="hidden sm:flex items-center gap-2 font-mono text-[11px] text-slate-500">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span>
+            Đồng bộ BootROM SAN: <strong className="text-emerald-700 font-bold">Trực tiếp (0.1s)</strong>
           </span>
         </div>
       </div>
@@ -81,7 +104,7 @@ export default function HardwareSpecsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs font-medium text-slate-800">
-            {specs.map((item) => {
+            {paginatedSpecs.map((item) => {
               const isSelected = selectedIds.includes(item.id);
 
               return (
@@ -229,70 +252,20 @@ export default function HardwareSpecsTable({
         </table>
       </div>
 
-      {/* Table Footer / Pagination & SAN Heartbeat */}
-      <div className="px-5 py-3.5 bg-slate-50/70 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 font-medium">
-        <div className="flex items-center gap-4">
-          <span>
-            Hiển thị <strong className="text-slate-900 font-bold">1 - {specs.length}</strong> của{' '}
-            <strong className="text-slate-900 font-bold">120</strong> trạm máy
-          </span>
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-500">Dòng/trang:</span>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="bg-white border border-slate-200 text-slate-800 text-xs font-bold py-1 px-2 rounded cursor-pointer focus:outline-none"
-            >
-              <option value={8}>8</option>
-              <option value={15}>15</option>
-              <option value={30}>30</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Pagination Buttons */}
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            disabled={currentPage === 1}
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            className="p-1.5 rounded-lg hover:bg-slate-200/70 text-slate-600 disabled:opacity-40 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button className="w-7 h-7 rounded-lg bg-sky-600 text-white font-bold text-xs flex items-center justify-center shadow-2xs">
-            1
-          </button>
-          <button className="w-7 h-7 rounded-lg hover:bg-slate-200/70 text-slate-700 font-semibold text-xs flex items-center justify-center transition-colors">
-            2
-          </button>
-          <button className="w-7 h-7 rounded-lg hover:bg-slate-200/70 text-slate-700 font-semibold text-xs flex items-center justify-center transition-colors">
-            3
-          </button>
-          <span className="px-1 text-slate-400">...</span>
-          <button className="w-7 h-7 rounded-lg hover:bg-slate-200/70 text-slate-700 font-semibold text-xs flex items-center justify-center transition-colors">
-            15
-          </button>
-          <button
-            type="button"
-            onClick={() => setCurrentPage((p) => p + 1)}
-            className="p-1.5 rounded-lg hover:bg-slate-200/70 text-slate-600 transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Realtime SAN Sync Heartbeat */}
-        <div className="hidden lg:flex items-center gap-2 font-mono text-[11px] text-slate-500">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span>
-            Telemetry SAN Sync: <strong className="text-emerald-700 font-bold">Live (0.1s)</strong>
-          </span>
-        </div>
-      </div>
+      {/* Table Footer / Reusable Dynamic Pagination */}
+      <Pagination
+        currentPage={currentPage}
+        totalItems={specs.length}
+        pageSize={pageSize}
+        pageSizeOptions={[8, 10, 20, 50]}
+        selectedCount={selectedIds.length}
+        onPageChange={setCurrentPage}
+        onPageSizeChange={(newSize) => {
+          setPageSize(newSize);
+          setCurrentPage(1);
+        }}
+        itemLabel="cấu hình máy"
+      />
     </div>
   );
 }

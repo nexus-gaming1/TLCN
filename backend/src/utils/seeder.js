@@ -416,63 +416,87 @@ const seedData = async (db) => {
         { component_id: 26, category: 'gear', name: 'Bộ Peripherals Standard Cyber Gaming' }
       ]);
     }
-    // Seed Promotions
-    if (db.Promotion) {
-      await safeSeed(db.Promotion, [
+    // Seed Pricing Plans & Zone Associations (Bảng giá máy & Giờ vàng)
+    if (db.PricingPlan) {
+      await safeSeed(db.PricingPlan, [
         {
-          promotion_id: 1,
-          code: 'WELCOME_NEXUS',
-          name: 'Tân Thủ Giảm Giá 50%',
-          description: 'Khuyến mãi đặc biệt dành riêng cho hội viên mới. Giảm 50% thời gian chơi.',
-          discount_type: 'PERCENTAGE',
-          discount_value: 50.00,
-          max_discount_amount: 50000.00,
-          min_deposit_amount: 50000.00,
-          start_date: new Date(new Date().setDate(new Date().getDate() - 10)),
-          end_date: new Date(new Date().setDate(new Date().getDate() + 30)),
-          schedule_note: 'Áp dụng mọi khung giờ',
-          target_audience: 'NEWBIE',
-          status: 'ACTIVE',
-          budget_spent: 1250000.00,
-          total_budget: 10000000.00,
+          pricing_plan_id: 1,
+          name: 'Giá Tiêu Chuẩn Tại Quán',
+          price_per_hour: 10000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 0,
+          start_time: null,
+          end_time: null,
+          apply_date: null,
           is_active: true
         },
         {
-          promotion_id: 2,
-          code: 'NIGHT_OWL',
-          name: 'Combo Xuyên Đêm (22h - 6h)',
-          description: 'Nạp 30K chơi thoải mái từ 22h đêm đến 6h sáng hôm sau.',
-          discount_type: 'COMBO',
-          discount_value: 30000.00,
-          max_discount_amount: null,
-          min_deposit_amount: null,
-          start_date: new Date(new Date().setDate(new Date().getDate() - 5)),
-          end_date: new Date(new Date().setDate(new Date().getDate() + 15)),
-          schedule_note: 'Chỉ áp dụng từ 22h đến 6h sáng',
-          target_audience: 'ALL',
-          status: 'ACTIVE',
-          budget_spent: 3500000.00,
-          total_budget: 15000000.00,
+          pricing_plan_id: 2,
+          name: 'Giờ Vàng Buổi Chiều',
+          price_per_hour: 6000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 10,
+          start_time: '13:00:00',
+          end_time: '17:00:00',
+          apply_date: null,
           is_active: true
         },
         {
-          promotion_id: 3,
-          code: 'FNB_15',
-          name: 'Giảm 15% Nước Uống',
-          description: 'Giảm 15% cho tất cả thức uống pha chế tại quầy.',
-          discount_type: 'FOOD_BEVERAGE',
-          discount_value: 15.00,
-          max_discount_amount: 20000.00,
-          min_deposit_amount: null,
-          start_date: new Date(new Date().setDate(new Date().getDate() - 15)),
-          end_date: new Date(new Date().setDate(new Date().getDate() - 1)),
-          schedule_note: 'Áp dụng buổi chiều (14h - 17h)',
-          target_audience: 'ALL',
-          status: 'ENDED',
-          budget_spent: 5000000.00,
-          total_budget: 5000000.00,
-          is_active: false
+          pricing_plan_id: 3,
+          name: 'Gói Chơi Xuyên Đêm',
+          price_per_hour: 4000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 20,
+          start_time: '23:00:00',
+          end_time: '06:00:00',
+          apply_date: null,
+          is_active: true
+        },
+        {
+          pricing_plan_id: 4,
+          name: 'Giá Tiêu Chuẩn Từ Xa',
+          price_per_hour: 15000.00,
+          plan_type: SessionType.REMOTE,
+          priority: 0,
+          start_time: null,
+          end_time: null,
+          apply_date: null,
+          is_active: true
+        },
+        {
+          pricing_plan_id: 5,
+          name: 'Ưu Đãi Ngày Cuối Tuần',
+          price_per_hour: 8000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 5,
+          start_time: null,
+          end_time: null,
+          apply_date: '2026-10-18',
+          is_active: true
         }
+      ], ['name', 'price_per_hour', 'plan_type', 'priority', 'start_time', 'end_time', 'apply_date', 'is_active']);
+    }
+
+    if (db.ZonePricingPlan) {
+      await safeSeed(db.ZonePricingPlan, [
+        { zone_id: 1, pricing_plan_id: 1 },
+        { zone_id: 2, pricing_plan_id: 1 },
+        { zone_id: 3, pricing_plan_id: 1 },
+        { zone_id: 4, pricing_plan_id: 1 },
+        { zone_id: 5, pricing_plan_id: 1 },
+        { zone_id: 1, pricing_plan_id: 2 },
+        { zone_id: 2, pricing_plan_id: 2 },
+        { zone_id: 3, pricing_plan_id: 2 },
+        { zone_id: 1, pricing_plan_id: 3 },
+        { zone_id: 2, pricing_plan_id: 3 },
+        { zone_id: 3, pricing_plan_id: 3 },
+        { zone_id: 1, pricing_plan_id: 4 },
+        { zone_id: 2, pricing_plan_id: 4 },
+        { zone_id: 3, pricing_plan_id: 4 },
+        { zone_id: 4, pricing_plan_id: 4 },
+        { zone_id: 5, pricing_plan_id: 4 },
+        { zone_id: 2, pricing_plan_id: 5 },
+        { zone_id: 3, pricing_plan_id: 5 }
       ]);
     }
 
