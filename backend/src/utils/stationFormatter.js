@@ -52,7 +52,10 @@ function formatStationDTO(computer) {
 
   const user = userInfo?.full_name ?? userInfo?.username ?? (raw.status === 'IN_USE' ? 'Khách chơi' : null);
   const type = STATUS_MAP[raw.status] ?? 'ready';
-  const pricePerHour = Number(raw.ComputerZone?.PricingPlan?.price_per_hour ?? 0);
+  const zonePricing = raw.ComputerZone?.PricingPlans?.find?.((p) => p.is_active)
+    ?? raw.ComputerZone?.PricingPlans?.[0]
+    ?? raw.ComputerZone?.PricingPlan;
+  const pricePerHour = Number(zonePricing?.price_per_hour ?? 0);
 
   return {
     id: raw.computer_name ?? `PC-${raw.computer_id}`,

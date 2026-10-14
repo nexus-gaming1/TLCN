@@ -1,11 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Wallet, ArrowRight, PlusCircle, History } from 'lucide-react';
+import TopUpModal from './TopUpModal';
 
 /**
  * WalletBalanceWidget Component
  * Renders Customer Wallet Balance, Bonus Balance, Rewards Points, and Quick Action Buttons
  */
-export default function WalletBalanceWidget({ balances }) {
+export default function WalletBalanceWidget({ balances, memberId  }) {
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);  //state quản lý Modal
+
   const formatVnd = (amount) => {
     const val = amount !== undefined && amount !== null && !isNaN(Number(amount)) ? Number(amount) : 0;
     return new Intl.NumberFormat('vi-VN').format(val) + ' đ';
@@ -67,6 +70,7 @@ export default function WalletBalanceWidget({ balances }) {
       <div className="flex items-center gap-3 pt-1">
         <button
           type="button"
+          onClick={() => setIsTopUpModalOpen(true)} // thêm sự kiện mở modal cho onClick của nút 
           className="flex-1 h-10 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
@@ -81,6 +85,13 @@ export default function WalletBalanceWidget({ balances }) {
           <span>Lịch sử</span>
         </button>
       </div>
+
+      {/* TopUp Modal */}
+      <TopUpModal
+        isOpen={isTopUpModalOpen}
+        onClose={() => setIsTopUpModalOpen(false)}
+        memberId={memberId}
+      />
     </div>
   );
 }

@@ -1,105 +1,146 @@
 import React from 'react';
-import { Search, Calendar, Filter, RefreshCw, RotateCcw, PlusCircle, Download } from 'lucide-react';
+import {
+    Search,
+    Download,
+    PlusCircle,
+    Calendar,
+    Tag,
+    CreditCard,
+    Activity,
+    ChevronDown
+} from 'lucide-react';
 
 export default function TransactionFilterBar({
     filters,
     onFilterChange,
-    onResetFilters,
-    onRefresh,
-    onOpenCreateModal,
-    onExportExcel,
-    loading
+    onExport,
+    onOpenCreateModal
 }) {
     return (
-        <div className="bg-surface-container-lowest rounded-xl p-4 shadow-xs border border-outline-variant/30 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-            {/* Search Input */}
-            <div className="flex-1 relative flex items-center">
-                <Search className="w-5 h-5 absolute left-3 text-on-surface-variant pointer-events-none" />
-                <input
-                    type="text"
-                    value={filters.search || ''}
-                    onChange={(e) => onFilterChange('search', e.target.value)}
-                    placeholder="Tìm mã giao dịch, khách hàng, SĐT..."
-                    className="w-full min-w-[240px] pl-10 pr-10 py-2 bg-surface-container-low rounded-lg text-on-surface font-body-md text-sm placeholder-on-surface-variant focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all border border-outline-variant/20"
-                />
-                <span className="absolute right-3 text-[11px] font-mono bg-surface-container-high px-1.5 py-0.5 rounded text-on-surface-variant">
-                    ⌘K
-                </span>
+        <div className="flex flex-col gap-3.5 bg-white p-4 sm:p-5 rounded-xl shadow-xs border border-slate-200/90">
+            {/* ===== HÀNG 1: Ô TÌM KIẾM (TRÁI) & 2 NÚT HÀNH ĐỘNG (PHẢI) ===== */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                {/* Ô Tìm Kiếm */}
+                <div className="relative flex-1 min-w-[260px] max-w-lg">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                        type="text"
+                        value={filters.search || ''}
+                        onChange={(e) => onFilterChange('search', e.target.value)}
+                        placeholder="Tìm kiếm mã TXN, tên khách, SĐT, số máy..."
+                        className="w-full pl-10 pr-12 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-sky-500/30 transition-all"
+                    />
+                    <kbd className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] font-bold text-slate-500 px-1.5 py-0.5 bg-slate-200/70 rounded pointer-events-none select-none">
+                        ⌘K
+                    </kbd>
+                </div>
+
+                {/* 2 Nút Hành Động */}
+                <div className="flex items-center gap-2.5 self-end sm:self-center shrink-0">
+                    <button
+                        type="button"
+                        onClick={onExport}
+                        className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200/70 text-slate-800 font-bold rounded-lg text-xs transition-all border border-slate-200/80 shadow-xs cursor-pointer whitespace-nowrap"
+                    >
+                        <Download className="w-3.5 h-3.5 text-sky-600" />
+                        <span>Xuất Báo Cáo</span>
+                    </button>
+
+                    <button
+                        type="button"
+                        onClick={onOpenCreateModal}
+                        className="flex items-center gap-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-extrabold rounded-lg text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap"
+                    >
+                        <PlusCircle className="w-4 h-4 text-white" />
+                        <span>Nạp Tiền Tại Quầy</span>
+                    </button>
+                </div>
             </div>
 
-            {/* Filter Controls */}
-            <div className="flex flex-wrap items-center gap-2">
-                {/* Date Range Selector */}
-                <div className="relative flex items-center bg-surface-container-low rounded-lg px-3 py-1.5 border border-outline-variant/20">
-                    <Calendar className="w-4 h-4 text-primary mr-1.5" />
+            {/* ===== HÀNG 2: 4 DROPDOWN LỌC — ĐỒNG MÀU ĐEN + ICON CHUYÊN BIỆT ===== */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100">
+                {/* Dropdown 1: Thời Gian (Icon Calendar) */}
+                <div className="relative flex items-center bg-slate-50 hover:bg-slate-100/70 rounded-lg border border-slate-200 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30 transition-all">
+                    <Calendar className="w-3.5 h-3.5 text-sky-600 ml-3 shrink-0 pointer-events-none" />
+                    <span className="pl-1.5 text-xs text-slate-900 font-bold select-none pointer-events-none shrink-0">
+                        Thời gian:
+                    </span>
                     <select
                         value={filters.dateRange || 'all'}
                         onChange={(e) => onFilterChange('dateRange', e.target.value)}
-                        className="bg-transparent text-xs font-semibold text-on-surface focus:outline-none cursor-pointer pr-1"
+                        className="w-full py-2 pl-1 pr-8 bg-transparent border-none outline-none appearance-none shadow-none focus:ring-0 focus:outline-none text-xs font-bold text-slate-900 cursor-pointer"
+                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     >
                         <option value="today">Hôm nay</option>
                         <option value="7days">7 ngày qua</option>
                         <option value="30days">Tháng này</option>
-                        <option value="all">Tất cả thời gian</option>
+                        <option value="all">Tất cả</option>
                     </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none stroke-[2]" />
                 </div>
 
-                {/* Transaction Category */}
-                <div className="relative flex items-center bg-surface-container-low rounded-lg px-2 py-1.5 border border-outline-variant/20">
+                {/* Dropdown 2: Khoản Mục (Icon Tag) */}
+                <div className="relative flex items-center bg-slate-50 hover:bg-slate-100/70 rounded-lg border border-slate-200 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30 transition-all">
+                    <Tag className="w-3.5 h-3.5 text-indigo-600 ml-3 shrink-0 pointer-events-none" />
+                    <span className="pl-1.5 text-xs text-slate-900 font-bold select-none pointer-events-none shrink-0">
+                        Khoản mục:
+                    </span>
                     <select
                         value={filters.category || 'all'}
                         onChange={(e) => onFilterChange('category', e.target.value)}
-                        className="bg-transparent text-xs font-semibold text-on-surface focus:outline-none cursor-pointer"
+                        className="w-full py-2 pl-1 pr-8 bg-transparent border-none outline-none appearance-none shadow-none focus:ring-0 focus:outline-none text-xs font-bold text-slate-900 cursor-pointer"
+                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     >
-                        <option value="all">Khoản mục (Tất cả)</option>
+                        <option value="all">Tất cả</option>
                         <option value="MEMBER_TOPUP">Nạp Giờ Chơi</option>
                         <option value="SERVICE_SALE">Dịch Vụ F&B</option>
-                        <option value="COMBO_PURCHASE">Combo Đêm</option>
+                        <option value="COMBO_PURCHASE">Mua Combo</option>
                         <option value="REFUND">Hoàn Tiền</option>
-                        <option value="OTHER">Khác</option>
                     </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none stroke-[2]" />
                 </div>
 
-                {/* Payment Method */}
-                <div className="relative flex items-center bg-surface-container-low rounded-lg px-2 py-1.5 border border-outline-variant/20">
+                {/* Dropdown 3: Phương Thức (Icon CreditCard) */}
+                <div className="relative flex items-center bg-slate-50 hover:bg-slate-100/70 rounded-lg border border-slate-200 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30 transition-all">
+                    <CreditCard className="w-3.5 h-3.5 text-emerald-600 ml-3 shrink-0 pointer-events-none" />
+                    <span className="pl-1.5 text-xs text-slate-900 font-bold select-none pointer-events-none shrink-0">
+                        Thanh toán:
+                    </span>
                     <select
                         value={filters.paymentMethod || 'all'}
                         onChange={(e) => onFilterChange('paymentMethod', e.target.value)}
-                        className="bg-transparent text-xs font-semibold text-on-surface focus:outline-none cursor-pointer"
+                        className="w-full py-2 pl-1 pr-8 bg-transparent border-none outline-none appearance-none shadow-none focus:ring-0 focus:outline-none text-xs font-bold text-slate-900 cursor-pointer"
+                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     >
-                        <option value="all">Phương thức (Tất cả)</option>
-                        <option value="CASH">Tiền mặt</option>
-                        <option value="VIETQR">VietQR</option>
-                        <option value="POS">Thẻ POS</option>
-                        <option value="MOMO">Ví MoMo</option>
+                        <option value="all">Tất cả</option>
+                        <option value="cash">Tiền mặt</option>
+                        <option value="vietqr">VietQR Pro</option>
+                        <option value="pos">Thẻ POS</option>
+                        <option value="momo">Ví MoMo</option>
                     </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none stroke-[2]" />
                 </div>
 
-                {/* Status Filter */}
-                <div className="relative flex items-center bg-surface-container-low rounded-lg px-2 py-1.5 border border-outline-variant/20">
+                {/* Dropdown 4: Trạng Thái (Icon Activity) */}
+                <div className="relative flex items-center bg-slate-50 hover:bg-slate-100/70 rounded-lg border border-slate-200 focus-within:border-sky-500 focus-within:ring-2 focus-within:ring-sky-500/30 transition-all">
+                    <Activity className="w-3.5 h-3.5 text-amber-600 ml-3 shrink-0 pointer-events-none" />
+                    <span className="pl-1.5 text-xs text-slate-900 font-bold select-none pointer-events-none shrink-0">
+                        Trạng thái:
+                    </span>
                     <select
                         value={filters.status || 'all'}
                         onChange={(e) => onFilterChange('status', e.target.value)}
-                        className="bg-transparent text-xs font-semibold text-on-surface focus:outline-none cursor-pointer"
+                        className="w-full py-2 pl-1 pr-8 bg-transparent border-none outline-none appearance-none shadow-none focus:ring-0 focus:outline-none text-xs font-bold text-slate-900 cursor-pointer"
+                        style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
                     >
-                        <option value="all">Trạng thái (Tất cả)</option>
-                        <option value="COMPLETED">Thành công</option>
-                        <option value="PENDING">Đang xử lý</option>
-                        <option value="FAILED">Thất bại</option>
-                        <option value="REFUNDED">Hoàn tiền</option>
+                        <option value="all">Tất cả</option>
+                        <option value="completed">🟢 Thành công</option>
+                        <option value="pending">🟡 Đang xử lý</option>
+                        <option value="failed">🔴 Thất bại</option>
+                        <option value="refunded">🟣 Hoàn tiền</option>
                     </select>
+                    <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 pointer-events-none stroke-[2]" />
                 </div>
-
-                <div className="w-px h-6 bg-outline-variant/30 hidden lg:block mx-1"></div>
-
-                <button
-                    onClick={onExportExcel}
-                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors border border-emerald-200/50 text-xs font-semibold ml-auto lg:ml-0"
-                    title="Xuất Báo Cáo Excel"
-                >
-                    <Download className="w-4 h-4" />
-                    <span className="hidden sm:inline">Xuất Excel</span>
-                </button>
             </div>
         </div>
     );
