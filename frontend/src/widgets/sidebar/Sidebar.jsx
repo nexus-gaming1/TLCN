@@ -10,7 +10,7 @@ export default function Sidebar({ activeNav = 'grid', setActiveNav, bootromStatu
         { id: 'members', label: 'Hội viên', icon: UserCheck, path: '/admin/members' },
         { id: 'hardware', label: 'Danh sách máy', icon: Cpu, path: '/admin/machines' },
         { id: 'config', label: 'Cấu hình máy', icon: Sliders, path: '/admin/config' },
-        { id: 'promotions', label: 'Khuyến mãi', icon: Tag, path: '/admin/promotions' },
+        { id: 'promotions', label: 'Bảng giá & Giờ vàng', icon: Tag, path: '/admin/pricing-plans' },
         { id: 'transactions', label: 'Giao dịch', icon: Receipt, path: '/admin/transactions' },
         { id: 'catalog', label: 'Dịch vụ (F&B)', icon: Coffee, path: '/admin/catalog' },
         { id: 'games', label: 'Kho game & BootROM', icon: Gamepad2 },

@@ -10,7 +10,7 @@ import MemberKpiCards from '../../features/members/ui/MemberKpiCards';
 import MemberFilterBar from '../../features/members/ui/MemberFilterBar';
 import MemberBulkActionBar from '../../features/members/ui/MemberBulkActionBar';
 import MemberTable from '../../features/members/ui/MemberTable';
-import MemberPagination from '../../features/members/ui/MemberPagination';
+import Pagination from '../../shared/ui/Pagination';
 import CreateMemberModal from '../../features/members/ui/CreateMemberModal';
 import EditMemberModal from '../../features/members/ui/EditMemberModal';
 import MemberDetailModal from '../../features/members/ui/MemberDetailModal';
@@ -86,6 +86,17 @@ export default function AccountManagementPage({ user, onLogout }) {
       return matchSearch && matchTier && matchStatus;
     });
   }, [members, searchQuery, tierFilter, statusFilter]);
+
+  // Reset trang khi lọc thay đổi
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, tierFilter, statusFilter, pageSize]);
+
+  // Phân trang dữ liệu hội viên
+  const paginatedMembers = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    return filteredMembers.slice(startIndex, startIndex + pageSize);
+  }, [filteredMembers, currentPage, pageSize]);
 
   // Handle Multi-Selection
   const handleToggleSelect = (id) => {
@@ -209,26 +220,29 @@ export default function AccountManagementPage({ user, onLogout }) {
                 <p className="text-xs font-bold">Đang tải dữ liệu hội viên từ cơ sở dữ liệu...</p>
               </div>
             ) : (
-              <MemberTable
-                members={filteredMembers}
-                selectedIds={selectedIds}
-                onToggleSelect={handleToggleSelect}
-                onToggleSelectAll={handleToggleSelectAll}
-                onViewDetail={handleViewDetail}
-                onEditInfo={handleEditInfoClick}
-                onChangeStatus={handleChangeStatus}
-              />
-            )}
+              <div className="flex flex-col">
+                <MemberTable
+                  members={paginatedMembers}
+                  selectedIds={selectedIds}
+                  onToggleSelect={handleToggleSelect}
+                  onToggleSelectAll={handleToggleSelectAll}
+                  onViewDetail={handleViewDetail}
+                  onEditInfo={handleEditInfoClick}
+                  onChangeStatus={handleChangeStatus}
+                />
 
-            {/* Pagination */}
-            <MemberPagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(filteredMembers.length / pageSize) || 1}
-              pageSize={pageSize}
-              totalItems={filteredMembers.length}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-            />
+                {/* Shared Reusable Pagination */}
+                <Pagination
+                  currentPage={currentPage}
+                  totalItems={filteredMembers.length}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                  itemLabel="hội viên"
+                  selectedCount={selectedIds.length}
+                />
+              </div>
+            )}
           </div>
 
           {/* Footer */}

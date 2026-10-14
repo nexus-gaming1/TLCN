@@ -8,7 +8,7 @@ import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AccountManagementPage from './pages/admin/AccountManagementPage';
 import MachineManagementPage from './pages/admin/MachineManagementPage';
 import ManageConfigPage from './pages/admin/ManageConfigPage';
-import PromotionManagementPage from './pages/admin/PromotionManagementPage';
+import PricingPlanManagementPage from './pages/admin/PricingPlanManagementPage';
 import TransactionManagementPage from './pages/admin/TransactionManagementPage';
 import StaffDashboardPage from './pages/staff/StaffDashboardPage';
 import CustomerDashboardPage from './pages/customer/CustomerDashboardPage';
@@ -103,9 +103,9 @@ const ManageConfigWrapper = () => {
   return <ManageConfigPage user={currentUser} onLogout={logout} />;
 };
 
-const PromotionManagementWrapper = () => {
+const PricingPlanManagementWrapper = () => {
   const { currentUser, logout } = useAuth();
-  return <PromotionManagementPage user={currentUser} onLogout={logout} />;
+  return <PricingPlanManagementPage user={currentUser} onLogout={logout} />;
 };
 
 const TransactionManagementWrapper = () => {
@@ -170,10 +170,19 @@ function App() {
           />
 
           <Route
+            path="/admin/pricing-plans"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <PricingPlanManagementWrapper />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
             path="/admin/promotions"
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
-                <PromotionManagementWrapper />
+                <PricingPlanManagementWrapper />
               </ProtectedRoute>
             }
           />

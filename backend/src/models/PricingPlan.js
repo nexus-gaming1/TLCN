@@ -3,7 +3,9 @@ const { SessionType } = require('../constants/enums');
 
 class PricingPlan extends Model {
   calculatePrice(minutes) {
-    return (parseFloat(this.price_per_hour || 0) / 60) * minutes;
+    const validMinutes = Math.max(0, Number(minutes) || 0);
+    const hourlyRate = Math.max(0, parseFloat(this.price_per_hour || 0));
+    return Math.round((hourlyRate / 60) * validMinutes);
   }
 
   activate() {
