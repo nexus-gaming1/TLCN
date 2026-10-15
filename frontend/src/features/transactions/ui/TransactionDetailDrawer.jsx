@@ -1,13 +1,14 @@
 import React from 'react';
 import { X, Receipt, Printer, RotateCcw, CheckCircle2, Clock, XCircle, User, Monitor, Calendar, ShieldCheck, FileText } from 'lucide-react';
+import { printTransactionReceipt } from '../utils/receiptPrinter';
 
 export default function TransactionDetailDrawer({ transaction, onClose, onRefund }) {
     if (!transaction) return null;
 
-    const txnCode = transaction.txn_code || `TXN-${String(transaction.transaction_id || transaction.id).padStart(5, '0')}`;
+    const txnCode = transaction.txnCode || transaction.txn_code || `TXN-${String(transaction.transaction_id || transaction.id).padStart(5, '0')}`;
     const amountStr = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(transaction.amount || 0);
 
-    const d = new Date(transaction.created_at || transaction.createdAt || Date.now());
+    const d = new Date(transaction.createdAt || transaction.created_at || Date.now());
     const formattedDate = d.toLocaleString('vi-VN', {
         hour: '2-digit', minute: '2-digit', second: '2-digit',
         day: '2-digit', month: '2-digit', year: 'numeric'
@@ -57,14 +58,14 @@ export default function TransactionDetailDrawer({ transaction, onClose, onRefund
                             <User className="w-3.5 h-3.5" /> Hội Viên / KH:
                         </span>
                         <span className="font-semibold text-slate-900">
-                            {transaction.member_name || transaction.customer_name || 'Khách Vãng Lai'}
+                            {transaction.memberName || transaction.member_name || transaction.customer_name || 'Khách Vãng Lai'}
                         </span>
                     </div>
 
-                    {transaction.member_phone && (
+                    {(transaction.phone || transaction.member_phone) && (
                         <div className="flex justify-between items-center text-xs">
                             <span className="text-slate-500">Số Điện Thoại:</span>
-                            <span className="font-mono font-medium text-slate-800">{transaction.member_phone}</span>
+                            <span className="font-mono font-medium text-slate-800">{transaction.phone || transaction.member_phone}</span>
                         </div>
                     )}
 
@@ -72,7 +73,7 @@ export default function TransactionDetailDrawer({ transaction, onClose, onRefund
                         <span className="text-slate-500 flex items-center gap-1.5">
                             <Monitor className="w-3.5 h-3.5" /> Trạm Máy:
                         </span>
-                        <span className="font-mono font-bold text-sky-700">{transaction.computer_name || 'Quầy Thu Ngân POS'}</span>
+                        <span className="font-mono font-bold text-sky-700">{transaction.computerName || transaction.computer_name || 'Quầy Thu Ngân POS'}</span>
                     </div>
 
                     <div className="flex justify-between items-center text-xs">
@@ -89,14 +90,14 @@ export default function TransactionDetailDrawer({ transaction, onClose, onRefund
 
                     <div className="flex justify-between items-center text-xs">
                         <span className="text-slate-500">Phương Thức:</span>
-                        <span className="font-semibold text-slate-900 capitalize">{transaction.payment_method || 'Tiền Mặt'}</span>
+                        <span className="font-semibold text-slate-900 capitalize">{transaction.paymentMethod || transaction.payment_method || 'Tiền Mặt'}</span>
                     </div>
 
                     <div className="flex justify-between items-center text-xs">
                         <span className="text-slate-500 flex items-center gap-1.5">
                             <ShieldCheck className="w-3.5 h-3.5" /> Nhân Viên Thực Hiện:
                         </span>
-                        <span className="font-medium text-slate-800">{transaction.staff_name || 'Quốc Huy (Shift Supervisor)'}</span>
+                        <span className="font-medium text-slate-800">{transaction.staffName || transaction.staff_name || 'Thu Ngân Quầy'}</span>
                     </div>
 
                     {transaction.notes && (
@@ -113,11 +114,11 @@ export default function TransactionDetailDrawer({ transaction, onClose, onRefund
             {/* Footer Actions */}
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-2">
                 <button
-                    onClick={() => window.print()}
+                    onClick={() => printTransactionReceipt(transaction)}
                     className="flex-1 py-2.5 px-3 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs"
                 >
                     <Printer className="w-4 h-4" />
-                    <span>In Hóa Đơn</span>
+                    <span>In Phiếu Thu</span>
                 </button>
 
                 {transaction.status === 'completed' && transaction.type !== 'REFUND' && (

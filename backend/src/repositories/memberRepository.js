@@ -43,10 +43,30 @@ class MemberRepository {
   }
 
   /**
-   * Save Member instance
+   * Find member by ID with lock (Pessimistic Locking) for safe financial balance updates
    */
-  async saveMember(memberInstance) {
-    return await memberInstance.save();
+  async findMemberWithLock(memberId, transaction = null) {
+    const options = {
+      include: [
+        {
+          model: this.models.User,
+          as: 'userInfo',
+          attributes: ['user_id', 'username', 'avatar_url', 'full_name', 'role', 'status']
+        }
+      ]
+    };
+    if (transaction) {
+      options.transaction = transaction;
+      options.lock = transaction.LOCK ? transaction.LOCK.UPDATE : true;
+    }
+    return await this.models.Member.findByPk(memberId, options);
+  }
+
+  /**
+   * Save Member instance with optional transaction
+   */
+  async saveMember(memberInstance, transaction = null) {
+    return await memberInstance.save(transaction ? { transaction } : undefined);
   }
 
   /**

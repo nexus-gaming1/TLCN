@@ -5,6 +5,7 @@ import {
     CreditCard, QrCode, Banknote, Wallet
 } from 'lucide-react';
 import Pagination from '../../../shared/ui/Pagination';
+import { printTransactionReceipt } from '../utils/receiptPrinter';
 
 export default function TransactionTable({
     transactions = [],
@@ -338,7 +339,7 @@ export default function TransactionTable({
                                                     <Receipt className="w-4 h-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => window.print()}
+                                                    onClick={() => printTransactionReceipt(txn)}
                                                     className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center transition-colors"
                                                     title="In hóa đơn"
                                                 >
