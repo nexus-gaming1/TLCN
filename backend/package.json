@@ -16,7 +16,8 @@
     "test:staff": "node --test tests/staff/**/*.test.js",
     "test:customer": "node --test tests/customer/**/*.test.js",
     "coverage": "c8 node --test tests/**/*.test.js",
-    "coverage:pricing": "c8 --include=src/controllers/pricingPlanController.js --include=src/routes/pricingPlanRoutes.js --include=src/services/pricingPlanService.js --include=src/models/PricingPlan.js --include=src/models/ZonePricingPlan.js node --test tests/admin/pricing-plans/**/*.test.js"
+    "coverage:pricing": "c8 --include=src/controllers/pricingPlanController.js --include=src/routes/pricingPlanRoutes.js --include=src/services/pricingPlanService.js --include=src/models/PricingPlan.js --include=src/models/ZonePricingPlan.js node --test tests/admin/pricing-plans/**/*.test.js",
+    "coverage:transactions": "c8 --include=src/controllers/transactionController.js --include=src/services/transactionService.js --include=src/routes/transactionRoutes.js --include=src/models/FinancialTransaction.js node --test tests/admin/transactions/**/*.test.js"
   },
   "keywords": [],
   "author": "",

@@ -500,6 +500,198 @@ const seedData = async (db) => {
       ]);
     }
 
+    // 10. Seed dữ liệu mẫu cho Sổ Cái Giao Dịch & 4 thẻ KPI Tài Chính (Đảm bảo có giao dịch hôm nay và hôm qua)
+    if (db.FinancialTransaction) {
+      const { Op } = require('sequelize');
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayCount = await db.FinancialTransaction.count({
+        where: { created_at: { [Op.gte]: todayStart } }
+      });
+
+      if (todayCount === 0) {
+        const now = new Date();
+        const hoursAgo = (h) => new Date(now.getTime() - h * 3600 * 1000);
+        const daysAgo = (d, h = 0) => new Date(now.getTime() - (d * 24 + h) * 3600 * 1000);
+
+        await db.FinancialTransaction.bulkCreate([
+          // Giao dịch hôm nay (Today)
+          {
+            txn_code: 'TXN-00001',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 100000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: 'Nạp tiền giờ chơi tại quầy thu ngân',
+            computer_name: 'VIP-01',
+            staff_name: 'Quản Trị Viên',
+            used_by: 2,
+            processed_by: 1,
+            created_at: hoursAgo(2)
+          },
+          {
+            txn_code: 'SEPAY-1729012345',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 50000.00,
+            payment_method: 'VIETQR',
+            status: 'COMPLETED',
+            description: '[SePay Auto Topup] Tự động nạp qua VietQR cho hội viên #3',
+            computer_name: 'VIP-02',
+            staff_name: 'Hệ thống SePay',
+            used_by: 3,
+            processed_by: null,
+            created_at: hoursAgo(3)
+          },
+          {
+            txn_code: 'TXN-00003',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.SERVICE_SALE,
+            amount: 45000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: '1x Mì xào bò trứng + 1x Nước ngọt Sting dâu',
+            computer_name: 'VIP-01',
+            staff_name: 'Quản Trị Viên',
+            used_by: 2,
+            processed_by: 1,
+            created_at: hoursAgo(1)
+          },
+          {
+            txn_code: 'TXN-00004',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.COMBO_PURCHASE,
+            amount: 120000.00,
+            payment_method: 'VIETQR',
+            status: 'COMPLETED',
+            description: 'Combo Đêm Hoàng Kim (6h chơi + Bò Húc + Mì cay)',
+            computer_name: 'STREAM-01',
+            staff_name: 'Quản Trị Viên',
+            used_by: 4,
+            processed_by: 1,
+            created_at: hoursAgo(4)
+          },
+          {
+            txn_code: 'TXN-00005',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 200000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: 'Nạp tài khoản hội viên thân thiết VIP',
+            computer_name: 'FPS-05',
+            staff_name: 'Quản Trị Viên',
+            used_by: 3,
+            processed_by: 1,
+            created_at: hoursAgo(0.5)
+          },
+          {
+            txn_code: 'TXN-00006',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 50000.00,
+            payment_method: 'VIETQR',
+            status: 'PENDING',
+            description: 'Chờ đối soát SePay biến động số dư ngân hàng',
+            computer_name: '—',
+            staff_name: 'Hệ thống SePay',
+            used_by: 4,
+            processed_by: null,
+            created_at: hoursAgo(0.2)
+          },
+          // Giao dịch hôm qua (Yesterday - để tính tỷ lệ tăng trưởng doanh thu thực tế)
+          {
+            txn_code: 'TXN-00007',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 200000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: 'Nạp tiền giờ chơi tại quầy',
+            computer_name: 'VIP-03',
+            staff_name: 'Quản Trị Viên',
+            used_by: 2,
+            processed_by: 1,
+            created_at: daysAgo(1, 4)
+          },
+          {
+            txn_code: 'TXN-00008',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.SERVICE_SALE,
+            amount: 60000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: '2x Cơm gà xối mỡ giòn cay',
+            computer_name: 'FPS-02',
+            staff_name: 'Quản Trị Viên',
+            used_by: 3,
+            processed_by: 1,
+            created_at: daysAgo(1, 6)
+          },
+          {
+            txn_code: 'TXN-00009',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 150000.00,
+            payment_method: 'VIETQR',
+            status: 'COMPLETED',
+            description: 'Nạp tiền tài khoản hội viên qua QR',
+            computer_name: 'STREAM-02',
+            staff_name: 'Hệ thống SePay',
+            used_by: 4,
+            processed_by: null,
+            created_at: daysAgo(1, 8)
+          },
+          // Giao dịch các ngày trước (3 - 6 ngày trước)
+          {
+            txn_code: 'TXN-00010',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 100000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: 'Nạp tiền giờ chơi cuối tuần',
+            computer_name: 'VIP-01',
+            staff_name: 'Quản Trị Viên',
+            used_by: 2,
+            processed_by: 1,
+            created_at: daysAgo(3, 2)
+          },
+          {
+            txn_code: 'TXN-00011',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 50000.00,
+            payment_method: 'CASH',
+            status: 'REFUNDED',
+            description: 'Khách nạp nhầm số tài khoản bạn bè',
+            notes: 'Lý do hoàn: Thu ngân hoàn tiền mặt tại quầy',
+            computer_name: 'VIP-02',
+            staff_name: 'Quản Trị Viên',
+            used_by: 3,
+            processed_by: 1,
+            created_at: daysAgo(4, 5)
+          },
+          {
+            txn_code: 'TXN-00012',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.SERVICE_SALE,
+            amount: 85000.00,
+            payment_method: 'MOMO',
+            status: 'COMPLETED',
+            description: 'Combo trà đào cam sả + Bắp rang bơ',
+            computer_name: 'COUPLE-01',
+            staff_name: 'Quản Trị Viên',
+            used_by: 2,
+            processed_by: 1,
+            created_at: daysAgo(6, 3)
+          }
+        ]);
+        console.log('✅ Seeded 12 sample Financial Transactions for Sổ Cái & KPI.');
+      }
+    }
+
     console.log('✅ Database Seeding Completed Successfully.');
   } catch (error) {
     console.error('❌ Database Seeding Error:', error);

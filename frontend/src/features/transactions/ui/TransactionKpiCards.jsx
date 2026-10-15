@@ -1,17 +1,18 @@
 import React from 'react';
-import { Banknote, Gamepad2, Utensils, ShieldCheck, TrendingUp } from 'lucide-react';
+import { Banknote, Gamepad2, Utensils, ShieldCheck, TrendingUp, TrendingDown } from 'lucide-react';
 
 /**
  * TransactionKpiCards
- * Hiển thị 4 thẻ KPI tài chính kiểm toán thu chi
+ * Hiển thị 4 thẻ KPI tài chính kiểm toán thu chi dựa 100% trên dữ liệu thật từ CSDL MySQL
  */
 export default function TransactionKpiCards({ metrics }) {
   const totalRevenue = metrics?.totalRevenueToday || 0;
+  const vsYesterdayPercent = metrics?.vsYesterdayPercent !== undefined ? metrics.vsYesterdayPercent : 0;
   const pcTimeRevenue = metrics?.pcTimeRevenue || 0;
-  const pcTimePercent = metrics?.pcTimePercent || 66.5;
+  const pcTimePercent = metrics?.pcTimePercent !== undefined ? metrics.pcTimePercent : 0;
   const foodServiceRevenue = metrics?.foodServiceRevenue || 0;
-  const foodServicePercent = metrics?.foodServicePercent || 33.5;
-  const successRate = metrics?.successRate || 99.4;
+  const foodServicePercent = metrics?.foodServicePercent !== undefined ? metrics.foodServicePercent : 0;
+  const successRate = metrics?.successRate !== undefined ? metrics.successRate : 100.0;
   const successCount = metrics?.successCount || 0;
   const pendingCount = metrics?.pendingCount || 0;
 
@@ -24,8 +25,8 @@ export default function TransactionKpiCards({ metrics }) {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Tổng Doanh Thu Hôm Nay
             </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 font-mono">
-              {totalRevenue.toLocaleString()} <span className="text-sm font-bold text-slate-500">₫</span>
+            <span className="flex items-baseline gap-1 text-2xl font-black text-slate-900 mt-1 font-mono">
+              {totalRevenue.toLocaleString()} <span className="text-base font-bold text-slate-400">₫</span>
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center">
@@ -33,9 +34,18 @@ export default function TransactionKpiCards({ metrics }) {
           </div>
         </div>
         <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
-          <div className="flex items-center gap-1 text-xs font-extrabold text-sky-700">
-            <TrendingUp className="w-4 h-4 text-emerald-600" />
-            <span>+14.2%</span>
+          <div className="flex items-center gap-1 text-xs font-extrabold">
+            {vsYesterdayPercent >= 0 ? (
+              <>
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <span className="text-emerald-700">+{vsYesterdayPercent}%</span>
+              </>
+            ) : (
+              <>
+                <TrendingDown className="w-4 h-4 text-rose-600" />
+                <span className="text-rose-600">{vsYesterdayPercent}%</span>
+              </>
+            )}
             <span className="text-slate-400 font-normal">so với hôm qua</span>
           </div>
           <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
@@ -51,8 +61,8 @@ export default function TransactionKpiCards({ metrics }) {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Doanh Thu Nạp Giờ (PC Time)
             </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 font-mono">
-              {pcTimeRevenue.toLocaleString()} <span className="text-sm font-bold text-slate-500">₫</span>
+            <span className="flex items-baseline gap-1 text-2xl font-black text-slate-900 mt-1 font-mono">
+              {pcTimeRevenue.toLocaleString()} <span className="text-base font-bold text-slate-400">₫</span>
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 border border-indigo-100 flex items-center justify-center">
@@ -79,8 +89,8 @@ export default function TransactionKpiCards({ metrics }) {
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               Dịch Vụ Ẩm Thực (F&amp;B)
             </span>
-            <span className="text-2xl font-black text-slate-900 mt-1 font-mono">
-              {foodServiceRevenue.toLocaleString()} <span className="text-sm font-bold text-slate-500">₫</span>
+            <span className="flex items-baseline gap-1 text-2xl font-black text-slate-900 mt-1 font-mono">
+              {foodServiceRevenue.toLocaleString()} <span className="text-base font-bold text-slate-400">₫</span>
             </span>
           </div>
           <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 border border-amber-100 flex items-center justify-center">

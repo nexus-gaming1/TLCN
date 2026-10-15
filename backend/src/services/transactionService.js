@@ -1,204 +1,240 @@
-const db = require('../models');
-const { TransactionType, TransactionCategory } = require('../constants/enums');
+const TransactionRepository = require('../repositories/transactionRepository');
+const MemberRepository = require('../repositories/memberRepository');
+const { TransactionType, TransactionCategory, TransactionStatusEnum } = require('../constants/enums');
+const { ValidationError, NotFoundError, BusinessLogicError } = require('../utils/errors');
+
+/**
+ * Cấu hình nghiệp vụ phân bổ doanh thu & điểm thưởng (Tuân thủ OCP)
+ * Cho phép mở rộng thêm loại giao dịch hoặc thay đổi tỷ lệ mà không sửa đổi core logic
+ */
+const DEFAULT_TRANSACTION_CONFIG = Object.freeze({
+  REVENUE_CATEGORIES: [
+    TransactionCategory.MEMBER_TOPUP,
+    TransactionCategory.SERVICE_SALE,
+    TransactionCategory.COMBO_PURCHASE
+  ],
+  BONUS_POINT_RATE: 1000 // 1,000 VNĐ nạp = 1 Điểm thưởng
+});
 
 /**
  * TransactionService
- * Quản lý nghiệp vụ Sổ Cái & Tra Cứu Giao Dịch Tài Chính
- * Tuân thủ quy tắc SOLID & Clean Code Architecture
+ * Quản lý nghiệp vụ Sổ Cái & Giao Dịch Tài Chính
+ * Tuân thủ nghiêm ngặt các nguyên tắc SOLID & Clean Architecture:
+ * - SRP: Tách bạch rõ ràng giữa xử lý logic nghiệp vụ, tính toán KPI, DTO formatting và repository query.
+ * - OCP: Cho phép mở rộng phân loại doanh thu / tỷ lệ tích điểm qua cấu hình DI config.
+ * - DIP: Không phụ thuộc vào ORM (Sequelize) hay Model CSDL; phụ thuộc hoàn toàn vào Abstraction Repository.
  */
 class TransactionService {
   /**
-   * Lấy danh sách giao dịch kèm thông tin Member & User + Tính toán các chỉ số KPI Tài Chính
+   * Dependency Injection qua Constructor (Tuân thủ DIP)
    */
-  async getAllTransactions() {
-    try {
-      const transactions = await db.FinancialTransaction.findAll({
-        include: [
-          {
-            model: db.Member,
-            as: 'memberInfo',
-            include: [
-              {
-                model: db.User,
-                as: 'userInfo',
-                attributes: ['user_id', 'username', 'full_name']
-              },
-              {
-                model: db.MembershipRank,
-                attributes: ['rank_id', 'name']
-              }
-            ]
-          },
-          {
-            model: db.User,
-            as: 'processedBy',
-            attributes: ['user_id', 'username', 'full_name']
-          }
-        ],
-        order: [['transaction_id', 'DESC']]
-      });
+  constructor(
+    transactionRepo = new TransactionRepository(),
+    memberRepo = new MemberRepository(),
+    config = DEFAULT_TRANSACTION_CONFIG
+  ) {
+    this.transactionRepo = transactionRepo;
+    this.memberRepo = memberRepo;
+    this.config = config;
+  }
 
-      // Calculate 4 Financial KPI Cards
-      let totalRevenueToday = 0;
-      let pcTimeRevenue = 0;
-      let foodServiceRevenue = 0;
-      const successCount = transactions.length;
+  /**
+   * Helper 1 (SRP & DIP): Ủy thác xây dựng bộ lọc CSDL cho Repository (không chứa cú pháp ORM Op)
+   */
+  buildSearchFilters(params = {}) {
+    return this.transactionRepo.buildSearchFilters(params);
+  }
 
-      transactions.forEach((t) => {
-        const amt = parseFloat(t.amount || 0);
-        const type = (t.type || '').toUpperCase();
-        const cat = (t.category || '').toUpperCase();
+  /**
+   * Helper 2 (SRP): Tính toán 4 thẻ chỉ số KPI Tài Chính từ Repository
+   */
+  async calculateFinancialKPIs() {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
-        if (type === TransactionType.INCOME) {
-          totalRevenueToday += amt;
-          if (cat === TransactionCategory.MEMBER_TOPUP) {
-            pcTimeRevenue += amt;
-          } else if (cat === TransactionCategory.SERVICE_SALE) {
-            foodServiceRevenue += amt;
-          } else if (cat === TransactionCategory.COMBO_PURCHASE) {
-            pcTimeRevenue += amt * 0.65;
-            foodServiceRevenue += amt * 0.35;
-          }
-        }
-      });
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
 
-      const totalTxnCount = transactions.length || 1;
-      const successRate = 100.0;
+    const [todayKpiRow, yesterdayKpiRow] = await Promise.all([
+      this.transactionRepo.getTodayKpiMetrics(todayStart),
+      this.transactionRepo.getYesterdayRevenue(yesterdayStart, todayStart)
+    ]);
 
-      const metrics = {
-        totalRevenueToday,
-        pcTimeRevenue: Math.round(pcTimeRevenue),
-        pcTimePercent: totalRevenueToday > 0 ? Number(((pcTimeRevenue / totalRevenueToday) * 100).toFixed(1)) : 66.5,
-        foodServiceRevenue: Math.round(foodServiceRevenue),
-        foodServicePercent: totalRevenueToday > 0 ? Number(((foodServiceRevenue / totalRevenueToday) * 100).toFixed(1)) : 33.5,
-        successRate,
-        successCount,
-        pendingCount: 0,
-        totalTxnCount
-      };
+    const totalRevenueToday = parseFloat(todayKpiRow?.totalRevenue || 0);
+    const yesterdayRevenue = parseFloat(yesterdayKpiRow?.yesterdayRevenue || 0);
+    const pcTimeRevenue = parseFloat(todayKpiRow?.pcTimeRevenue || 0);
+    const foodServiceRevenue = parseFloat(todayKpiRow?.foodServiceRevenue || 0);
+    const successCount = parseInt(todayKpiRow?.successCount || todayKpiRow?.totalTxnCount || 0, 10);
+    const pendingCount = parseInt(todayKpiRow?.pendingCount || 0, 10);
+    const totalTxnCount = parseInt(todayKpiRow?.totalTxnCount || 0, 10);
 
-      const formattedTransactions = transactions.map((t) => {
-        const userObj = t.memberInfo ? t.memberInfo.userInfo : null;
-        const rankObj = t.memberInfo ? t.memberInfo.MembershipRank : null;
-        const staffObj = t.processedBy;
+    let vsYesterdayPercent = 0;
+    if (yesterdayRevenue > 0) {
+      vsYesterdayPercent = Number((((totalRevenueToday - yesterdayRevenue) / yesterdayRevenue) * 100).toFixed(1));
+    } else if (totalRevenueToday > 0) {
+      vsYesterdayPercent = 100.0;
+    }
 
-        return {
-          id: t.transaction_id,
-          txnCode: `TXN-${String(t.transaction_id).padStart(5, '0')}`,
-          type: t.type || TransactionType.INCOME,
-          category: t.category || TransactionCategory.MEMBER_TOPUP,
-          amount: parseFloat(t.amount || 0),
-          paymentMethod: 'CASH',
-          status: 'SUCCESS',
-          memberId: t.used_by,
-          memberName: userObj ? userObj.full_name : 'Khách Vãng Lai',
-          username: userObj ? userObj.username : 'guest',
-          phone: t.memberInfo ? t.memberInfo.phone : '—',
-          rankName: rankObj ? rankObj.name : 'Đồng',
-          computerName: '—',
-          staffName: staffObj ? staffObj.full_name : 'Thu Ngân Quầy',
-          notes: t.description || '',
-          createdAt: t.created_at
-        };
-      });
+    const successRate = totalTxnCount > 0 ? Number(((successCount / totalTxnCount) * 100).toFixed(1)) : 100.0;
+
+    return {
+      totalRevenueToday,
+      yesterdayRevenue,
+      vsYesterdayPercent,
+      pcTimeRevenue: Math.round(pcTimeRevenue),
+      pcTimePercent: totalRevenueToday > 0 ? Number(((pcTimeRevenue / totalRevenueToday) * 100).toFixed(1)) : 0,
+      foodServiceRevenue: Math.round(foodServiceRevenue),
+      foodServicePercent: totalRevenueToday > 0 ? Number(((foodServiceRevenue / totalRevenueToday) * 100).toFixed(1)) : 0,
+      successRate,
+      successCount,
+      pendingCount,
+      totalTxnCount
+    };
+  }
+
+  /**
+   * Helper 3 (SRP): Định dạng danh sách bản ghi Entity thành DTO sạch cho UI
+   */
+  formatTransactionDTO(rows) {
+    return rows.map((t) => {
+      const userObj = t.memberInfo && t.memberInfo.userInfo ? t.memberInfo.userInfo : null;
+      const rankObj = t.memberInfo && t.memberInfo.MembershipRank ? t.memberInfo.MembershipRank : null;
+      const staffObj = t.processedBy;
 
       return {
-        transactions: formattedTransactions,
-        metrics
+        id: t.transaction_id,
+        txnCode: t.txn_code || `TXN-${String(t.transaction_id).padStart(5, '0')}`,
+        type: t.type || TransactionType.INCOME,
+        category: t.category || TransactionCategory.MEMBER_TOPUP,
+        amount: parseFloat(t.amount || 0),
+        paymentMethod: t.payment_method || 'CASH',
+        status: t.status || TransactionStatusEnum.COMPLETED,
+        memberId: t.used_by,
+        memberName: userObj ? userObj.full_name : 'Khách Vãng Lai',
+        username: userObj ? userObj.username : 'guest',
+        phone: t.memberInfo ? t.memberInfo.phone : '—',
+        rankName: rankObj ? rankObj.name : 'Đồng',
+        computerName: t.computer_name || '—',
+        staffName: staffObj ? staffObj.full_name : (t.staff_name || 'Thu Ngân Quầy'),
+        notes: t.notes || t.description || '',
+        createdAt: t.created_at
       };
-    } catch (error) {
-      console.error('Lỗi khi lấy danh sách giao dịch tài chính:', error);
-      throw error;
-    }
+    });
+  }
+
+  /**
+   * Lấy danh sách giao dịch kèm thông tin Member & User + Tính toán các chỉ số KPI Tài Chính
+   * (Phương thức điều phối Use Case thuần túy, không chứa mã ORM)
+   */
+  async getAllTransactions(params = {}) {
+    const { page = 1, limit = 10, ...filterParams } = params;
+
+    const [{ count, rows }, metrics] = await Promise.all([
+      this.transactionRepo.findAndCountAllWithAssociations(filterParams, { page, limit }),
+      this.calculateFinancialKPIs()
+    ]);
+
+    return {
+      transactions: this.formatTransactionDTO(rows),
+      total: count,
+      page: parseInt(page, 10),
+      totalPages: Math.ceil(count / parseInt(limit, 10)),
+      metrics
+    };
   }
 
   /**
    * Tạo mới giao dịch Nạp Tiền Tại Quầy
+   * - Bắt buộc có processed_by xác định (Tránh hardcode fallback 1)
+   * - Đảm bảo tính nguyên tử ACID bằng Managed Transaction
+   * - Sử dụng Repository Abstraction với Pessimistic Lock
    */
   async createTopUpTransaction(data) {
-    try {
-      const { member_id, amount, description, processed_by } = data;
+    const { member_id, amount, description, processed_by } = data;
 
-      // Find target member
-      const member = await db.Member.findByPk(member_id, {
-        include: [{ model: db.User, as: 'userInfo' }]
-      });
+    // 1. Kiểm tra dữ liệu đầu vào
+    const topupAmount = parseFloat(amount || 0);
+    if (isNaN(topupAmount) || topupAmount <= 0) {
+      throw new ValidationError('Số tiền nạp không hợp lệ (phải lớn hơn 0)');
+    }
+
+    if (!member_id) {
+      throw new ValidationError('Thiếu thông tin mã hội viên cần nạp');
+    }
+
+    if (!processed_by) {
+      throw new ValidationError('Thiếu thông tin nhân viên thu ngân thực hiện nạp tiền (processed_by)');
+    }
+
+    // 2. Thực thi giao dịch CSDL an toàn qua Repository
+    return await this.transactionRepo.runInTransaction(async (t) => {
+      const member = await this.memberRepo.findMemberWithLock(member_id, t);
 
       if (!member) {
-        throw new Error('Không tìm thấy tài khoản hội viên');
+        throw new NotFoundError('Không tìm thấy tài khoản hội viên');
       }
 
-      const topupAmount = parseFloat(amount || 0);
-      if (isNaN(topupAmount) || topupAmount <= 0) {
-        throw new Error('Số tiền nạp không hợp lệ');
-      }
+      // Cộng tiền và điểm thưởng theo tỷ lệ cấu hình
+      member.real_balance = parseFloat(member.real_balance || 0) + topupAmount;
+      member.point = (member.point || 0) + Math.floor(topupAmount / this.config.BONUS_POINT_RATE);
+      await this.memberRepo.saveMember(member, t);
 
-      // Add balance via member model method topUp()
-      await member.topUp(topupAmount);
-      // Award bonus point (1000 đ = 1 point)
-      member.point = (member.point || 0) + Math.floor(topupAmount / 1000);
-      await member.save();
-
-      // Create Financial Transaction record
-      const newTxn = await db.FinancialTransaction.create({
+      // Lưu lịch sử giao dịch vào FinancialTransaction
+      const newTxn = await this.transactionRepo.create({
         type: TransactionType.INCOME,
         category: TransactionCategory.MEMBER_TOPUP,
         amount: topupAmount,
+        payment_method: 'CASH',
+        status: TransactionStatusEnum.COMPLETED,
         description: description || `Nạp tiền tại quầy cho ${member.userInfo ? member.userInfo.full_name : 'hội viên'}`,
         used_by: member.member_id,
-        processed_by: processed_by || 1,
+        processed_by: processed_by,
         created_at: new Date()
-      });
+      }, { transaction: t });
 
       return newTxn;
-    } catch (error) {
-      console.error('Lỗi khi tạo giao dịch nạp tiền:', error);
-      throw error;
-    }
-  }
-
-  // Hàm bóc tách member_id từ nội dung chuyển khoản bằng Regex
-  parseMemberIdFromContent(content) {
-    if (!content || typeof content !== 'string') return null;
-    const match = content.match(/NEXUS[-_\s]*(\d+)/i);
-    if (match && match[1]) {
-      const memberId = parseInt(match[1], 10);
-      return isNaN(memberId) ? null : memberId;
-    }
-    return null;
-  }
-
-   //Xử lý webhook SePay nạp tiền tự động
-   //Đảm bảo tính nguyên tử ACID bằng Sequelize Transaction
-  async processSePayWebhook(webhookData) {
-    // 1. Bóc tách dữ liệu từ payload của SePay
-    const content = webhookData.content || webhookData.description || webhookData.code || '';
-    const rawAmount = webhookData.transferAmount !== undefined ? webhookData.transferAmount : webhookData.amount;
-    const amount = parseFloat(rawAmount || 0);
-    const referenceCode = webhookData.referenceCode || webhookData.id || webhookData.referenceNumber || `SEPAY-${Date.now()}`;
-
-    if (isNaN(amount) || amount <= 0) {
-      const err = new Error('Số tiền chuyển khoản không hợp lệ (phải > 0)');
-      err.statusCode = 400;
-      throw err;
-    }
-
-    // 2. Phân tích bóc tách member_id
-    const memberId = this.parseMemberIdFromContent(content);
-    if (!memberId) {
-      const err = new Error(`Không tìm thấy cú pháp mã hội viên NEXUS hợp lệ trong nội dung: "${content}"`);
-      err.statusCode = 400;
-      throw err;
-    }
-
-    // Kiểm tra chống trùng lặp giao dịch
-    // Ngăn chặn lỗi SePay bắn webhook 2 lần cho cùng 1 giao dịch gây cộng tiền 2 lần
-    const existingTxn = await db.FinancialTransaction.findOne({
-      where: { txn_code: referenceCode }
     });
+  }
 
+  /**
+   * Bước 1: Xử lý Nạp Tiền Tự Động dùng chung cho mọi nguồn thanh toán (Internal Standard DTO)
+   * Giữ TransactionService thuần khiết 100%, không phụ thuộc cấu trúc của bất kỳ bên thứ 3 nào.
+   * @param {Object} payload
+   * @param {number} payload.memberId - ID của hội viên cần nạp
+   * @param {number} payload.amount - Số tiền nạp thực tế
+   * @param {string} [payload.paymentMethod='VIETQR'] - Phương thức thanh toán chuẩn
+   * @param {string} payload.referenceCode - Mã tham chiếu/Mã giao dịch ngân hàng duy nhất (Idempotency Key)
+   * @param {string} [payload.description] - Mô tả giao dịch
+   * @param {string} [payload.notes] - Ghi chú chi tiết
+   */
+  async processAutoTopUp(payload = {}) {
+    const {
+      memberId,
+      amount,
+      paymentMethod = 'VIETQR',
+      referenceCode,
+      description,
+      notes
+    } = payload;
+
+    const parsedMemberId = parseInt(memberId, 10);
+    if (!memberId || isNaN(parsedMemberId)) {
+      throw new ValidationError('Mã hội viên nạp tiền không hợp lệ');
+    }
+
+    const parsedAmount = parseFloat(amount || 0);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      throw new ValidationError('Số tiền nạp tự động không hợp lệ (phải lớn hơn 0)');
+    }
+
+    if (!referenceCode || !String(referenceCode).trim()) {
+      throw new ValidationError('Thiếu mã tham chiếu giao dịch (referenceCode/Idempotency Key)');
+    }
+
+    // 1. Chống nạp tiền trùng lặp Idempotency
+    const existingTxn = await this.transactionRepo.findByTxnCode(referenceCode);
     if (existingTxn) {
-      console.warn(`[SePay] Giao dịch ${referenceCode} đã được xử lý trước đó. Bỏ qua.`);
+      console.warn(`[AutoTopUp] Giao dịch ${referenceCode} đã được xử lý trước đó. Bỏ qua.`);
       return {
         message: 'Giao dịch đã được xử lý trước đó',
         transaction_id: existingTxn.transaction_id,
@@ -207,37 +243,30 @@ class TransactionService {
       };
     }
 
-    // 3. Thực hiện sequelize transaction để đảm bảo an toàn CSDL
-    return await db.sequelize.transaction(async (t) => {
-      // Tìm thông tin hội viên
-      const member = await db.Member.findByPk(memberId, {
-        include: [{ model: db.User, as: 'userInfo' }],
-        transaction: t
-      });
+    // 2. ACID Transaction cập nhật số dư & tạo giao dịch tài chính
+    return await this.transactionRepo.runInTransaction(async (t) => {
+      const member = await this.memberRepo.findMemberWithLock(parsedMemberId, t);
 
       if (!member) {
-        const err = new Error(`Hội viên #${memberId} không tồn tại trong hệ thống`);
-        err.statusCode = 404;
-        throw err;
+        throw new NotFoundError(`Hội viên #${parsedMemberId} không tồn tại trong hệ thống`);
       }
 
-      // Cộng tiền real_balance và điểm thưởng (1,000 đ = 1 point)
-      member.real_balance = parseFloat(member.real_balance || 0) + amount;
-      member.point = (member.point || 0) + Math.floor(amount / 1000);
-      await member.save({ transaction: t });
+      member.real_balance = parseFloat(member.real_balance || 0) + parsedAmount;
+      member.point = (member.point || 0) + Math.floor(parsedAmount / this.config.BONUS_POINT_RATE);
+      await this.memberRepo.saveMember(member, t);
 
-      // Lưu log vào bảng FinancialTransaction
-      const newTxn = await db.FinancialTransaction.create({
+      // Lưu bản ghi với trạng thái COMPLETED đồng bộ với hệ thống KPI
+      const newTxn = await this.transactionRepo.create({
         type: TransactionType.INCOME,
         category: TransactionCategory.MEMBER_TOPUP,
-        amount: amount,
-        description: `[SePay Auto Topup] Tự động nạp ${amount.toLocaleString('vi-VN')}đ cho hội viên #${memberId} (${member.userInfo ? member.userInfo.full_name : ''})`,
-        used_by: memberId,
-        processed_by: null, // Hệ thống tự động xử lý
-        payment_method: 'BANK_TRANSFER',
-        status: 'SUCCESS',
+        amount: parsedAmount,
+        payment_method: paymentMethod,
+        status: TransactionStatusEnum.COMPLETED,
         txn_code: referenceCode,
-        notes: content,
+        description: description || `[Tự động nạp tiền] Nạp ${parsedAmount.toLocaleString('vi-VN')}đ cho hội viên #${parsedMemberId} (${member.userInfo ? member.userInfo.full_name : ''})`,
+        notes: notes || '',
+        used_by: parsedMemberId,
+        processed_by: null, // Hệ thống tự động
         created_at: new Date()
       }, { transaction: t });
 
@@ -246,12 +275,69 @@ class TransactionService {
         member_id: member.member_id,
         username: member.userInfo ? member.userInfo.username : '',
         full_name: member.userInfo ? member.userInfo.full_name : '',
-        amount_added: amount,
+        amount_added: parsedAmount,
         new_real_balance: parseFloat(member.real_balance),
-        points_added: Math.floor(amount / 1000)
+        points_added: Math.floor(parsedAmount / this.config.BONUS_POINT_RATE)
       };
+    });
+  }
+
+
+
+  /**
+   * Xử lý hoàn tiền giao dịch (Refund)
+   * - Kiểm tra số dư hội viên: Từ chối hoàn nếu số dư hiện tại < số tiền cần hoàn (Khắc phục lỗ hổng gian lận)
+   * - Khấu trừ điểm thưởng đã tích lũy từ giao dịch này
+   * - Sử dụng Repository Abstraction với Pessimistic Lock
+   */
+  async refundTransaction(transactionId, reason) {
+    if (!reason || !String(reason).trim()) {
+      throw new ValidationError('Lý do hoàn tiền không được để trống');
+    }
+
+    return await this.transactionRepo.runInTransaction(async (t) => {
+      const txn = await this.transactionRepo.findByIdWithLock(transactionId, t);
+
+      if (!txn) {
+        return null;
+      }
+
+      if (txn.status === TransactionStatusEnum.REFUNDED) {
+        throw new BusinessLogicError('Giao dịch này đã được hoàn tiền trước đó');
+      }
+
+      // Xử lý hoàn tiền cho giao dịch Nạp tiền giờ chơi
+      if (txn.category === TransactionCategory.MEMBER_TOPUP && txn.used_by) {
+        const member = await this.memberRepo.findMemberWithLock(txn.used_by, t);
+
+        if (member) {
+          const currentBal = parseFloat(member.real_balance || 0);
+          const refundAmt = parseFloat(txn.amount || 0);
+
+          // Bảo vệ chống gian lận: Hội viên đã tiêu hết tiền nạp thì không được hoàn tiền
+          if (currentBal < refundAmt) {
+            throw new BusinessLogicError(
+              `Số dư tài khoản hội viên không đủ để hoàn tiền (Số dư hiện tại: ${currentBal.toLocaleString()}đ, Số tiền cần hoàn: ${refundAmt.toLocaleString()}đ)`
+            );
+          }
+
+          // Trừ lại số dư và thu hồi điểm thưởng đã nhận
+          member.real_balance = currentBal - refundAmt;
+          const pointsEarned = Math.floor(refundAmt / this.config.BONUS_POINT_RATE);
+          member.point = Math.max(0, (member.point || 0) - pointsEarned);
+          await this.memberRepo.saveMember(member, t);
+        }
+      }
+
+      // Cập nhật trạng thái giao dịch
+      txn.status = TransactionStatusEnum.REFUNDED;
+      txn.notes = txn.notes ? `${txn.notes} | Lý do hoàn: ${reason}` : `Lý do hoàn: ${reason}`;
+      await this.transactionRepo.save(txn, t);
+
+      return txn;
     });
   }
 }
 
 module.exports = new TransactionService();
+module.exports.TransactionService = TransactionService;
