@@ -14,7 +14,7 @@ export default function Sidebar({ activeNav = 'grid', setActiveNav, bootromStatu
         { id: 'transactions', label: 'Giao dịch', icon: Receipt, path: '/admin/transactions' },
         { id: 'catalog', label: 'Dịch vụ (F&B)', icon: Coffee, path: '/admin/catalog' },
         { id: 'games', label: 'Kho game & BootROM', icon: Gamepad2 },
-        { id: 'reports', label: 'Báo cáo doanh thu', icon: BarChart3 },
+        { id: 'reports', label: 'Báo cáo doanh thu', icon: BarChart3,  path: '/admin/reports' },
     ];
 
     const handleNavClick = (item, e) => {
