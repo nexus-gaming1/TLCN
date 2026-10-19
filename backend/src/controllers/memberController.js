@@ -73,6 +73,28 @@ class MemberController {
       next(error);
     }
   }
+
+  async createMember(req, res, next) {
+    try {
+      const newMember = await memberService.createMember(req.body);
+      return res.status(201).json({
+        status: 'success',
+        data: newMember,
+        message: 'Tạo tài khoản hội viên thành công'
+      });
+    } catch (error) {
+      if (
+        error.message.includes('đã tồn tại') ||
+        error.message.includes('không được để trống')
+      ) {
+        return res.status(400).json({
+          status: 'error',
+          message: error.message
+        });
+      }
+      next(error);
+    }
+  }
 }
 
 module.exports = new MemberController();
