@@ -113,7 +113,7 @@ const seedData = async (db) => {
           password_hash: hashedPassword,
           full_name: 'Lê Minh Khoa',
           role: UserRole.MEMBER,
-          status: UserStatus.ACTIVE
+          status: UserStatus.INACTIVE
         },
         {
           user_id: 10,
@@ -131,38 +131,31 @@ const seedData = async (db) => {
           password_hash: hashedPassword,
           full_name: 'Đỗ Hải Đăng',
           role: UserRole.MEMBER,
-          status: UserStatus.ACTIVE
+          status: UserStatus.LOCKED
+        },
+        {
+          user_id: 12,
+          username: 'cuong.hack',
+          avatar_url: '',
+          password_hash: hashedPassword,
+          full_name: 'Nguyễn Quốc Cường',
+          role: UserRole.MEMBER,
+          status: UserStatus.BANNED
         }
       ], ['username', 'password_hash', 'full_name', 'role', 'status']);
 
       await safeSeed(db.Member, [
         {
           member_id: 2,
-          phone: '+84 900 000 002',
+          phone: '0900.000.002',
           real_balance: 500000.00,
           bonus_balance: 50000.00,
           point: 100,
           rank_id: 3
         },
         {
-          member_id: 3,
-          phone: '+84 912 849 201',
-          real_balance: 1250000.00,
-          bonus_balance: 350000.00,
-          point: 2850,
-          rank_id: 3
-        },
-        {
-          member_id: 4,
-          phone: '+84 988 777 666',
-          real_balance: 500000.00,
-          bonus_balance: 100000.00,
-          point: 1200,
-          rank_id: 2
-        },
-        {
           member_id: 5,
-          phone: '+84 977 111 222',
+          phone: '0977.111.222',
           real_balance: 3200000.00,
           bonus_balance: 800000.00,
           point: 4500,
@@ -170,21 +163,61 @@ const seedData = async (db) => {
         },
         {
           member_id: 6,
-          phone: '+84 933 444 555',
-          real_balance: 150000.00,
-          bonus_balance: 20000.00,
-          point: 350,
-          rank_id: 1
+          phone: '0912.345.678',
+          real_balance: 485000.00,
+          bonus_balance: 50000.00,
+          point: 850,
+          rank_id: 2
         },
         {
           member_id: 7,
-          phone: '+84 905 666 777',
-          real_balance: 850000.00,
+          phone: '0987.442.119',
+          real_balance: 1200000.00,
           bonus_balance: 150000.00,
-          point: 1800,
+          point: 3400,
           rank_id: 3
+        },
+        {
+          member_id: 8,
+          phone: '0903.111.222',
+          real_balance: 165000.00,
+          bonus_balance: 20000.00,
+          point: 680,
+          rank_id: 2
+        },
+        {
+          member_id: 9,
+          phone: '0945.666.777',
+          real_balance: 15000.00,
+          bonus_balance: 0.00,
+          point: 45,
+          rank_id: 1
+        },
+        {
+          member_id: 10,
+          phone: '0977.888.999',
+          real_balance: 890000.00,
+          bonus_balance: 110000.00,
+          point: 2800,
+          rank_id: 4
+        },
+        {
+          member_id: 11,
+          phone: '0912.887.331',
+          real_balance: 0.00,
+          bonus_balance: 0.00,
+          point: 10,
+          rank_id: 1
+        },
+        {
+          member_id: 12,
+          phone: '0933.221.144',
+          real_balance: 0.00,
+          bonus_balance: 0.00,
+          point: 0,
+          rank_id: 1
         }
-      ]);
+      ], ['phone', 'real_balance', 'bonus_balance', 'point', 'rank_id']);
     }
 
     // 2. Seed Pricing Plans
@@ -344,9 +377,12 @@ const seedData = async (db) => {
       { computer_id: 21, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 110 * 60 * 1000), notes: 'Apex Legends' },
       { computer_id: 25, member_id: 7, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 40 * 60 * 1000), notes: 'PUBG Battlegrounds' },
       { computer_id: 27, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 180 * 60 * 1000), notes: 'OBS 4K Stream • Cyberpunk 2077 RT' },
+      { computer_id: 1, member_id: 2, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 40 * 60 * 1000), notes: 'Valorant Ranked' },
+      { computer_id: 8, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 110 * 60 * 1000), notes: 'VIP Cyberpunk' },
       { computer_id: 29, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 65 * 60 * 1000), notes: 'VTuber Live Stream' },
       { computer_id: 32, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 25 * 60 * 1000), notes: 'Cloud Stream WebRTC' },
-      { computer_id: 34, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 85 * 60 * 1000), notes: 'Elden Ring Shadow of Erdtree' }
+      { computer_id: 34, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 85 * 60 * 1000), notes: 'Elden Ring Shadow of Erdtree' },
+      { computer_id: 25, member_id: 10, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 50 * 60 * 1000), notes: 'Stream League of Legends' }
     ]);
 
     // 7. Seed Games

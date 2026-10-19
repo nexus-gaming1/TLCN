@@ -1,66 +1,53 @@
-import React from 'react';
-import { Eye, Edit, Lock, LockOpen, PauseCircle, ShieldCheck, Award } from 'lucide-react';
+import { Eye, Edit, Lock, LockOpen, Award, Phone } from 'lucide-react';
+import { USER_STATUS_LABELS } from '../../../shared/constants/userConstants';
+
+/**
+ * Tier configurations mapping
+ */
+const TIER_CONFIGS = Object.freeze({
+  diamond: { label: 'Kim Cương', badgeClass: 'bg-cyan-100 text-cyan-950 border-cyan-300', iconColor: 'text-cyan-700' },
+  gold: { label: 'Vàng', badgeClass: 'bg-amber-100 text-amber-950 border-amber-400', iconColor: 'text-amber-800' },
+  silver: { label: 'Bạc', badgeClass: 'bg-slate-200 text-slate-900 border-slate-300', iconColor: 'text-slate-700' },
+  normal: { label: 'Đồng', badgeClass: 'bg-orange-100 text-orange-950 border-orange-300', iconColor: 'text-orange-800' }
+});
 
 /**
  * Helper to render Member Tier Badge with High Contrast
  */
 function TierBadge({ rankName, tier }) {
-  if (tier === 'diamond' || (rankName && rankName.includes('Kim Cương'))) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-cyan-100 text-cyan-950 border border-cyan-300 shadow-2xs text-xs font-extrabold tracking-wide">
-        <Award className="w-3.5 h-3.5 text-cyan-700" />
-        {rankName || 'Kim Cương'}
-      </span>
-    );
-  }
-  if (tier === 'gold' || (rankName && rankName.includes('Vàng'))) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-100 text-amber-950 border border-amber-400 shadow-2xs text-xs font-extrabold tracking-wide">
-        <Award className="w-3.5 h-3.5 text-amber-800" />
-        {rankName || 'Vàng'}
-      </span>
-    );
-  }
-  if (tier === 'silver' || (rankName && rankName.includes('Bạc'))) {
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-200 text-slate-900 border border-slate-300 shadow-2xs text-xs font-extrabold">
-        <ShieldCheck className="w-3.5 h-3.5 text-slate-700" />
-        {rankName || 'Bạc'}
-      </span>
-    );
-  }
+  const tierKey = tier || (
+    rankName?.includes('Kim Cương') ? 'diamond' :
+    rankName?.includes('Vàng') ? 'gold' :
+    rankName?.includes('Bạc') ? 'silver' : 'normal'
+  );
+  const config = TIER_CONFIGS[tierKey] || TIER_CONFIGS.normal;
+
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100 text-orange-950 border border-orange-300 shadow-2xs text-xs font-extrabold">
-      <ShieldCheck className="w-3.5 h-3.5 text-orange-800" />
-      {rankName || 'Đồng'}
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border shadow-2xs text-xs font-extrabold tracking-wide ${config.badgeClass}`}>
+      <Award className={`w-3.5 h-3.5 ${config.iconColor}`} />
+      {rankName || config.label}
     </span>
   );
 }
 
 /**
- * Helper to render Account Status Badge
+ * Helper to render Account Status Badge strictly based on USER_STATUS_LABELS
  */
 function AccountStatusBadge({ status }) {
-  if (status === 'ACTIVE' || status === 'active' || status === 'online') {
+  const normalized = (status || '').toUpperCase();
+  const config = USER_STATUS_LABELS[normalized];
+
+  if (config) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-950 border border-emerald-300 rounded-full font-mono text-[11px] font-extrabold">
-        <span className="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
-        Hoạt động
-      </span>
-    );
-  }
-  if (status === 'LOCKED' || status === 'locked') {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-rose-100 text-rose-950 border border-rose-300 rounded-full font-mono text-[11px] font-extrabold">
-        <span className="h-2 w-2 rounded-full bg-rose-600"></span>
-        Đã khóa
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[11px] font-extrabold border ${config.badgeClass}`}>
+        <span className={`h-2 w-2 rounded-full ${config.dotClass}`}></span>
+        {config.label}
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 text-amber-950 border border-amber-300 rounded-full font-mono text-[11px] font-extrabold">
-      <span className="h-2 w-2 rounded-full bg-amber-600"></span>
-      Tạm ngưng
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-full font-mono text-[11px] font-bold">
+      {status || 'Không rõ'}
     </span>
   );
 }
@@ -95,6 +82,7 @@ export default function MemberTable({
                 />
               </th>
               <th className="py-3.5 px-4 font-extrabold text-slate-800 min-w-[220px]">Hội Viên &amp; UID</th>
+              <th className="py-3.5 px-4 font-extrabold text-slate-800 min-w-[140px] whitespace-nowrap">Số Điện Thoại</th>
               <th className="py-3.5 px-4 font-extrabold text-slate-800 min-w-[130px] whitespace-nowrap">Hạng</th>
               <th className="py-3.5 px-4 font-extrabold text-slate-800 text-right pr-6 min-w-[150px] whitespace-nowrap">SỐ DƯ</th>
               <th className="py-3.5 px-4 font-extrabold text-slate-800 text-right pr-6 min-w-[120px] whitespace-nowrap">ĐIỂM TÍCH LŨY</th>
@@ -146,6 +134,16 @@ export default function MemberTable({
                           </span>
                         </div>
                       </div>
+                    </div>
+                  </td>
+
+                  {/* Phone Number */}
+                  <td className="py-3.5 px-4 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5 font-mono text-xs">
+                      <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                      <span className={m.phone && m.phone !== 'Chưa cập nhật' ? 'font-bold text-slate-800' : 'text-slate-400 italic'}>
+                        {m.phone || 'Chưa cập nhật'}
+                      </span>
                     </div>
                   </td>
 
@@ -225,13 +223,13 @@ export default function MemberTable({
                         <Edit className="w-4 h-4" />
                       </button>
 
-                      {/* Status Change Buttons */}
-                      {m.status === 'LOCKED' ? (
+                      {/* Status Change Buttons: Khóa hoặc Mở khóa */}
+                      {isLocked || m.status === 'BANNED' ? (
                         <button
                           type="button"
                           onClick={() => onChangeStatus && onChangeStatus(m.id, 'ACTIVE')}
-                          className="w-8 h-8 rounded-lg text-emerald-600 hover:bg-emerald-50 flex items-center justify-center transition-colors"
-                          title="Mở khóa tài khoản"
+                          className="w-8 h-8 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                          title="Kích hoạt lại tài khoản"
                         >
                           <LockOpen className="w-4 h-4" />
                         </button>
@@ -239,21 +237,10 @@ export default function MemberTable({
                         <button
                           type="button"
                           onClick={() => onChangeStatus && onChangeStatus(m.id, 'LOCKED')}
-                          className="w-8 h-8 rounded-lg text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors"
-                          title="Khóa tài khoản"
+                          className="w-8 h-8 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
+                          title="Tạm khóa tài khoản"
                         >
                           <Lock className="w-4 h-4" />
-                        </button>
-                      )}
-
-                      {m.status !== 'SUSPENDED' && (
-                        <button
-                          type="button"
-                          onClick={() => onChangeStatus && onChangeStatus(m.id, 'SUSPENDED')}
-                          className="w-8 h-8 rounded-lg text-amber-600 hover:bg-amber-50 flex items-center justify-center transition-colors"
-                          title="Tạm ngưng tài khoản"
-                        >
-                          <PauseCircle className="w-4 h-4" />
                         </button>
                       )}
                     </div>
