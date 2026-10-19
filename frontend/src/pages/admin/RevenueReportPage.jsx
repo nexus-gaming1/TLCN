@@ -2,18 +2,19 @@ import React, { useState, useEffect, useCallback } from 'react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
+
 import reportService from '../../shared/api/report.service';
 import RevenueChart from '../../features/reports/ui/RevenueChart';
+import PaymentMethodChart from '../../features/reports/ui/PaymentMethodChart';
+import TopMembersTable from '../../features/reports/ui/TopMembersTable';
+import TopSellingItems from '../../features/reports/ui/TopSellingItems';
 
 import {
-  Banknote,
   Gamepad2,
   Utensils,
-  Calendar,
   RefreshCw,
   Loader2,
-  TrendingUp,
-  Download
+  TrendingUp
 } from 'lucide-react';
 
 export default function RevenueReportPage({ user, onLogout }) {
@@ -47,6 +48,11 @@ export default function RevenueReportPage({ user, onLogout }) {
   };
 
   const chartData = reportData?.chartData || [];
+  const analytics = reportData?.analytics || {
+    paymentMethods: [],
+    topItems: [],
+    topMembers: []
+  };
 
   return (
     <div className="bg-background font-sans text-on-surface antialiased min-h-screen">
@@ -58,7 +64,7 @@ export default function RevenueReportPage({ user, onLogout }) {
         onLogout={onLogout}
       />
 
-      {/*Thanh sidebar bên trái, gắn đường dẫn cho tab (Active nav = 'reports') */}
+      {/* Thanh sidebar bên trái, gắn đường dẫn cho tab (Active nav = 'reports') */}
       <Sidebar activeNav="reports" bootromStatus="ONLINE" role="ADMIN" />
 
       {/* vùng nội dung chính */}
@@ -84,7 +90,7 @@ export default function RevenueReportPage({ user, onLogout }) {
                 </p>
               </div>
 
-              {/* Bộ lọc 7- 14 -30 ngày*/}
+              {/* Bộ lọc thời gian gợi ý sẵn */}
               <div className="flex items-center gap-2.5 self-start lg:self-center">
                 <div className="bg-white p-1 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-1">
                   {[
@@ -143,7 +149,7 @@ export default function RevenueReportPage({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* Thẻ 2: Doanh thu nạp tiền*/}
+              {/* Thẻ 2: Doanh thu nạp giờ */}
               <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-all">
                 <div className="flex items-start justify-between">
                   <div className="flex flex-col">
@@ -175,7 +181,7 @@ export default function RevenueReportPage({ user, onLogout }) {
                 </div>
               </div>
 
-              {/* Thẻ 3: Doanh thu tiền dịch vụ đồ ăn*/}
+              {/* Thẻ 3: Doanh thu tiền đồ ăn thức uống */}
               <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-all">
                 <div className="flex items-start justify-between">
                   <div className="flex flex-col">
@@ -208,30 +214,68 @@ export default function RevenueReportPage({ user, onLogout }) {
               </div>
             </div>
 
-            {/* khung biểu đồ doanh thu */}
-            <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <div className="flex flex-col">
-                  <h3 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                    <span>Biểu Đồ Xu Hướng Doanh Thu</span>
-                    <span className="font-mono text-xs font-semibold text-slate-400">
-                      ({summary.startDate} ➔ {summary.endDate})
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    So sánh trực quan giữa dòng tiền nạp giờ và doanh thu dịch vụ ẩm thực theo từng ngày.
-                  </p>
+            {/* bố cục 2 cột chính( 8 cột trái -4 cột phải ) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              
+              {/* Cột trái (8 Cột): Biểu đồ miền xu hướng + Bảng top member */}
+              <div className="lg:col-span-8 flex flex-col gap-6">
+                {/* 1. Biểu đồ xu hướng doanh thu*/}
+                <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex flex-col">
+                      <h3 className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">
+                        <span>Biểu Đồ Xu Hướng Doanh Thu</span>
+                        <span className="font-mono text-xs font-semibold text-slate-400">
+                          ({summary.startDate} ➔ {summary.endDate})
+                        </span>
+                      </h3>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        So sánh tương quan giữa dòng tiền nạp và doanh số bán hàng F&amp;B
+                      </p>
+                    </div>
+                  </div>
+
+                  {loading ? (
+                    <div className="w-full h-80 flex flex-col items-center justify-center gap-2 text-slate-400">
+                      <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+                      <span className="font-mono text-xs">Đang tổng hợp dữ liệu biểu đồ...</span>
+                    </div>
+                  ) : (
+                    <RevenueChart data={chartData} />
+                  )}
                 </div>
+
+                {/* 2. Bảng xếp hạng khách nạp tiền*/}
+                {loading ? (
+                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center min-h-[220px]">
+                    <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
+                  </div>
+                ) : (
+                  <TopMembersTable data={analytics.topMembers} />
+                )}
               </div>
 
-              {loading ? (
-                <div className="w-full h-80 flex flex-col items-center justify-center gap-2 text-slate-400">
-                  <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-                  <span className="font-mono text-xs">Đang tổng hợp dữ liệu báo cáo từ CSDL...</span>
-                </div>
-              ) : (
-                <RevenueChart data={chartData} />
-              )}
+              {/* Cột phải( 4 cột ): Biểu đồ tròn phương thức thanh toán + top món ăn, đồ uống */}
+              <div className="lg:col-span-4 flex flex-col gap-6">
+                {/* 1. Donut Chart phương thức thanh toán*/}
+                {loading ? (
+                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center min-h-[340px]">
+                    <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
+                  </div>
+                ) : (
+                  <PaymentMethodChart data={analytics.paymentMethods} />
+                )}
+
+                {/* 2. Bảng top dồ ăn, đồ uống */}
+                {loading ? (
+                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center min-h-[220px]">
+                    <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
+                  </div>
+                ) : (
+                  <TopSellingItems data={analytics.topItems} />
+                )}
+              </div>
+
             </div>
 
           </div>
