@@ -67,6 +67,112 @@ class ReportRepository {
       raw: true
     });
   }
+
+  //Truy vấn tỷ trọng phương thức thanh toán tiền nạp (CASH, VIETQR...)
+  async getPaymentMethodDistribution(startDate, endDate) {
+    return await this.models.FinancialTransaction.findAll({
+      attributes: [
+        ['payment_method', 'method'],
+        [this.sequelize.fn('SUM', this.sequelize.col('amount')), 'total']
+      ],
+      where: {
+        type: TransactionType.INCOME,
+        category: TransactionCategory.MEMBER_TOPUP,
+        status: TransactionStatusEnum.COMPLETED,
+        created_at: {
+          [Op.gte]: startDate,
+          [Op.lte]: endDate
+        }
+      },
+      group: ['payment_method'],
+      order: [[this.sequelize.literal('total'), 'DESC']],
+      raw: true
+    });
+  }
+
+  //Truy vấn Top món ăn bán chạy nhất
+  async getTopSellingItems(startDate, endDate, limit = 5) {
+    return await this.models.ServiceOrderItem.findAll({
+      attributes: [
+        'service_item_id',
+        'item_name',
+        [this.sequelize.fn('SUM', this.sequelize.col('quantity')), 'totalSold'],
+        [
+          this.sequelize.fn(
+            'SUM',
+            this.sequelize.literal('`ServiceOrderItem`.`quantity` * `ServiceOrderItem`.`price`')
+          ),
+          'revenue'
+        ]
+      ],
+      include: [
+        {
+          model: this.models.ServiceOrder,
+          attributes: [],
+          where: {
+            payment_status: PaymentStatus.PAID,
+            created_at: {
+              [Op.gte]: startDate,
+              [Op.lte]: endDate
+            }
+          },
+          required: true
+        }
+      ],
+      group: ['ServiceOrderItem.service_item_id', 'ServiceOrderItem.item_name'],
+      order: [[this.sequelize.literal('revenue'), 'DESC']],
+      limit: parseInt(limit, 10),
+      raw: true,
+      subQuery: false
+    });
+  }
+
+  //Truy vấn top hội viên nạp tiền nhiều nhất
+  async getTopVipMembers(startDate, endDate, limit = 5) {
+    return await this.models.FinancialTransaction.findAll({
+      attributes: [
+        ['used_by', 'memberId'],
+        [this.sequelize.col('memberInfo.userInfo.full_name'), 'name'],
+        [this.sequelize.col('memberInfo.userInfo.username'), 'username'],
+        [this.sequelize.fn('SUM', this.sequelize.col('amount')), 'totalTopup']
+      ],
+      include: [
+        {
+          model: this.models.Member,
+          as: 'memberInfo',
+          attributes: [],
+          required: true,
+          include: [
+            {
+              model: this.models.User,
+              as: 'userInfo',
+              attributes: [],
+              required: true
+            }
+          ]
+        }
+      ],
+      where: {
+        type: TransactionType.INCOME,
+        category: TransactionCategory.MEMBER_TOPUP,
+        status: TransactionStatusEnum.COMPLETED,
+        created_at: {
+          [Op.gte]: startDate,
+          [Op.lte]: endDate
+        }
+      },
+      group: [
+        'FinancialTransaction.used_by',
+        'memberInfo.userInfo.user_id',
+        'memberInfo.userInfo.full_name',
+        'memberInfo.userInfo.username'
+      ],
+      order: [[this.sequelize.literal('totalTopup'), 'DESC']],
+      limit: parseInt(limit, 10),
+      raw: true,
+      subQuery: false
+    });
+  }
 }
 
 module.exports = new ReportRepository();
