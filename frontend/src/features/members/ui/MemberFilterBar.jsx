@@ -1,7 +1,9 @@
-import React from 'react';
-import { Search, Download, Printer, UserPlus, RefreshCw } from 'lucide-react';
+import { useMemo } from 'react';
+import { Search, Download, Printer, UserPlus } from 'lucide-react';
+import { USER_STATUS_LABELS } from '../../../shared/constants/userConstants';
 
 export default function MemberFilterBar({
+  members = [],
   searchQuery,
   onSearchChange,
   tierFilter,
@@ -9,12 +11,31 @@ export default function MemberFilterBar({
   statusFilter,
   onStatusChange,
   onOpenCreateModal,
-  onRefresh,
+  onOpenExportModal,
+  onPrintList,
 }) {
   const selectedTier = tierFilter;
   const setSelectedTier = onTierChange;
   const selectedStatus = statusFilter;
   const setSelectedStatus = onStatusChange;
+
+  // Tính toán số lượng từng tầng hạng động từ dữ liệu thực tế, không hardcode
+  const tierCounts = useMemo(() => {
+    const all = members.length;
+    const diamond = members.filter((m) => m.tier === 'diamond').length;
+    const gold = members.filter((m) => m.tier === 'gold').length;
+    const silver = members.filter((m) => m.tier === 'silver').length;
+    const normal = members.filter((m) => m.tier === 'normal').length;
+    return { all, diamond, gold, silver, normal };
+  }, [members]);
+
+  const tierOptions = [
+    { id: 'all', label: `Tất cả (${tierCounts.all})` },
+    { id: 'diamond', label: `💎 Kim Cương (${tierCounts.diamond})` },
+    { id: 'gold', label: `⭐ Vàng (${tierCounts.gold})` },
+    { id: 'silver', label: `🥈 Bạc (${tierCounts.silver})` },
+    { id: 'normal', label: `🥉 Đồng (${tierCounts.normal})` },
+  ];
 
   return (
     <div className="bg-white p-3.5 rounded-lg shadow-flat border border-slate-200 space-y-3">
@@ -39,14 +60,18 @@ export default function MemberFilterBar({
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <button
             type="button"
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200/70 text-slate-700 rounded-md text-xs font-semibold transition-colors"
+            onClick={onOpenExportModal}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-300 text-slate-700 rounded-md text-xs font-semibold transition-colors cursor-pointer"
+            title="Mở hộp thoại xuất báo cáo Excel/PDF"
           >
-            <Download className="w-4 h-4 text-slate-600" />
+            <Download className="w-4 h-4 text-sky-600" />
             <span>Xuất Báo Cáo</span>
           </button>
           <button
             type="button"
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200/70 text-slate-700 rounded-md text-xs font-semibold transition-colors"
+            onClick={onPrintList}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-300 text-slate-700 rounded-md text-xs font-semibold transition-colors cursor-pointer"
+            title="In danh sách hội viên qua trình duyệt (A4)"
           >
             <Printer className="w-4 h-4 text-slate-600" />
             <span className="hidden sm:inline">In Danh Sách</span>
@@ -62,16 +87,11 @@ export default function MemberFilterBar({
         </div>
       </div>
 
-      {/* Filter Pills Strip (Tightened Spacing & Grouped Filter Pills) */}
+      {/* Filter Pills Strip */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 pt-2.5 border-t border-slate-100">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-mono text-[10px] uppercase text-slate-600 font-bold mr-1">Tầng Hạng:</span>
-          {[
-            { id: 'all', label: 'Tất cả (3,420)' },
-            { id: 'diamond', label: '💎 VIP Diamond (24)' },
-            { id: 'gold', label: '⭐ VIP Gold (118)' },
-            { id: 'normal', label: '🎮 Normal Standard (3,278)' },
-          ].map((tier) => (
+          {tierOptions.map((tier) => (
             <button
               key={tier.id}
               type="button"
@@ -88,27 +108,20 @@ export default function MemberFilterBar({
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-[10px] uppercase text-slate-600 font-bold mr-1">Trạng thái:</span>
+          <span className="font-mono text-[11px] uppercase text-slate-600 font-bold mr-1">Trạng thái:</span>
           <select
             value={selectedStatus || 'all'}
             onChange={(e) => setSelectedStatus && setSelectedStatus(e.target.value)}
-            className="px-3 py-1 bg-slate-100 text-slate-800 font-sans text-xs font-bold rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500/30 border-0 cursor-pointer"
+            aria-label="Lọc theo trạng thái tài khoản"
+            className="h-8 pl-3 pr-8 py-1 bg-slate-50 hover:bg-white text-slate-800 font-sans text-xs font-bold rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 shadow-2xs cursor-pointer transition-all"
           >
-            <option value="all">Toàn bộ trạng thái (100%)</option>
-            <option value="playing-local">🟢 Đang chơi tại trạm (Local)</option>
-            <option value="playing-remote">⚡ Đang chơi Cloud Gaming (Remote)</option>
-            <option value="idle">🔵 Online sảnh / Rảnh</option>
-            <option value="offline">⚪ Ngoại tuyến (Offline)</option>
-            <option value="locked">🔴 Tài khoản tạm khóa</option>
+            <option value="all">Tất cả trạng thái</option>
+            {Object.entries(USER_STATUS_LABELS).map(([statusKey, config]) => (
+              <option key={statusKey} value={statusKey}>
+                {config.label}
+              </option>
+            ))}
           </select>
-          <button
-            type="button"
-            onClick={onRefresh}
-            className="w-7 h-7 flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors"
-            title="Làm mới bảng"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-          </button>
         </div>
       </div>
     </div>

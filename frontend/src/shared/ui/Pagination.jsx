@@ -1,10 +1,7 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
-/**
- * Reusable Pagination Component (Phân trang dùng chung cho toàn bộ Admin UI)
- * Chuẩn Clean Code, Responsive, hỗ trợ tính toán dynamic số trang và kích thước trang.
- */
+
 export default function Pagination({
   currentPage = 1,
   totalItems = 0,
@@ -66,7 +63,7 @@ export default function Pagination({
       className={`px-4 py-3 bg-slate-50 border-t border-slate-200/90 rounded-b-xl flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-slate-600 select-none ${className}`}
     >
       {/* Thông tin số lượng & Lựa chọn số dòng mỗi trang */}
-      <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 w-full md:w-auto">
         <div className="flex items-center gap-2">
           <span>
             Hiển thị{' '}
@@ -86,6 +83,24 @@ export default function Pagination({
             </span>
           )}
         </div>
+
+        {Boolean(onPageSizeChange) && (
+          <div className="flex items-center gap-2 border-l border-slate-200 pl-3">
+            <span className="text-slate-500 font-medium">Số dòng:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              aria-label="Chọn số dòng mỗi trang"
+              className="h-8 text-xs font-bold text-slate-800 bg-white border border-slate-200 rounded-lg pl-2.5 pr-8 py-1 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 shadow-2xs cursor-pointer"
+            >
+              {pageSizeOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt} / trang
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Điều hướng chuyển trang */}
