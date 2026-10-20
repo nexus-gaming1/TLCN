@@ -28,9 +28,10 @@ class ReportService {
   //Lấy báo cáo doanh thu theo khoảng thời gian (days)
   //@param {number} days (mặc định là 7)
   async getRevenueReport(days = 7) {
-    const parsedDays = Math.max(1, parseInt(days, 10) || 7);
-    // 1. Xác định mốc thời gian (startDate -> endDate) theo giờ Việt Nam
-    const now = new Date();
+    const parsedDays = Math.min(Math.max(1, parseInt(days, 10) || 7), 365);
+    // 1. Xác định mốc thời gian theo giờ Việt Nam bất chấp múi giờ của Server
+    const vnTimeStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" });
+    const now = new Date(vnTimeStr);
     // Mốc kết thúc: Cuối ngày hôm nay (23:59)
     const endDate = new Date(now);
     endDate.setHours(23, 59, 59, 999);

@@ -83,9 +83,11 @@ const runMigrations = async () => {
     await ensureColumn('financial_transaction', null, 'order_id', 'INT NULL');
     // Ép MySQL cập nhật lại ENUM của cột payment_method
     try {
+      //// Dọn rác dữ liệu cũ trước khi ép kiểu ENUM mới để tránh lỗi "Data truncated"
+      await db.sequelize.query("UPDATE `financial_transaction` SET `payment_method` = 'VIETQR' WHERE `payment_method` IN ('MOMO', 'POS')");
       await db.sequelize.query("ALTER TABLE `financial_transaction` MODIFY COLUMN `payment_method` ENUM('CASH', 'VIETQR', 'WALLET') NOT NULL DEFAULT 'CASH'");
     } catch (e) {
-      // Bỏ qua lỗi nếu bảng chưa tồn tại hoặc ENUM đã được cập nhật
+      console.warn('⚠️ ENUM payment_method update skipped or already updated.');
     }
 
     // Perform Sequelize sync with alter fallback

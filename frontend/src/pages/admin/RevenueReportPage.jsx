@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect} from 'react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -22,24 +22,40 @@ export default function RevenueReportPage({ user, onLogout }) {
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0); // Thêm cờ để kích hoạt nút Refresh
 
-  // Hàm tải dữ liệu báo cáo từ Backend API
-  const fetchReportData = useCallback(async (days) => {
-    setLoading(true);
-    try {
-      const data = await reportService.getRevenueReport(days);
-      setReportData(data);
-    } catch (err) {
-      console.error('Lỗi khi nạp dữ liệu báo cáo doanh thu:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Hàm tải dữ liệu báo cáo từ Backend API (fix lỗi Race Condition)
   useEffect(() => {
-    fetchReportData(daysFilter);
-  }, [daysFilter, fetchReportData]);
+    let ignore = false; // Cờ theo dõi trạng thái vòng đời của request
 
+    const fetchReportData = async () => {
+      setLoading(true);
+      try {
+        const data = await reportService.getRevenueReport(daysFilter);
+        // Chỉ cập nhật UI nếu người dùng chưa bấm sang filter khác
+        if (!ignore) {
+          setReportData(data);
+        }
+      } catch (err) {
+        if (!ignore) console.error('Lỗi khi nạp dữ liệu báo cáo doanh thu:', err);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    fetchReportData();
+
+    // Cleanup function: Kích hoạt khi daysFilter bị thay đổi (user bấm nút khác)
+    return () => {
+      ignore = true; // Bật cờ ignore lên để hủy bỏ kết quả của request cũ
+    };
+  }, [daysFilter, refreshKey]); // Thêm refreshKey vào dependency để kích hoạt reload khi bấm nút Refresh
+
+  // Hàm gắn vào nút Làm mới
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
+  
   const summary = reportData?.summary || {
     totalRevenue: 0,
     totalTopupRevenue: 0,
@@ -115,7 +131,7 @@ export default function RevenueReportPage({ user, onLogout }) {
 
                 <button
                   type="button"
-                  onClick={() => fetchReportData(daysFilter)}
+                  onClick={handleRefresh}
                   className="bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs p-2.5 rounded-xl border border-slate-200 shadow-2xs transition-colors cursor-pointer"
                   title="Làm mới dữ liệu"
                 >
