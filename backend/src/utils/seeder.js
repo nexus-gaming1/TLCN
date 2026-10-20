@@ -678,7 +678,7 @@ const seedData = async (db) => {
             type: TransactionType.INCOME,
             category: TransactionCategory.SERVICE_SALE,
             amount: 85000.00,
-            payment_method: 'MOMO',
+            payment_method: 'VIETQR',
             status: 'COMPLETED',
             description: 'Combo trà đào cam sả + Bắp rang bơ',
             computer_name: 'COUPLE-01',
@@ -688,6 +688,59 @@ const seedData = async (db) => {
             created_at: daysAgo(6, 3)
           }
         ]);
+
+
+      // 11. Giả lập Mua đồ ăn F&B và Thanh toán hỗn hợp
+        if (db.ServiceOrder && db.ServiceOrderItem) {
+          const orderCount = await db.ServiceOrder.count();
+          if (orderCount === 0) {
+            // A. Tạo 1 Đơn hàng mẫu
+            await db.ServiceOrder.create({
+              order_id: 101, // ID cứng để dễ tham chiếu
+              status: 'COMPLETED',
+              payment_status: 'PAID',
+              used_by: 2, // Hội viên có member_id = 2
+              processed_by: 1, // Nhân viên thu ngân
+              created_at: hoursAgo(2)
+            });
+
+            // B. Thêm 2 món ăn vào đơn 101 (Tổng tiền = 85.000đ)
+            await db.ServiceOrderItem.bulkCreate([
+              { order_id: 101, service_item_id: 1, item_name: 'Mì Trứng Bò Hầm ProGamer', price: 35000, quantity: 2 }, // 70.000
+              { order_id: 101, service_item_id: 2, item_name: 'Sting Dâu Ướp Lạnh', price: 15000, quantity: 1 } // 15.000
+            ]);
+
+            // C. Giả lập Thanh toán cho đơn 101 (Trả 50k bằng VÍ, 35k bằng TIỀN MẶT)
+            await db.FinancialTransaction.bulkCreate([
+              {
+                txn_code: 'TXN-SPLIT-01',
+                type: TransactionType.EXPENSE, // Tiền ví bị trừ
+                category: TransactionCategory.SERVICE_SALE,
+                amount: 50000.00,
+                payment_method: 'WALLET', // Trừ bằng ví hội viên
+                status: 'COMPLETED',
+                description: 'Thanh toán đơn F&B #101 bằng số dư ví',
+                used_by: 2,
+                order_id: 101, // Liên kết với đơn hàng
+                created_at: hoursAgo(2)
+              },
+              {
+                txn_code: 'TXN-SPLIT-02',
+                type: TransactionType.INCOME, // Tiền mặt thu thêm vào két
+                category: TransactionCategory.SERVICE_SALE,
+                amount: 35000.00,
+                payment_method: 'CASH', // Thu thêm tiền mặt
+                status: 'COMPLETED',
+                description: 'Thu thêm tiền mặt cho đơn F&B #101',
+                used_by: 2,
+                order_id: 101, // Liên kết với đơn hàng
+                created_at: hoursAgo(2)
+              }
+            ]);
+            console.log('✅ Seeded 1 sample F&B Order with Split Payment (WALLET + CASH).');
+          }
+        }
+
         console.log('✅ Seeded 12 sample Financial Transactions for Sổ Cái & KPI.');
       }
     }
@@ -698,4 +751,4 @@ const seedData = async (db) => {
   }
 };
 
-module.exports = seedData;
+module.exports = seedData;
