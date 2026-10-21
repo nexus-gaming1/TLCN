@@ -64,8 +64,7 @@ const SessionType = Object.freeze({
 const PaymentMethodEnum = Object.freeze({
   CASH: 'CASH',
   VIETQR: 'VIETQR',
-  POS: 'POS',
-  MOMO: 'MOMO',
+  WALLET: 'WALLET'
 });
 
 const TransactionStatusEnum = Object.freeze({

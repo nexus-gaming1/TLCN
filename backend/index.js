@@ -20,6 +20,7 @@ const healthRoutes = require('./src/routes/healthRoutes');
 const profileRoutes = require('./src/routes/profileRoutes');
 const serviceCatalogRoutes = require('./src/routes/serviceCatalogRoutes');
 const webhookRoutes = require('./src/routes/webhookRoutes');
+const reportRoutes = require('./src/routes/reportRoutes');
 
 const errorHandler = require('./src/middleware/errorHandler');
 const computerSocketService = require('./src/services/computerSocketService');
@@ -51,6 +52,7 @@ app.use('/api/promotions', pricingPlanRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/catalog', serviceCatalogRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Centralized Error Handler
 app.use(errorHandler);

@@ -14,6 +14,7 @@ import StaffDashboardPage from './pages/staff/StaffDashboardPage';
 import CustomerDashboardPage from './pages/customer/CustomerDashboardPage';
 import CustomerProfilePage from './pages/customer/CustomerProfilePage';
 import ServiceCatalogPage from './pages/admin/ServiceCatalogPage';
+import RevenueReportPage from './pages/admin/RevenueReportPage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -133,6 +134,11 @@ const ServiceCatalogWrapper = () => {
   return <ServiceCatalogPage user={currentUser} onLogout={logout} />;
 };
 
+const RevenueReportWrapper = () => {
+  const { currentUser, logout } = useAuth();
+  return <RevenueReportPage user={currentUser} onLogout={logout} />;
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -201,6 +207,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
                 <ServiceCatalogWrapper />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/reports"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <RevenueReportWrapper />
               </ProtectedRoute>
             }
           />

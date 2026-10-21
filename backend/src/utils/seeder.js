@@ -113,7 +113,7 @@ const seedData = async (db) => {
           password_hash: hashedPassword,
           full_name: 'Lê Minh Khoa',
           role: UserRole.MEMBER,
-          status: UserStatus.INACTIVE
+          status: UserStatus.ACTIVE
         },
         {
           user_id: 10,
@@ -131,31 +131,38 @@ const seedData = async (db) => {
           password_hash: hashedPassword,
           full_name: 'Đỗ Hải Đăng',
           role: UserRole.MEMBER,
-          status: UserStatus.LOCKED
-        },
-        {
-          user_id: 12,
-          username: 'cuong.hack',
-          avatar_url: '',
-          password_hash: hashedPassword,
-          full_name: 'Nguyễn Quốc Cường',
-          role: UserRole.MEMBER,
-          status: UserStatus.BANNED
+          status: UserStatus.ACTIVE
         }
       ], ['username', 'password_hash', 'full_name', 'role', 'status']);
 
       await safeSeed(db.Member, [
         {
           member_id: 2,
-          phone: '0900.000.002',
+          phone: '+84 900 000 002',
           real_balance: 500000.00,
           bonus_balance: 50000.00,
           point: 100,
           rank_id: 3
         },
         {
+          member_id: 3,
+          phone: '+84 912 849 201',
+          real_balance: 1250000.00,
+          bonus_balance: 350000.00,
+          point: 2850,
+          rank_id: 3
+        },
+        {
+          member_id: 4,
+          phone: '+84 988 777 666',
+          real_balance: 500000.00,
+          bonus_balance: 100000.00,
+          point: 1200,
+          rank_id: 2
+        },
+        {
           member_id: 5,
-          phone: '0977.111.222',
+          phone: '+84 977 111 222',
           real_balance: 3200000.00,
           bonus_balance: 800000.00,
           point: 4500,
@@ -163,61 +170,21 @@ const seedData = async (db) => {
         },
         {
           member_id: 6,
-          phone: '0912.345.678',
-          real_balance: 485000.00,
-          bonus_balance: 50000.00,
-          point: 850,
-          rank_id: 2
+          phone: '+84 933 444 555',
+          real_balance: 150000.00,
+          bonus_balance: 20000.00,
+          point: 350,
+          rank_id: 1
         },
         {
           member_id: 7,
-          phone: '0987.442.119',
-          real_balance: 1200000.00,
+          phone: '+84 905 666 777',
+          real_balance: 850000.00,
           bonus_balance: 150000.00,
-          point: 3400,
+          point: 1800,
           rank_id: 3
-        },
-        {
-          member_id: 8,
-          phone: '0903.111.222',
-          real_balance: 165000.00,
-          bonus_balance: 20000.00,
-          point: 680,
-          rank_id: 2
-        },
-        {
-          member_id: 9,
-          phone: '0945.666.777',
-          real_balance: 15000.00,
-          bonus_balance: 0.00,
-          point: 45,
-          rank_id: 1
-        },
-        {
-          member_id: 10,
-          phone: '0977.888.999',
-          real_balance: 890000.00,
-          bonus_balance: 110000.00,
-          point: 2800,
-          rank_id: 4
-        },
-        {
-          member_id: 11,
-          phone: '0912.887.331',
-          real_balance: 0.00,
-          bonus_balance: 0.00,
-          point: 10,
-          rank_id: 1
-        },
-        {
-          member_id: 12,
-          phone: '0933.221.144',
-          real_balance: 0.00,
-          bonus_balance: 0.00,
-          point: 0,
-          rank_id: 1
         }
-      ], ['phone', 'real_balance', 'bonus_balance', 'point', 'rank_id']);
+      ]);
     }
 
     // 2. Seed Pricing Plans
@@ -377,12 +344,9 @@ const seedData = async (db) => {
       { computer_id: 21, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 110 * 60 * 1000), notes: 'Apex Legends' },
       { computer_id: 25, member_id: 7, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 40 * 60 * 1000), notes: 'PUBG Battlegrounds' },
       { computer_id: 27, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 180 * 60 * 1000), notes: 'OBS 4K Stream • Cyberpunk 2077 RT' },
-      { computer_id: 1, member_id: 2, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 40 * 60 * 1000), notes: 'Valorant Ranked' },
-      { computer_id: 8, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 110 * 60 * 1000), notes: 'VIP Cyberpunk' },
       { computer_id: 29, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 65 * 60 * 1000), notes: 'VTuber Live Stream' },
       { computer_id: 32, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 25 * 60 * 1000), notes: 'Cloud Stream WebRTC' },
-      { computer_id: 34, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 85 * 60 * 1000), notes: 'Elden Ring Shadow of Erdtree' },
-      { computer_id: 25, member_id: 10, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 50 * 60 * 1000), notes: 'Stream League of Legends' }
+      { computer_id: 34, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 85 * 60 * 1000), notes: 'Elden Ring Shadow of Erdtree' }
     ]);
 
     // 7. Seed Games
@@ -714,7 +678,7 @@ const seedData = async (db) => {
             type: TransactionType.INCOME,
             category: TransactionCategory.SERVICE_SALE,
             amount: 85000.00,
-            payment_method: 'MOMO',
+            payment_method: 'VIETQR',
             status: 'COMPLETED',
             description: 'Combo trà đào cam sả + Bắp rang bơ',
             computer_name: 'COUPLE-01',
@@ -724,6 +688,59 @@ const seedData = async (db) => {
             created_at: daysAgo(6, 3)
           }
         ]);
+
+
+      // 11. Giả lập Mua đồ ăn F&B và Thanh toán hỗn hợp
+        if (db.ServiceOrder && db.ServiceOrderItem) {
+          const orderCount = await db.ServiceOrder.count();
+          if (orderCount === 0) {
+            // A. Tạo 1 Đơn hàng mẫu
+            await db.ServiceOrder.create({
+              order_id: 101, // ID cứng để dễ tham chiếu
+              status: 'COMPLETED',
+              payment_status: 'PAID',
+              used_by: 2, // Hội viên có member_id = 2
+              processed_by: 1, // Nhân viên thu ngân
+              created_at: hoursAgo(2)
+            });
+
+            // B. Thêm 2 món ăn vào đơn 101 (Tổng tiền = 85.000đ)
+            await db.ServiceOrderItem.bulkCreate([
+              { order_id: 101, service_item_id: 1, item_name: 'Mì Trứng Bò Hầm ProGamer', price: 35000, quantity: 2 }, // 70.000
+              { order_id: 101, service_item_id: 2, item_name: 'Sting Dâu Ướp Lạnh', price: 15000, quantity: 1 } // 15.000
+            ]);
+
+            // C. Giả lập Thanh toán cho đơn 101 (Trả 50k bằng VÍ, 35k bằng TIỀN MẶT)
+            await db.FinancialTransaction.bulkCreate([
+              {
+                txn_code: 'TXN-SPLIT-01',
+                type: TransactionType.EXPENSE, // Tiền ví bị trừ
+                category: TransactionCategory.SERVICE_SALE,
+                amount: 50000.00,
+                payment_method: 'WALLET', // Trừ bằng ví hội viên
+                status: 'COMPLETED',
+                description: 'Thanh toán đơn F&B #101 bằng số dư ví',
+                used_by: 2,
+                order_id: 101, // Liên kết với đơn hàng
+                created_at: hoursAgo(2)
+              },
+              {
+                txn_code: 'TXN-SPLIT-02',
+                type: TransactionType.INCOME, // Tiền mặt thu thêm vào két
+                category: TransactionCategory.SERVICE_SALE,
+                amount: 35000.00,
+                payment_method: 'CASH', // Thu thêm tiền mặt
+                status: 'COMPLETED',
+                description: 'Thu thêm tiền mặt cho đơn F&B #101',
+                used_by: 2,
+                order_id: 101, // Liên kết với đơn hàng
+                created_at: hoursAgo(2)
+              }
+            ]);
+            console.log('✅ Seeded 1 sample F&B Order with Split Payment (WALLET + CASH).');
+          }
+        }
+
         console.log('✅ Seeded 12 sample Financial Transactions for Sổ Cái & KPI.');
       }
     }
@@ -734,4 +751,4 @@ const seedData = async (db) => {
   }
 };
 
-module.exports = seedData;
+module.exports = seedData;
