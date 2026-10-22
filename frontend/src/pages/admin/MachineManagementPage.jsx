@@ -7,12 +7,10 @@ import MachineKpiCards from '../../features/machines/ui/MachineKpiCards';
 import MachineFilterBar from '../../features/machines/ui/MachineFilterBar';
 import MachineBulkActionBar from '../../features/machines/ui/MachineBulkActionBar';
 import MachineTable from '../../features/machines/ui/MachineTable';
-import MachinePagination from '../../features/machines/ui/MachinePagination';
+import Pagination from '../../shared/ui/Pagination';
 import CreateMachineModal from '../../features/machines/ui/CreateMachineModal';
 import EditMachineModal from '../../features/machines/ui/EditMachineModal';
 import { ComputerStatus } from '../../shared/constants/stationConstants';
-
-// Station Card Grid View
 import StationCard from '../../entities/station/ui/StationCard';
 
 // Single Source of Truth for Status Grouping (DRY Resolver)
@@ -364,7 +362,6 @@ export default function MachineManagementPage({ user, onLogout }) {
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               onOpenCreateModal={() => setIsModalOpen(true)}
-              onSyncBootrom={() => alert('Đã đồng bộ lại danh sách trạm máy!')}
               onExportReport={handleExportReport}
             />
 
@@ -384,59 +381,75 @@ export default function MachineManagementPage({ user, onLogout }) {
                 <span className="animate-spin text-slate-700">⏳</span> Đang tải danh sách máy trạm...
               </div>
             ) : viewMode === 'table' ? (
-              <MachineTable
-                machines={paginatedMachines}
-                selectedIds={selectedIds}
-                onToggleSelect={handleToggleSelect}
-                onToggleSelectAll={handleToggleSelectAll}
-                onLiveMirror={(id) => alert(`Đang kết nối Live Mirror xem màn hình máy ${id}...`)}
-                onEdit={(machineObj) => setEditingMachine(machineObj)}
-                onDelete={handleDeleteSingle}
-              />
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3.5 bg-white p-4 rounded-xl border border-slate-200">
-                {paginatedMachines.map((m) => {
-                  const statusGroup = getStatusGroup(m.status);
-                  const stationType = m.type || (
-                    statusGroup === ComputerStatus.ONLINE
-                      ? 'ready'
-                      : statusGroup === ComputerStatus.MAINTENANCE
-                      ? 'maint'
-                      : statusGroup === ComputerStatus.IN_USE
-                      ? (m.is_remote_enabled ? 'cloud' : 'local')
-                      : statusGroup === ComputerStatus.LOCKED
-                      ? 'locked'
-                      : 'off'
-                  );
-
-                  return (
-                    <StationCard
-                      key={m.id}
-                      station={{
-                        id: m.id,
-                        user: m.userName,
-                        game: m.currentGame || m.cleanStatus,
-                        type: stationType,
-                        time: m.sessionTime ? m.sessionTime.split('/')[0].trim() : '00:00',
-                        latency: m.ip
-                      }}
-                      onClick={() => alert(`Chi tiết máy ${m.id}`)}
-                    />
-                  );
-                })}
+              <div className="w-full bg-white rounded-xl shadow-xs border border-slate-200/90 overflow-hidden flex flex-col">
+                <MachineTable
+                  machines={paginatedMachines}
+                  selectedIds={selectedIds}
+                  onToggleSelect={handleToggleSelect}
+                  onToggleSelectAll={handleToggleSelectAll}
+                  onLiveMirror={(id) => alert(`Đang kết nối Live Mirror xem màn hình máy ${id}...`)}
+                  onEdit={(machineObj) => setEditingMachine(machineObj)}
+                  onDelete={handleDeleteSingle}
+                />
+                {/* Dynamic Pagination liền mạch ở đáy bảng */}
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  totalItems={filteredMachines.length}
+                  selectedCount={selectedIds.length}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                  itemLabel="máy trạm"
+                  className="rounded-t-none border-t border-slate-200"
+                />
               </div>
-            )}
+            ) : (
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3.5 bg-white p-4 rounded-xl border border-slate-200">
+                  {paginatedMachines.map((m) => {
+                    const statusGroup = getStatusGroup(m.status);
+                    const stationType = m.type || (
+                      statusGroup === ComputerStatus.ONLINE
+                        ? 'ready'
+                        : statusGroup === ComputerStatus.MAINTENANCE
+                        ? 'maint'
+                        : statusGroup === ComputerStatus.IN_USE
+                        ? (m.is_remote_enabled ? 'cloud' : 'local')
+                        : statusGroup === ComputerStatus.LOCKED
+                        ? 'locked'
+                        : 'off'
+                    );
 
-            {/* Real Dynamic Pagination */}
-            <MachinePagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              pageSize={pageSize}
-              totalItems={filteredMachines.length}
-              selectedCount={selectedIds.length}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={setPageSize}
-            />
+                    return (
+                      <StationCard
+                        key={m.id}
+                        station={{
+                          id: m.id,
+                          user: m.userName,
+                          game: m.currentGame || m.cleanStatus,
+                          type: stationType,
+                          time: m.sessionTime ? m.sessionTime.split('/')[0].trim() : '00:00',
+                          latency: m.ip
+                        }}
+                        onClick={() => alert(`Chi tiết máy ${m.id}`)}
+                      />
+                    );
+                  })}
+                </div>
+                {/* Dynamic Pagination cho Grid view */}
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  pageSize={pageSize}
+                  totalItems={filteredMachines.length}
+                  selectedCount={selectedIds.length}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                  itemLabel="máy trạm"
+                />
+              </>
+            )}
           </div>
 
           {/* Footer */}

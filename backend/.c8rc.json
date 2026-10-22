@@ -1,0 +1,15 @@
+{
+  "all": true,
+  "reporter": ["text", "text-summary", "html", "lcov"],
+  "reports-dir": "./coverage",
+  "exclude": [
+    "tests/**",
+    "node_modules/**",
+    "coverage/**"
+  ],
+  "check-coverage": false,
+  "lines": 70,
+  "statements": 70,
+  "functions": 70,
+  "branches": 70
+}

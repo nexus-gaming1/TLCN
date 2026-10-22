@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Copy, Check, Receipt, Printer, RotateCcw, AlertCircle,
     CheckCircle2, Clock, XCircle, Gamepad2, Utensils, Moon,
     CreditCard, QrCode, Banknote, Wallet
 } from 'lucide-react';
+import Pagination from '../../../shared/ui/Pagination';
+import { printTransactionReceipt } from '../utils/receiptPrinter';
 
 export default function TransactionTable({
     transactions = [],
@@ -15,53 +17,77 @@ export default function TransactionTable({
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
+    // Reset current page when transactions change and currentPage is out of range
+    useEffect(() => {
+        const maxPage = Math.max(1, Math.ceil(transactions.length / pageSize));
+        if (currentPage > maxPage) {
+            setCurrentPage(1);
+        }
+    }, [transactions.length, pageSize, currentPage]);
+
     const handleCopy = (code, id) => {
         navigator.clipboard.writeText(code);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    // Helper functions for category badges
+    // Helper functions for category badges — map database enums → Vietnamese UI labels
     const renderCategoryBadge = (category) => {
-        const cat = (category || '').toUpperCase();
+        const cat = (category || '').toUpperCase().trim();
         switch (cat) {
+            // Nạp giờ chơi
             case 'TOPUP':
+            case 'MEMBER_TOPUP':
             case 'NẠP GIỜ CHƠI':
             case 'PC TIME':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-mono text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-mono text-xs font-semibold whitespace-nowrap">
                         <Gamepad2 className="w-3.5 h-3.5" />
                         <span>Nạp Giờ Chơi</span>
                     </span>
                 );
+            // Dịch vụ F&B
             case 'SERVICE_FOOD':
+            case 'SERVICE_SALE':
             case 'DỊCH VỤ F&B':
             case 'ẨM THỰC F&B':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-mono text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-mono text-xs font-semibold whitespace-nowrap">
                         <Utensils className="w-3.5 h-3.5" />
                         <span>Dịch Vụ F&B</span>
                     </span>
                 );
+            // Combo mua gói
+            case 'COMBO_PURCHASE':
             case 'NIGHT_COMBO':
             case 'COMBO ĐÊM':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-mono text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-700 font-mono text-xs font-semibold whitespace-nowrap">
                         <Moon className="w-3.5 h-3.5" />
-                        <span>Combo Đêm</span>
+                        <span>Mua Combo</span>
                     </span>
                 );
+            // Giờ + F&B
             case 'COMBINED':
             case 'GIỜ + F&B':
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-mono text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-mono text-xs font-semibold whitespace-nowrap">
                         <Gamepad2 className="w-3.5 h-3.5" />
                         <span>Giờ + F&B</span>
                     </span>
                 );
+            // Hoàn tiền
+            case 'REFUND':
+            case 'HOÀN TIỀN':
+                return (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700 font-mono text-xs font-semibold whitespace-nowrap">
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Hoàn Tiền</span>
+                    </span>
+                );
             default:
                 return (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono text-xs font-semibold">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono text-xs font-semibold whitespace-nowrap">
                         <Gamepad2 className="w-3.5 h-3.5" />
                         <span>{category || 'Khác'}</span>
                     </span>
@@ -160,22 +186,38 @@ export default function TransactionTable({
     const paginatedItems = transactions.slice(startIndex, startIndex + pageSize);
 
     return (
-        <div className="bg-surface-container-lowest rounded-xl shadow-xs border border-outline-variant/30 overflow-hidden flex flex-col">
+        <div className="bg-white rounded-xl shadow-xs border border-slate-200/90 overflow-hidden flex flex-col">
+            {/* Table Header Micro-Action Strip — đồng bộ trang Cấu Hình Máy */}
+            <div className="px-5 py-3.5 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+
+                {/* Realtime Stream Status */}
+                <div className="hidden sm:flex items-center gap-2 font-mono text-[11px] text-slate-500">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span>
+                        Kiểm toán MySQL: <strong className="text-emerald-700 font-bold">Trực tiếp (Realtime)</strong>
+                    </span>
+                </div>
+            </div>
+
+            {/* Scrollable High-Density Table Body */}
             <div className="overflow-x-auto w-full">
-                <table className="w-full text-left border-collapse">
-                    <thead className="border-b border-slate-200/80 bg-slate-50 text-slate-600 font-mono text-[11px] uppercase tracking-wider">
-                        <tr>
-                            <th className="py-3 px-4 font-semibold">Mã GD (TXN)</th>
-                            <th className="py-3 px-4 font-semibold">Thời Gian</th>
-                            <th className="py-3 px-4 font-semibold">Hội Viên / Khách Hàng</th>
-                            <th className="py-3 px-4 font-semibold">Khoản Mục</th>
-                            <th className="py-3 px-4 font-semibold text-right">Số Tiền</th>
-                            <th className="py-3 px-4 font-semibold">Phương Thức</th>
-                            <th className="py-3 px-4 font-semibold text-center">Trạng Thái</th>
-                            <th className="py-3 px-4 font-semibold text-center">Thao Tác</th>
+                <table className="w-full text-left border-collapse min-w-[1050px]">
+                    <thead>
+                        <tr className="bg-slate-100 text-slate-700 text-[11px] uppercase tracking-wider select-none border-b-2 border-slate-300 font-extrabold">
+                            <th className="py-3 px-4 font-extrabold text-slate-800">Mã GD</th>
+                            <th className="py-3 px-4 font-extrabold text-slate-800">Thời Gian</th>
+                            <th className="py-3 px-4 font-extrabold text-slate-800">Hội Viên / Khách Hàng</th>
+                            <th className="py-3 px-4 font-extrabold text-slate-800">Khoản Mục</th>
+                            <th className="py-3 px-4 font-extrabold text-slate-800 text-right">Số Tiền</th>
+                            <th className="py-3 px-4 font-extrabold text-slate-800">Phương Thức</th>
+                            <th className="py-3 px-4 font-extrabold text-slate-800 text-center">Trạng Thái</th>
+                            <th className="py-3 px-4 font-extrabold text-slate-800 text-center">Thao Tác</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 text-sm">
+                    <tbody className="divide-y divide-slate-200 text-xs font-medium text-slate-800">
                         {loading ? (
                             <tr>
                                 <td colSpan="8" className="py-12 text-center text-slate-400">
@@ -261,13 +303,19 @@ export default function TransactionTable({
                                             {renderCategoryBadge(txn.category)}
                                         </td>
 
-                                        {/* Số Tiền */}
+                                        {/* Số Tiền — refund âm + đỏ, thu vào dương + xanh */}
                                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                                            <span className={`font-mono text-base font-bold ${
-                                                txn.type === 'REFUND' ? 'text-purple-600' : 'text-sky-700'
-                                            }`}>
-                                                {txn.type === 'REFUND' ? '-' : '+'}{formatCurrency(txn.amount)}
-                                            </span>
+                                            {(() => {
+                                                const catUpper = (txn.category || txn.type || '').toUpperCase();
+                                                const isRefund = catUpper === 'REFUND' || catUpper === 'HOÀN TIỀN';
+                                                return (
+                                                    <span className={`font-mono text-base font-bold ${
+                                                        isRefund ? 'text-rose-600' : 'text-emerald-700'
+                                                    }`}>
+                                                        {isRefund ? '-' : '+'}{formatCurrency(txn.amount)}
+                                                    </span>
+                                                );
+                                            })()}
                                         </td>
 
                                         {/* Phương Thức */}
@@ -291,7 +339,7 @@ export default function TransactionTable({
                                                     <Receipt className="w-4 h-4" />
                                                 </button>
                                                 <button
-                                                    onClick={() => window.print()}
+                                                    onClick={() => printTransactionReceipt(txn)}
                                                     className="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center transition-colors"
                                                     title="In hóa đơn"
                                                 >
@@ -317,49 +365,18 @@ export default function TransactionTable({
             </div>
 
             {/* Pagination Footer */}
-            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
-                <div className="flex items-center gap-3">
-                    <span>
-                        Hiển thị <span className="font-semibold text-slate-900">{totalItems === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + pageSize, totalItems)}</span> của <span className="font-semibold text-slate-900">{totalItems}</span> giao dịch
-                    </span>
-                    <span className="text-slate-300">•</span>
-                    <div className="flex items-center gap-1.5">
-                        <span>Số dòng mỗi trang:</span>
-                        <select
-                            value={pageSize}
-                            onChange={(e) => {
-                                setPageSize(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="bg-white text-slate-800 text-xs rounded px-2 py-1 focus:outline-none border border-slate-300 font-medium"
-                        >
-                            <option value={10}>10</option>
-                            <option value={25}>25</option>
-                            <option value={50}>50</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-1 font-mono">
-                    <button
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="px-2.5 py-1 rounded bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 border border-slate-300 transition-colors"
-                    >
-                        Trước
-                    </button>
-                    <span className="px-3 py-1 font-semibold text-slate-800">
-                        {currentPage} / {totalPages}
-                    </span>
-                    <button
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="px-2.5 py-1 rounded bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 border border-slate-300 transition-colors"
-                    >
-                        Sau
-                    </button>
-                </div>
-            </div>
+            <Pagination
+                currentPage={currentPage}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                pageSizeOptions={[10, 25, 50, 100]}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={(newSize) => {
+                    setPageSize(newSize);
+                    setCurrentPage(1);
+                }}
+                itemLabel="giao dịch"
+            />
         </div>
     );
 }

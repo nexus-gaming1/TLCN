@@ -1,5 +1,5 @@
-import React from 'react';
 import { X, User, Phone, Mail, Award, Wallet, Star, Monitor, Clock, ShieldCheck, AlertCircle } from 'lucide-react';
+import { USER_STATUS_LABELS } from '../../../shared/constants/userConstants';
 
 /**
  * MemberDetailModal
@@ -8,8 +8,8 @@ import { X, User, Phone, Mail, Award, Wallet, Star, Monitor, Clock, ShieldCheck,
 export default function MemberDetailModal({ isOpen, onClose, member }) {
   if (!isOpen || !member) return null;
 
-  const isLocked = member.status === 'LOCKED' || member.status === 'locked';
-  const isSuspended = member.status === 'SUSPENDED' || member.status === 'suspended';
+  const statusUpper = (member.status || '').toUpperCase();
+  const statusConfig = USER_STATUS_LABELS[statusUpper] || { label: member.status || 'Chưa rõ', colorText: 'text-slate-500' };
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -51,8 +51,8 @@ export default function MemberDetailModal({ isOpen, onClose, member }) {
             <ShieldCheck className="w-5 h-5 text-sky-600 shrink-0" />
             <div>
               <span className="text-[10px] text-slate-500 font-bold uppercase block tracking-wider">Trạng thái tài khoản</span>
-              <span className={`text-xs font-extrabold ${isLocked ? 'text-rose-600' : isSuspended ? 'text-amber-600' : 'text-emerald-600'}`}>
-                {isLocked ? 'Đã khóa' : isSuspended ? 'Tạm ngưng' : 'Hoạt động'}
+              <span className={`text-xs font-extrabold ${statusConfig.colorText}`}>
+                {statusConfig.label}
               </span>
             </div>
           </div>

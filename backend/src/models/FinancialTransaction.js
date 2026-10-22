@@ -1,5 +1,5 @@
 const { Model, DataTypes } = require('sequelize');
-const { TransactionType, TransactionCategory } = require('../constants/enums');
+const { TransactionType, TransactionCategory, PaymentMethodEnum, TransactionStatusEnum } = require('../constants/enums');
 
 class FinancialTransaction extends Model {
   record() {
@@ -23,9 +23,12 @@ module.exports = (sequelize) => {
     type: { type: DataTypes.ENUM(...Object.values(TransactionType)), allowNull: false },
     category: { type: DataTypes.ENUM(...Object.values(TransactionCategory)), allowNull: false },
     amount: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
+    payment_method: { type: DataTypes.ENUM(...Object.values(PaymentMethodEnum)), defaultValue: PaymentMethodEnum.CASH },
+    status: { type: DataTypes.ENUM(...Object.values(TransactionStatusEnum)), defaultValue: TransactionStatusEnum.COMPLETED },
     description: { type: DataTypes.TEXT },
     used_by: { type: DataTypes.INTEGER, allowNull: false },
-    processed_by: { type: DataTypes.INTEGER }
+    processed_by: { type: DataTypes.INTEGER },
+    order_id: { type: DataTypes.INTEGER, allowNull: true }
   }, {
     sequelize,
     modelName: 'FinancialTransaction',
@@ -38,9 +41,7 @@ module.exports = (sequelize) => {
   FinancialTransaction.associate = (models) => {
     FinancialTransaction.belongsTo(models.Member, { foreignKey: 'used_by', as: 'memberInfo' });
     FinancialTransaction.belongsTo(models.User, { foreignKey: 'processed_by', as: 'processedBy' });
-    if (models.Promotion) {
-      FinancialTransaction.belongsTo(models.Promotion, { foreignKey: 'promotion_id' });
-    }
+    FinancialTransaction.belongsTo(models.ServiceOrder, { foreignKey: 'order_id', as: 'serviceOrder' });
   };
 
   return FinancialTransaction;

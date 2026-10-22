@@ -2,15 +2,21 @@ const transactionService = require('../services/transactionService');
 
 /**
  * TransactionController
- * Quản lý HTTP RESTful endpoints cho Sổ Cái & Tra Cứu Giao Dịch
+ * Quản lý HTTP RESTful endpoints cho Sổ Cái & Tra Cứu Giao Dịch (Internal Web/App)
+ * Tuân thủ Single Responsibility Principle (SRP):
+ * - Chỉ phục vụ các thao tác của nhân viên thu ngân / quản trị viên nội bộ.
+ * - Toàn bộ thao tác Webhook bên thứ 3 đã được tách riêng sang WebhookController.
  */
 class TransactionController {
   async getTransactions(req, res, next) {
     try {
-      const data = await transactionService.getAllTransactions();
+      const data = await transactionService.getAllTransactions(req.query);
       return res.json({
         status: 'success',
         data: data.transactions,
+        total: data.total,
+        page: data.page,
+        totalPages: data.totalPages,
         metrics: data.metrics,
         message: 'Lấy sổ cái giao dịch thành công'
       });
@@ -21,7 +27,11 @@ class TransactionController {
 
   async createTopUp(req, res, next) {
     try {
-      const newTxn = await transactionService.createTopUpTransaction(req.body);
+      const payload = {
+        ...req.body,
+        processed_by: req.user ? req.user.user_id : req.body.processed_by
+      };
+      const newTxn = await transactionService.createTopUpTransaction(payload);
       return res.status(201).json({
         status: 'success',
         data: newTxn,

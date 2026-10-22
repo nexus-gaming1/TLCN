@@ -61,6 +61,19 @@ const SessionType = Object.freeze({
   SYSTEM: 'SYSTEM',
 });
 
+const PaymentMethodEnum = Object.freeze({
+  CASH: 'CASH',
+  VIETQR: 'VIETQR',
+  WALLET: 'WALLET'
+});
+
+const TransactionStatusEnum = Object.freeze({
+  COMPLETED: 'COMPLETED',
+  PENDING: 'PENDING',
+  FAILED: 'FAILED',
+  REFUNDED: 'REFUNDED',
+});
+
 
 const ComboTimeStatus = Object.freeze({
   ACTIVE: 'ACTIVE',
@@ -78,4 +91,6 @@ module.exports = {
   TransactionCategory,
   SessionType,
   ComboTimeStatus,
+  PaymentMethodEnum,
+  TransactionStatusEnum,
 };

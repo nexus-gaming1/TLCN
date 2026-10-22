@@ -219,12 +219,14 @@ class ComputerService {
       // Group stations by zone
       const zoneGrids = zones.map((zone) => {
         const zoneStations = formattedStations.filter((s) => s.zone_id === zone.zone_id);
-        const pricingPlan = zone.PricingPlan || {};
+        // Lấy bảng giá từ quan hệ belongsToMany PricingPlans
+        const pricingPlans = zone.PricingPlans || (zone.PricingPlan ? [zone.PricingPlan] : []);
+        const activePlan = pricingPlans.find((p) => p.is_active) || pricingPlans[0] || {};
 
         return {
           zone_id: zone.zone_id,
           zone_name: zone.zone_name,
-          price_per_hour: pricingPlan.price_per_hour ? Number(pricingPlan.price_per_hour) : 0,
+          price_per_hour: activePlan.price_per_hour ? Number(activePlan.price_per_hour) : 0,
           total_stations: zoneStations.length,
           stations: zoneStations
         };

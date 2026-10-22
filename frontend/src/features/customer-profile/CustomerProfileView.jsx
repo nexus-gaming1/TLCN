@@ -170,7 +170,7 @@ export default function CustomerProfileView({ user, memberId }) {
 
         {/* RIGHT SIDEBAR COLUMN (4 Cols) */}
         <div className="lg:col-span-4 flex flex-col gap-6">
-          <WalletBalanceWidget balances={profile?.balances} />
+          <WalletBalanceWidget balances={profile?.balances} memberId={effectiveMemberId}/>
           <RankRewardsWidget profile={profile} />
         </div>
       </div>

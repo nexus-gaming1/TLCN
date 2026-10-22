@@ -1,58 +1,55 @@
-import React from 'react';
+import { CheckCircle2, Lock, LockOpen } from 'lucide-react';
 
-/**
- * MemberBulkActionBar component for handling multi-selection actions on members
- */
 export default function MemberBulkActionBar({
   selectedCount = 0,
-  onAddHours,
   onLock,
-  onDelete
+  onUnlock
 }) {
   if (selectedCount === 0) return null;
 
   return (
     <div
-      className="flex items-center justify-between bg-inverse-surface text-inverse-on-surface px-space-lg py-space-sm rounded-xl shadow-lg transition-all animate-fade-in"
+      className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900 text-white px-5 py-3 rounded-xl shadow-xl border border-slate-800 transition-all animate-in fade-in slide-in-from-top-2 duration-150"
       id="bulk-actions"
     >
-      <div className="flex items-center gap-space-md">
-        <div className="flex items-center gap-space-xs font-label-sm text-label-sm font-semibold">
-          <span className="material-symbols-outlined text-inverse-primary text-[18px]">
-            check_circle
-          </span>
+      {/* Selection Info */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 text-xs font-bold text-sky-400">
+          <CheckCircle2 className="w-4 h-4 text-sky-400 shrink-0" />
           <span>
-            Đã chọn <strong className="text-inverse-primary" id="selected-count">{selectedCount}</strong> hội viên
+            Đã chọn <strong className="text-white font-mono text-sm underline decoration-sky-500" id="selected-count">{selectedCount}</strong> hội viên
           </span>
         </div>
-        <div className="h-4 w-px bg-outline"></div>
-        <span className="font-label-xs text-label-xs text-outline-variant hidden sm:inline">
-          Hành động hàng loạt trên node máy trạm
+        <div className="h-4 w-px bg-slate-700 hidden sm:block"></div>
+        <span className="text-xs text-slate-400 hidden md:inline">
+          Thao tác trạng thái hàng loạt cho các tài khoản đang chọn
         </span>
       </div>
-      <div className="flex items-center gap-space-xs">
+
+      {/* Action Buttons: Khóa tạm thời & Mở khóa tất cả */}
+      <div className="flex items-center gap-2 flex-wrap justify-end">
         <button
-          onClick={onAddHours}
-          className="flex items-center gap-1 px-space-md py-1.5 bg-primary hover:bg-primary-container text-on-primary font-label-sm text-label-sm font-semibold rounded-lg transition-colors"
+          type="button"
+          onClick={onUnlock}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
+          title="Kích hoạt / Mở khóa tất cả tài khoản đang chọn"
         >
-          <span className="material-symbols-outlined text-[16px]">add_card</span>
-          <span>Cộng Giờ / Bonus</span>
+          <LockOpen className="w-3.5 h-3.5" />
+          <span>Mở Khóa Tất Cả</span>
         </button>
+
         <button
+          type="button"
           onClick={onLock}
-          className="flex items-center gap-1 px-space-md py-1.5 bg-surface-container-highest/20 hover:bg-surface-container-highest/30 text-inverse-on-surface font-label-sm text-label-sm font-medium rounded-lg transition-colors"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-600/90 hover:bg-amber-600 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-xs"
+          title="Tạm khóa tất cả tài khoản đang chọn"
         >
-          <span className="material-symbols-outlined text-[16px]">lock</span>
-          <span>Khóa tạm thời</span>
-        </button>
-        <button
-          onClick={onDelete}
-          className="flex items-center gap-1 px-space-md py-1.5 bg-error hover:bg-on-error-container text-on-error font-label-sm text-label-sm font-semibold rounded-lg transition-colors"
-        >
-          <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
-          <span>Xóa hội viên</span>
+          <Lock className="w-3.5 h-3.5" />
+          <span>Khóa Tạm Thời</span>
         </button>
       </div>
     </div>
   );
 }
+
+

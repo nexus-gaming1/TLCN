@@ -10,7 +10,15 @@
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:seed": "node src/utils/seeder.js",
     "lint": "eslint . --ext .js",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/**/*.test.js",
+    "test:coverage": "node --experimental-test-coverage --test tests/**/*.test.js",
+    "test:admin": "node --test tests/admin/**/*.test.js",
+    "test:staff": "node --test tests/staff/**/*.test.js",
+    "test:customer": "node --test tests/customer/**/*.test.js",
+    "coverage": "c8 node --test tests/**/*.test.js",
+    "coverage:pricing": "c8 --include=src/controllers/pricingPlanController.js --include=src/routes/pricingPlanRoutes.js --include=src/services/pricingPlanService.js --include=src/models/PricingPlan.js --include=src/models/ZonePricingPlan.js node --test tests/admin/pricing-plans/**/*.test.js",
+    "coverage:transactions": "c8 --include=src/controllers/transactionController.js --include=src/services/transactionService.js --include=src/routes/transactionRoutes.js --include=src/models/FinancialTransaction.js node --test tests/admin/transactions/**/*.test.js",
+    "coverage:members": "c8 --include=src/controllers/memberController.js --include=src/routes/memberRoutes.js --include=src/services/memberService.js --include=src/models/Member.js node --test tests/admin/members/**/*.test.js"
   },
   "keywords": [],
   "author": "",
@@ -29,6 +37,7 @@
     "umzug": "^3.8.3"
   },
   "devDependencies": {
+    "c8": "^12.0.0",
     "eslint": "^8.57.1",
     "nodemon": "^3.1.14"
   }

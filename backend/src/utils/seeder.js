@@ -416,64 +416,333 @@ const seedData = async (db) => {
         { component_id: 26, category: 'gear', name: 'Bộ Peripherals Standard Cyber Gaming' }
       ]);
     }
-    // Seed Promotions
-    if (db.Promotion) {
-      await safeSeed(db.Promotion, [
+    // Seed Pricing Plans & Zone Associations (Bảng giá máy & Giờ vàng)
+    if (db.PricingPlan) {
+      await safeSeed(db.PricingPlan, [
         {
-          promotion_id: 1,
-          code: 'WELCOME_NEXUS',
-          name: 'Tân Thủ Giảm Giá 50%',
-          description: 'Khuyến mãi đặc biệt dành riêng cho hội viên mới. Giảm 50% thời gian chơi.',
-          discount_type: 'PERCENTAGE',
-          discount_value: 50.00,
-          max_discount_amount: 50000.00,
-          min_deposit_amount: 50000.00,
-          start_date: new Date(new Date().setDate(new Date().getDate() - 10)),
-          end_date: new Date(new Date().setDate(new Date().getDate() + 30)),
-          schedule_note: 'Áp dụng mọi khung giờ',
-          target_audience: 'NEWBIE',
-          status: 'ACTIVE',
-          budget_spent: 1250000.00,
-          total_budget: 10000000.00,
+          pricing_plan_id: 1,
+          name: 'Giá Tiêu Chuẩn Tại Quán',
+          price_per_hour: 10000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 0,
+          start_time: null,
+          end_time: null,
+          apply_date: null,
           is_active: true
         },
         {
-          promotion_id: 2,
-          code: 'NIGHT_OWL',
-          name: 'Combo Xuyên Đêm (22h - 6h)',
-          description: 'Nạp 30K chơi thoải mái từ 22h đêm đến 6h sáng hôm sau.',
-          discount_type: 'COMBO',
-          discount_value: 30000.00,
-          max_discount_amount: null,
-          min_deposit_amount: null,
-          start_date: new Date(new Date().setDate(new Date().getDate() - 5)),
-          end_date: new Date(new Date().setDate(new Date().getDate() + 15)),
-          schedule_note: 'Chỉ áp dụng từ 22h đến 6h sáng',
-          target_audience: 'ALL',
-          status: 'ACTIVE',
-          budget_spent: 3500000.00,
-          total_budget: 15000000.00,
+          pricing_plan_id: 2,
+          name: 'Giờ Vàng Buổi Chiều',
+          price_per_hour: 6000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 10,
+          start_time: '13:00:00',
+          end_time: '17:00:00',
+          apply_date: null,
           is_active: true
         },
         {
-          promotion_id: 3,
-          code: 'FNB_15',
-          name: 'Giảm 15% Nước Uống',
-          description: 'Giảm 15% cho tất cả thức uống pha chế tại quầy.',
-          discount_type: 'FOOD_BEVERAGE',
-          discount_value: 15.00,
-          max_discount_amount: 20000.00,
-          min_deposit_amount: null,
-          start_date: new Date(new Date().setDate(new Date().getDate() - 15)),
-          end_date: new Date(new Date().setDate(new Date().getDate() - 1)),
-          schedule_note: 'Áp dụng buổi chiều (14h - 17h)',
-          target_audience: 'ALL',
-          status: 'ENDED',
-          budget_spent: 5000000.00,
-          total_budget: 5000000.00,
-          is_active: false
+          pricing_plan_id: 3,
+          name: 'Gói Chơi Xuyên Đêm',
+          price_per_hour: 4000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 20,
+          start_time: '23:00:00',
+          end_time: '06:00:00',
+          apply_date: null,
+          is_active: true
+        },
+        {
+          pricing_plan_id: 4,
+          name: 'Giá Tiêu Chuẩn Từ Xa',
+          price_per_hour: 15000.00,
+          plan_type: SessionType.REMOTE,
+          priority: 0,
+          start_time: null,
+          end_time: null,
+          apply_date: null,
+          is_active: true
+        },
+        {
+          pricing_plan_id: 5,
+          name: 'Ưu Đãi Ngày Cuối Tuần',
+          price_per_hour: 8000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 5,
+          start_time: null,
+          end_time: null,
+          apply_date: '2026-10-18',
+          is_active: true
         }
+      ], ['name', 'price_per_hour', 'plan_type', 'priority', 'start_time', 'end_time', 'apply_date', 'is_active']);
+    }
+
+    if (db.ZonePricingPlan) {
+      await safeSeed(db.ZonePricingPlan, [
+        { zone_id: 1, pricing_plan_id: 1 },
+        { zone_id: 2, pricing_plan_id: 1 },
+        { zone_id: 3, pricing_plan_id: 1 },
+        { zone_id: 4, pricing_plan_id: 1 },
+        { zone_id: 5, pricing_plan_id: 1 },
+        { zone_id: 1, pricing_plan_id: 2 },
+        { zone_id: 2, pricing_plan_id: 2 },
+        { zone_id: 3, pricing_plan_id: 2 },
+        { zone_id: 1, pricing_plan_id: 3 },
+        { zone_id: 2, pricing_plan_id: 3 },
+        { zone_id: 3, pricing_plan_id: 3 },
+        { zone_id: 1, pricing_plan_id: 4 },
+        { zone_id: 2, pricing_plan_id: 4 },
+        { zone_id: 3, pricing_plan_id: 4 },
+        { zone_id: 4, pricing_plan_id: 4 },
+        { zone_id: 5, pricing_plan_id: 4 },
+        { zone_id: 2, pricing_plan_id: 5 },
+        { zone_id: 3, pricing_plan_id: 5 }
       ]);
+    }
+
+    // 10. Seed dữ liệu mẫu cho Sổ Cái Giao Dịch & 4 thẻ KPI Tài Chính (Đảm bảo có giao dịch hôm nay và hôm qua)
+    if (db.FinancialTransaction) {
+      const { Op } = require('sequelize');
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayCount = await db.FinancialTransaction.count({
+        where: { created_at: { [Op.gte]: todayStart } }
+      });
+
+      if (todayCount === 0) {
+        const now = new Date();
+        const hoursAgo = (h) => new Date(now.getTime() - h * 3600 * 1000);
+        const daysAgo = (d, h = 0) => new Date(now.getTime() - (d * 24 + h) * 3600 * 1000);
+
+        await db.FinancialTransaction.bulkCreate([
+          // Giao dịch hôm nay (Today)
+          {
+            txn_code: 'TXN-00001',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 100000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: 'Nạp tiền giờ chơi tại quầy thu ngân',
+            computer_name: 'VIP-01',
+            staff_name: 'Quản Trị Viên',
+            used_by: 2,
+            processed_by: 1,
+            created_at: hoursAgo(2)
+          },
+          {
+            txn_code: 'SEPAY-1729012345',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 50000.00,
+            payment_method: 'VIETQR',
+            status: 'COMPLETED',
+            description: '[SePay Auto Topup] Tự động nạp qua VietQR cho hội viên #3',
+            computer_name: 'VIP-02',
+            staff_name: 'Hệ thống SePay',
+            used_by: 3,
+            processed_by: null,
+            created_at: hoursAgo(3)
+          },
+          {
+            txn_code: 'TXN-00003',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.SERVICE_SALE,
+            amount: 45000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: '1x Mì xào bò trứng + 1x Nước ngọt Sting dâu',
+            computer_name: 'VIP-01',
+            staff_name: 'Quản Trị Viên',
+            used_by: 2,
+            processed_by: 1,
+            created_at: hoursAgo(1)
+          },
+          {
+            txn_code: 'TXN-00004',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.COMBO_PURCHASE,
+            amount: 120000.00,
+            payment_method: 'VIETQR',
+            status: 'COMPLETED',
+            description: 'Combo Đêm Hoàng Kim (6h chơi + Bò Húc + Mì cay)',
+            computer_name: 'STREAM-01',
+            staff_name: 'Quản Trị Viên',
+            used_by: 4,
+            processed_by: 1,
+            created_at: hoursAgo(4)
+          },
+          {
+            txn_code: 'TXN-00005',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 200000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: 'Nạp tài khoản hội viên thân thiết VIP',
+            computer_name: 'FPS-05',
+            staff_name: 'Quản Trị Viên',
+            used_by: 3,
+            processed_by: 1,
+            created_at: hoursAgo(0.5)
+          },
+          {
+            txn_code: 'TXN-00006',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 50000.00,
+            payment_method: 'VIETQR',
+            status: 'PENDING',
+            description: 'Chờ đối soát SePay biến động số dư ngân hàng',
+            computer_name: '—',
+            staff_name: 'Hệ thống SePay',
+            used_by: 4,
+            processed_by: null,
+            created_at: hoursAgo(0.2)
+          },
+          // Giao dịch hôm qua (Yesterday - để tính tỷ lệ tăng trưởng doanh thu thực tế)
+          {
+            txn_code: 'TXN-00007',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 200000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: 'Nạp tiền giờ chơi tại quầy',
+            computer_name: 'VIP-03',
+            staff_name: 'Quản Trị Viên',
+            used_by: 2,
+            processed_by: 1,
+            created_at: daysAgo(1, 4)
+          },
+          {
+            txn_code: 'TXN-00008',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.SERVICE_SALE,
+            amount: 60000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: '2x Cơm gà xối mỡ giòn cay',
+            computer_name: 'FPS-02',
+            staff_name: 'Quản Trị Viên',
+            used_by: 3,
+            processed_by: 1,
+            created_at: daysAgo(1, 6)
+          },
+          {
+            txn_code: 'TXN-00009',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 150000.00,
+            payment_method: 'VIETQR',
+            status: 'COMPLETED',
+            description: 'Nạp tiền tài khoản hội viên qua QR',
+            computer_name: 'STREAM-02',
+            staff_name: 'Hệ thống SePay',
+            used_by: 4,
+            processed_by: null,
+            created_at: daysAgo(1, 8)
+          },
+          // Giao dịch các ngày trước (3 - 6 ngày trước)
+          {
+            txn_code: 'TXN-00010',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 100000.00,
+            payment_method: 'CASH',
+            status: 'COMPLETED',
+            description: 'Nạp tiền giờ chơi cuối tuần',
+            computer_name: 'VIP-01',
+            staff_name: 'Quản Trị Viên',
+            used_by: 2,
+            processed_by: 1,
+            created_at: daysAgo(3, 2)
+          },
+          {
+            txn_code: 'TXN-00011',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.MEMBER_TOPUP,
+            amount: 50000.00,
+            payment_method: 'CASH',
+            status: 'REFUNDED',
+            description: 'Khách nạp nhầm số tài khoản bạn bè',
+            notes: 'Lý do hoàn: Thu ngân hoàn tiền mặt tại quầy',
+            computer_name: 'VIP-02',
+            staff_name: 'Quản Trị Viên',
+            used_by: 3,
+            processed_by: 1,
+            created_at: daysAgo(4, 5)
+          },
+          {
+            txn_code: 'TXN-00012',
+            type: TransactionType.INCOME,
+            category: TransactionCategory.SERVICE_SALE,
+            amount: 85000.00,
+            payment_method: 'VIETQR',
+            status: 'COMPLETED',
+            description: 'Combo trà đào cam sả + Bắp rang bơ',
+            computer_name: 'COUPLE-01',
+            staff_name: 'Quản Trị Viên',
+            used_by: 2,
+            processed_by: 1,
+            created_at: daysAgo(6, 3)
+          }
+        ]);
+
+
+      // 11. Giả lập Mua đồ ăn F&B và Thanh toán hỗn hợp
+        if (db.ServiceOrder && db.ServiceOrderItem) {
+          const orderCount = await db.ServiceOrder.count();
+          if (orderCount === 0) {
+            // A. Tạo 1 Đơn hàng mẫu
+            await db.ServiceOrder.create({
+              order_id: 101, // ID cứng để dễ tham chiếu
+              status: 'COMPLETED',
+              payment_status: 'PAID',
+              used_by: 2, // Hội viên có member_id = 2
+              processed_by: 1, // Nhân viên thu ngân
+              created_at: hoursAgo(2)
+            });
+
+            // B. Thêm 2 món ăn vào đơn 101 (Tổng tiền = 85.000đ)
+            await db.ServiceOrderItem.bulkCreate([
+              { order_id: 101, service_item_id: 1, item_name: 'Mì Trứng Bò Hầm ProGamer', price: 35000, quantity: 2 }, // 70.000
+              { order_id: 101, service_item_id: 2, item_name: 'Sting Dâu Ướp Lạnh', price: 15000, quantity: 1 } // 15.000
+            ]);
+
+            // C. Giả lập Thanh toán cho đơn 101 (Trả 50k bằng VÍ, 35k bằng TIỀN MẶT)
+            await db.FinancialTransaction.bulkCreate([
+              {
+                txn_code: 'TXN-SPLIT-01',
+                type: TransactionType.EXPENSE, // Tiền ví bị trừ
+                category: TransactionCategory.SERVICE_SALE,
+                amount: 50000.00,
+                payment_method: 'WALLET', // Trừ bằng ví hội viên
+                status: 'COMPLETED',
+                description: 'Thanh toán đơn F&B #101 bằng số dư ví',
+                used_by: 2,
+                order_id: 101, // Liên kết với đơn hàng
+                created_at: hoursAgo(2)
+              },
+              {
+                txn_code: 'TXN-SPLIT-02',
+                type: TransactionType.INCOME, // Tiền mặt thu thêm vào két
+                category: TransactionCategory.SERVICE_SALE,
+                amount: 35000.00,
+                payment_method: 'CASH', // Thu thêm tiền mặt
+                status: 'COMPLETED',
+                description: 'Thu thêm tiền mặt cho đơn F&B #101',
+                used_by: 2,
+                order_id: 101, // Liên kết với đơn hàng
+                created_at: hoursAgo(2)
+              }
+            ]);
+            console.log('✅ Seeded 1 sample F&B Order with Split Payment (WALLET + CASH).');
+          }
+        }
+
+        console.log('✅ Seeded 12 sample Financial Transactions for Sổ Cái & KPI.');
+      }
     }
 
     console.log('✅ Database Seeding Completed Successfully.');
@@ -482,4 +751,4 @@ const seedData = async (db) => {
   }
 };
 
-module.exports = seedData;
+module.exports = seedData;

@@ -75,9 +75,20 @@ const runMigrations = async () => {
     await ensureColumn('computer', null, 'is_remote_enabled', 'TINYINT(1) DEFAULT 0');
 
 
-    // 7. financial_transaction: member_id -> used_by
+    // 7. financial_transaction: member_id -> used_by, order_id, ENUM update
     await ensureColumn('financial_transaction', 'member_id', 'used_by', 'INT NOT NULL DEFAULT 1');
     await ensureColumn('financial_transaction', null, 'processed_by', 'INT NULL');
+
+    // Thêm cột order_id để liên kết với đơn F&B
+    await ensureColumn('financial_transaction', null, 'order_id', 'INT NULL');
+    // Ép MySQL cập nhật lại ENUM của cột payment_method
+    try {
+      //// Dọn rác dữ liệu cũ trước khi ép kiểu ENUM mới để tránh lỗi "Data truncated"
+      await db.sequelize.query("UPDATE `financial_transaction` SET `payment_method` = 'VIETQR' WHERE `payment_method` IN ('MOMO', 'POS')");
+      await db.sequelize.query("ALTER TABLE `financial_transaction` MODIFY COLUMN `payment_method` ENUM('CASH', 'VIETQR', 'WALLET') NOT NULL DEFAULT 'CASH'");
+    } catch (e) {
+      console.warn('⚠️ ENUM payment_method update skipped or already updated.');
+    }
 
     // Perform Sequelize sync with alter fallback
     await db.sequelize.sync({ alter: true }).catch((err) => {

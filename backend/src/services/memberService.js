@@ -1,4 +1,6 @@
+const bcrypt = require('bcryptjs');
 const db = require('../models');
+const { UserRole, UserStatus } = require('../constants/enums');
 
 class MemberService {
   /**
@@ -40,10 +42,12 @@ class MemberService {
         return {
           id: m.member_id,
           uid: `#MB-${String(m.member_id).padStart(3, '0')}`,
-          username: m.userInfo ? m.userInfo.username : '',
-          full_name: m.userInfo ? m.userInfo.full_name : '',
-          phone: m.phone || null,
-          status: m.userInfo ? m.userInfo.status : 'ACTIVE',
+          name: (m.userInfo && m.userInfo.full_name) ? m.userInfo.full_name : 'Hội Viên',
+          username: m.userInfo ? (m.userInfo.username || '') : '',
+          full_name: m.userInfo ? (m.userInfo.full_name || '') : '',
+          email: `${(m.userInfo && m.userInfo.username) ? m.userInfo.username : 'user'}@cyber.vn`,
+          phone: m.phone || 'Chưa cập nhật',
+          status: (m.userInfo && m.userInfo.status) ? m.userInfo.status : 'ACTIVE',
           rank_id: m.rank_id,
           rank_name: m.MembershipRank ? m.MembershipRank.name : 'Đồng',
           real_balance: parseFloat(m.real_balance || 0),
@@ -51,6 +55,7 @@ class MemberService {
           points: m.point || 0,
           station_name: comp ? comp.computer_name : null,
           station_status: comp ? comp.status : null,
+          created_at: m.created_at || new Date().toISOString(),
           last_login: null
         };
       });
@@ -89,18 +94,31 @@ class MemberService {
    */
   async updateMemberInfo(memberId, { full_name, phone_number, phone }) {
     try {
-      const member = await db.Member.findByPk(memberId, {
-        include: [{ model: db.User, as: 'userInfo' }]
-      });
-      if (!member || !member.userInfo) return null;
+      const member = await db.Member.findByPk(memberId);
+      if (!member) return null;
 
-      if (full_name !== undefined) member.userInfo.full_name = full_name;
-      const newPhone = phone || phone_number;
-      if (newPhone !== undefined) member.phone = newPhone;
+      const user = await db.User.findByPk(memberId);
+      if (user) {
+        let userDirty = false;
+        if (full_name !== undefined) {
+          user.full_name = full_name;
+          userDirty = true;
+        }
+        if (userDirty) {
+          await user.save();
+        }
+      }
 
-      await member.userInfo.save();
-      await member.save();
-      return member;
+      const newPhone = phone !== undefined ? phone : phone_number;
+      if (newPhone !== undefined) {
+        member.phone = newPhone && newPhone.trim() ? newPhone.trim() : null;
+        await member.save();
+      }
+
+      return {
+        ...member.toJSON(),
+        userInfo: user ? user.toJSON() : null
+      };
     } catch (error) {
       console.error('Lỗi khi cập nhật thông tin hội viên:', error);
       throw error;
@@ -117,16 +135,97 @@ class MemberService {
         throw new Error('Trạng thái tài khoản không hợp lệ');
       }
 
-      const member = await db.Member.findByPk(memberId, {
-        include: [{ model: db.User, as: 'userInfo' }]
-      });
-      if (!member || !member.userInfo) return null;
+      const member = await db.Member.findByPk(memberId);
+      if (!member) return null;
 
-      member.userInfo.status = status;
-      await member.userInfo.save();
-      return member;
+      const user = await db.User.findByPk(memberId);
+      if (!user) return null;
+
+      user.status = status;
+      await user.save();
+
+      return {
+        ...member.toJSON(),
+        userInfo: user.toJSON()
+      };
     } catch (error) {
       console.error('Lỗi khi cập nhật trạng thái tài khoản:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Tạo tài khoản hội viên mới và lưu trực tiếp vào CSDL MySQL
+   */
+  async createMember({ username, fullName, password, phone, tier, deposit }) {
+    try {
+      if (!username || !username.trim()) {
+        throw new Error('Tên đăng nhập không được để trống');
+      }
+      if (!fullName || !fullName.trim()) {
+        throw new Error('Họ và tên hội viên không được để trống');
+      }
+
+      const cleanUsername = username.trim();
+      const existingUser = await db.User.findOne({
+        where: { username: cleanUsername }
+      });
+      if (existingUser) {
+        throw new Error('Tên đăng nhập đã tồn tại trong hệ thống');
+      }
+
+      const rawPassword = password && password.trim() ? password.trim() : '123456';
+      const hashedPassword = bcrypt.hashSync(rawPassword, 10);
+
+      const newUser = await db.User.create({
+        username: cleanUsername,
+        password_hash: hashedPassword,
+        full_name: fullName.trim(),
+        role: UserRole.MEMBER,
+        status: UserStatus.ACTIVE
+      });
+
+      const tierMap = {
+        diamond: { rank_id: 4, name: 'Kim Cương', bonusRate: 0.15 },
+        gold: { rank_id: 3, name: 'Vàng', bonusRate: 0.10 },
+        silver: { rank_id: 2, name: 'Bạc', bonusRate: 0.05 },
+        normal: { rank_id: 1, name: 'Đồng', bonusRate: 0.00 }
+      };
+      const tierConfig = tierMap[tier] || tierMap.normal;
+      const depositAmount = parseFloat(deposit) || 0;
+      const bonusAmount = Math.round(depositAmount * tierConfig.bonusRate);
+      const points = Math.floor(depositAmount / 1000);
+
+      const newMember = await db.Member.create({
+        member_id: newUser.user_id,
+        phone: phone && phone.trim() ? phone.trim() : null,
+        real_balance: depositAmount,
+        bonus_balance: bonusAmount,
+        point: points,
+        rank_id: tierConfig.rank_id
+      });
+
+      return {
+        id: newMember.member_id,
+        uid: `#MB-${String(newMember.member_id).padStart(3, '0')}`,
+        name: newUser.full_name,
+        username: newUser.username,
+        full_name: newUser.full_name,
+        email: `${newUser.username}@cyber.vn`,
+        phone: newMember.phone || 'Chưa cập nhật',
+        status: newUser.status,
+        rank_id: newMember.rank_id,
+        rank_name: tierConfig.name,
+        real_balance: parseFloat(newMember.real_balance || 0),
+        bonus_balance: parseFloat(newMember.bonus_balance || 0),
+        points: newMember.point || 0,
+        station_name: null,
+        station_status: null,
+        created_at: new Date().toISOString(),
+        last_login: null
+      };
+    } catch (error) {
+      console.error('Lỗi khi tạo tài khoản hội viên:', error);
       throw error;
     }
   }

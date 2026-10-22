@@ -47,7 +47,7 @@ export const apiClient = {
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
 
     try {
-      const res = await fetch(url, { ...options, headers });
+      const res = await fetch(url, { cache: 'no-cache', ...options, headers });
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok || data.status === 'error') {
