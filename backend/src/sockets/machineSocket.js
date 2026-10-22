@@ -103,8 +103,21 @@ function registerMachineSocket(io) {
                 }
             });
             if (computer) {
+                const activeCombo = await db.ComboTime.findOne({
+                    where: {
+                        computer_id: computer.computer_id,
+                        status: 'ACTIVE',
+                        end_time: { [Op.gt]: new Date() }
+                    }
+                });
+
                 const previousStatus = computer.status;
-                computer.status = data.status || ComputerStatus.ONLINE;
+                if (activeCombo) {
+                    computer.status = ComputerStatus.IN_USE;
+                } else if (computer.status !== ComputerStatus.MAINTENANCE) {
+                    computer.status = data.status || ComputerStatus.ONLINE;
+                }
+
                 await computer.save();
                 await recordStatusChange(
                     computer,
@@ -112,6 +125,16 @@ function registerMachineSocket(io) {
                     computer.status,
                     null
                 );
+
+                // Fail-closed security: if no active session, ensure overlay lock is maintained on agent
+                if (!activeCombo) {
+                    try {
+                        const computerSocketService = require('../services/computerSocketService');
+                        computerSocketService.logout(data.machineId);
+                    } catch (sockErr) {
+                        // socket error ignored during initial register
+                    }
+                }
             }
             socket.join(
                 `machine:${data.machineId}`
