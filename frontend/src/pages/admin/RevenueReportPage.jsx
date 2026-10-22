@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -14,7 +14,8 @@ import {
   Utensils,
   RefreshCw,
   Loader2,
-  TrendingUp
+  TrendingUp,
+  Download
 } from 'lucide-react';
 
 export default function RevenueReportPage({ user, onLogout }) {
@@ -23,6 +24,7 @@ export default function RevenueReportPage({ user, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshKey, setRefreshKey] = useState(0); // Thêm cờ để kích hoạt nút Refresh
+  const [isExporting, setIsExporting] = useState(false);
 
   // Hàm tải dữ liệu báo cáo từ Backend API (fix lỗi Race Condition)
   useEffect(() => {
@@ -68,6 +70,49 @@ export default function RevenueReportPage({ user, onLogout }) {
     paymentMethods: [],
     topItems: [],
     topMembers: []
+  };
+
+  const exportAbortRef = useRef(null);
+
+  // Cleanup: Hủy tải file nếu người dùng chuyển sang trang khác
+  useEffect(() => {
+    return () => {
+      if (exportAbortRef.current) {
+        exportAbortRef.current.abort();
+      }
+    };
+  }, []);
+
+  
+const handleExportExcel = async () => {
+    if (isExporting) return;
+    setIsExporting(true);
+    
+    const controller = new AbortController();
+    exportAbortRef.current = controller;
+
+    try {
+      const { blob, filename } = await reportService.exportRevenueExcel(daysFilter, controller.signal);
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Lỗi khi xuất file báo cáo Excel:', err);
+        alert(err.message || 'Có lỗi xảy ra khi xuất file báo cáo Excel');
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsExporting(false);
+      }
+    }
   };
 
   return (
@@ -136,6 +181,26 @@ export default function RevenueReportPage({ user, onLogout }) {
                   title="Làm mới dữ liệu"
                 >
                   <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleExportExcel}
+                  disabled={isExporting}
+                  className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                  title="Xuất file báo cáo Excel (.xlsx)"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-white" />
+                      <span>Đang xuất...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 text-white" />
+                      <span>Xuất Excel</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
