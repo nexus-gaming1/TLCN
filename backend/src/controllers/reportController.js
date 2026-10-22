@@ -49,7 +49,15 @@ class ReportController {
       await workbook.xlsx.write(res);
       res.end();
     } catch (error) {
-      next(error);
+      // Nếu header đã gửi hoặc stream đã bị hủy thì destroy socket, không gọi next(error)
+      if (res.headersSent || res.destroyed) {
+        if (!res.destroyed) res.destroy(error);
+        return;
+      }
+      res.removeHeader('Content-Type');
+      res.removeHeader('Content-Disposition');
+      res.removeHeader('Access-Control-Expose-Headers');
+      return next(error);
     }
   }
 }

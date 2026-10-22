@@ -1,4 +1,4 @@
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -72,28 +72,48 @@ export default function RevenueReportPage({ user, onLogout }) {
     topMembers: []
   };
 
+  const exportAbortRef = useRef(null);
+
+  // Cleanup: Hủy tải file nếu người dùng chuyển sang trang khác
+  useEffect(() => {
+    return () => {
+      if (exportAbortRef.current) {
+        exportAbortRef.current.abort();
+      }
+    };
+  }, []);
+
+  
 const handleExportExcel = async () => {
-  if (isExporting) return;
-  setIsExporting(true);
-  try {
-    const { blob, filename } = await reportService.exportRevenueExcel(daysFilter);
-    // Kích hoạt cơ chế tải file an toàn trên trình duyệt
-    const downloadUrl = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    // Cleanup giải phóng vùng nhớ trình duyệt
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(downloadUrl);
-  } catch (err) {
-    console.error('Lỗi khi xuất file báo cáo Excel:', err);
-    alert(err.message || 'Có lỗi xảy ra khi xuất file báo cáo Excel');
-  } finally {
-    setIsExporting(false);
-  }
-};
+    if (isExporting) return;
+    setIsExporting(true);
+    
+    const controller = new AbortController();
+    exportAbortRef.current = controller;
+
+    try {
+      const { blob, filename } = await reportService.exportRevenueExcel(daysFilter, controller.signal);
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Lỗi khi xuất file báo cáo Excel:', err);
+        alert(err.message || 'Có lỗi xảy ra khi xuất file báo cáo Excel');
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsExporting(false);
+      }
+    }
+  };
 
   return (
     <div className="bg-background font-sans text-on-surface antialiased min-h-screen">
