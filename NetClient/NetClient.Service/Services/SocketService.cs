@@ -61,11 +61,7 @@ public class SocketService : BackgroundService
             var options = new SocketIOOptions();
             _client = new SocketIO(uri, options);
 
-
             RegisterSocketEvents();
-
-            _logger.LogInformation("Connecting to Socket.IO backend at {Url}...", _serverUrl);
-            await _client.ConnectAsync();
 
             // Start periodic heartbeat
             _heartbeatTimer = new System.Threading.Timer(
@@ -74,8 +70,46 @@ public class SocketService : BackgroundService
                 TimeSpan.FromSeconds(2),
                 TimeSpan.FromSeconds(_heartbeatIntervalSeconds));
 
-            // Keep service alive until cancellation
-            await Task.Delay(Timeout.Infinite, stoppingToken);
+            var retryDelay = TimeSpan.FromSeconds(5);
+            var nextRegistrationAttempt = DateTimeOffset.MinValue;
+
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                if (!_client.Connected)
+                {
+                    _isRegistered = false;
+                    try
+                    {
+                        _logger.LogInformation("Connecting to Socket.IO backend at {Url}...", _serverUrl);
+                        await _client.ConnectAsync(stoppingToken);
+                        nextRegistrationAttempt = DateTimeOffset.UtcNow;
+                    }
+                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(
+                            ex,
+                            "Unable to connect to Socket.IO backend. Retrying in {RetrySeconds} seconds.",
+                            retryDelay.TotalSeconds);
+
+                        await Task.Delay(retryDelay, stoppingToken);
+                        continue;
+                    }
+                }
+
+                if (_client.Connected &&
+                    !_isRegistered &&
+                    DateTimeOffset.UtcNow >= nextRegistrationAttempt)
+                {
+                    await SendRegisterAsync();
+                    nextRegistrationAttempt = DateTimeOffset.UtcNow.Add(retryDelay);
+                }
+
+                await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+            }
         }
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
@@ -105,10 +139,9 @@ public class SocketService : BackgroundService
     {
         if (_client == null) return;
 
-        _client.OnConnected += async (sender, e) =>
+        _client.OnConnected += (sender, e) =>
         {
             _logger.LogInformation("Connected to Socket.IO backend successfully.");
-            await SendRegisterAsync();
         };
 
         _client.OnDisconnected += (sender, reason) =>

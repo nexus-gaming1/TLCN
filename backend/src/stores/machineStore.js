@@ -76,7 +76,7 @@ class MachineStore {
 
         // Cập nhật lastHeartbeat theo server time để tính timeout chuẩn xác
         machine.lastHeartbeat = new Date().toISOString();
-
+        colsole.log(`[MachineStore] Heartbeat updated for machine ${machineId}:`, machine);
         this.machines.set(machineId, machine);
 
         return machine;

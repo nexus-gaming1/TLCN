@@ -29,19 +29,13 @@ export default function AdminDashboardPage({ user, onLogout }) {
         setToastMessage({ text, isError });
         setTimeout(() => setToastMessage(null), 3500);
     };
-<<<<<<< HEAD
 const {
         data: machines = {},
         isLoading,
         isError,
     } = useMachines();
-    const loadDashboardData = useCallback(async () => {
-        setLoading(true);
-=======
-
     const loadDashboardData = useCallback(async (showLoading = true) => {
         if (showLoading) setLoading(true);
->>>>>>> main
         const data = await dashboardService.getOverview();
         if (data) {
             setOverviewData(data);

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NetClient.Service")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e7fd30a1f01275d5617ad4f0e0f35bf9ff5d5ba7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+65c048f237d0d50055320bc10b930ce5b048427c")]
 [assembly: System.Reflection.AssemblyProductAttribute("NetClient.Service")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NetClient.Service")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

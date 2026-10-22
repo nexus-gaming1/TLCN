@@ -1,11 +1,12 @@
 const machineStore = require('../stores/machineStore');
-const Computer = require('../models/Computer');
 const db = require('../models');
+const Computer = db.Computer;
 const { Op } = require('sequelize');
 const HEARTBEAT_TIMEOUT_MS = 15000;
 const HEARTBEAT_CHECK_INTERVAL_MS = 5000;
 const ComputerStatus = require('../constants/enums').ComputerStatus;
 const { recordStatusChange } = require('../services/computerStatusLogService');
+
 function registerMachineSocket(io) {
 
     function broadcastUpdate() {
