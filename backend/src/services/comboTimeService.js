@@ -300,9 +300,9 @@ class ComboTimeService {
 
   /**
    * 8. Purchase Combo Time for a Member
-   * Supports both fresh purchase (PENDING) and auto-extension of active combo time.
+   * Thời gian đếm ngay khi mua. Hỗ trợ kích hoạt trực tiếp nếu có computerId hoặc gán máy sau.
    */
-  async purchaseCombo({ memberId, comboId, paymentMethod = 'WALLET', staffUserId = null }) {
+  async purchaseCombo({ memberId, comboId, paymentMethod = 'WALLET', computerId = null, staffUserId = null }) {
     if (!memberId) {
       const err = new Error('Mã hội viên (memberId) là bắt buộc. Khách vãng lai không được mua Combo Time.');
       err.statusCode = 400;
@@ -386,6 +386,40 @@ class ComboTimeService {
         await lockedMember.save({ transaction });
       }
 
+      // Validate computer if computerId is passed
+      let targetComputer = null;
+      if (computerId) {
+        targetComputer = await db.Computer.findByPk(computerId, {
+          include: [{ model: db.ComputerZone }],
+          transaction,
+          lock: transaction.LOCK.UPDATE
+        });
+        if (!targetComputer) {
+          const err = new Error(`Không tìm thấy máy trạm với ID: ${computerId}`);
+          err.statusCode = 404;
+          throw err;
+        }
+        if (targetComputer.status === ComputerStatus.IN_USE) {
+          const err = new Error(`Máy trạm ${targetComputer.computer_name} hiện đang có người sử dụng.`);
+          err.statusCode = 400;
+          throw err;
+        }
+        if (targetComputer.status === ComputerStatus.MAINTENANCE) {
+          const err = new Error(`Máy trạm ${targetComputer.computer_name} hiện đang bảo trì.`);
+          err.statusCode = 400;
+          throw err;
+        }
+        const targetZoneTier = targetComputer.ComputerZone ? targetComputer.ComputerZone.tier_level : 1;
+        if (comboPackage.allowed_tier && Number(targetZoneTier) > Number(comboPackage.allowed_tier)) {
+          const err = new Error(
+            `Máy trạm ${targetComputer.computer_name} thuộc phân khu ${targetComputer.ComputerZone?.zone_name || ''} (Cấp độ ${targetZoneTier}), ` +
+            `vượt quá cấp độ cho phép của Combo này (Cấp tối đa: ${comboPackage.allowed_tier}).`
+          );
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
       // Check for ACTIVE ComboTime for this member
       const activeCombo = await db.ComboTime.findOne({
         include: [{
@@ -454,21 +488,48 @@ class ComboTimeService {
         await activeCombo.save({ transaction });
         resultComboTime = activeCombo;
       } else {
-        // --- Fresh Purchase Flow (Rule 2.1) ---
-        // Time does NOT start yet. Status = PENDING, start_time = null, end_time = null.
+        // --- Fresh Purchase Flow ---
+        // Thời gian đếm ngay khi mua: startedAt = now, expiresAt = startedAt + duration
+        const now = new Date();
+        const durationMin = comboPackage.duration_minutes || 60;
+        const expiresAt = new Date(now.getTime() + durationMin * 60 * 1000);
+
         resultComboTime = await db.ComboTime.create({
           order_id: serviceOrder.order_id,
           combo_id: comboPackage.combo_id,
           allowed_tier: comboPackage.allowed_tier,
-          duration_minutes: comboPackage.duration_minutes,
-          status: ComboTimeStatus.PENDING,
-          start_time: null,
-          end_time: null,
-          computer_id: null
+          duration_minutes: durationMin,
+          status: ComboTimeStatus.ACTIVE,
+          start_time: now,
+          end_time: expiresAt,
+          computer_id: targetComputer ? targetComputer.computer_id : null
         }, { transaction });
+
+        if (targetComputer) {
+          targetComputer.status = ComputerStatus.IN_USE;
+          await targetComputer.save({ transaction });
+
+          await db.ComputerStatusLog.create({
+            computer_id: targetComputer.computer_id,
+            member_id: memberId,
+            status: ComputerStatus.IN_USE,
+            session_type: SessionType.MEMBER,
+            start_time: now,
+            notes: `Kích hoạt Combo Time: ${comboPackage.name} (#${resultComboTime.combo_time_id})`
+          }, { transaction });
+        }
       }
 
       await transaction.commit();
+
+      if (targetComputer) {
+        const username = lockedMember.userInfo ? lockedMember.userInfo.username : 'Member';
+        try {
+          computerSocketService.login(targetComputer.computer_name, username);
+        } catch (sockErr) {
+          console.warn(`[Socket Warning] NetClient login signal skipped for ${targetComputer.computer_name}:`, sockErr.message);
+        }
+      }
 
       return {
         isExtension: Boolean(activeCombo),
@@ -525,11 +586,25 @@ class ComboTimeService {
         throw err;
       }
 
-      // Verify status: must be PENDING (Rule 2.1 & Test 6 concurrency)
-      if (comboTime.status !== ComboTimeStatus.PENDING) {
-        const err = new Error(`Gói Combo không ở trạng thái chờ kích hoạt (Trạng thái hiện tại: ${comboTime.status}).`);
+      // Verify status: must be ACTIVE or PENDING
+      if (comboTime.status !== ComboTimeStatus.ACTIVE && comboTime.status !== ComboTimeStatus.PENDING) {
+        const err = new Error(`Gói Combo không ở trạng thái hợp lệ để gán máy (Trạng thái hiện tại: ${comboTime.status}).`);
         err.statusCode = 400;
         throw err;
+      }
+
+      // If status is ACTIVE, check if already expired or already assigned to a computer
+      if (comboTime.status === ComboTimeStatus.ACTIVE) {
+        if (new Date() >= new Date(comboTime.end_time)) {
+          const err = new Error('Gói Combo này đã hết hạn sử dụng.');
+          err.statusCode = 400;
+          throw err;
+        }
+        if (comboTime.computer_id) {
+          const err = new Error(`Gói Combo đang hoạt động trên máy trạm khác hoặc đã được gán máy.`);
+          err.statusCode = 400;
+          throw err;
+        }
       }
 
       // 🔒 Pessimistic Lock on Computer
@@ -580,6 +655,7 @@ class ComboTimeService {
         where: {
           combo_time_id: { [Op.ne]: comboTimeId },
           status: ComboTimeStatus.ACTIVE,
+          computer_id: { [Op.ne]: null },
           end_time: { [Op.gt]: new Date() }
         },
         transaction,
@@ -592,12 +668,16 @@ class ComboTimeService {
         throw err;
       }
 
-      // Activate time: startedAt = now, expiresAt = startedAt + durationMinutes
+      // Preserve original start_time and end_time (time starts counting from purchase!)
       const now = new Date();
       const durationMin = comboTime.duration_minutes || 60;
-      const expiresAt = new Date(now.getTime() + durationMin * 60 * 1000);
+      let startedAt = comboTime.start_time || now;
+      let expiresAt = comboTime.end_time;
+      if (!expiresAt) {
+        expiresAt = new Date(startedAt.getTime() + durationMin * 60 * 1000);
+      }
 
-      comboTime.start_time = now;
+      comboTime.start_time = startedAt;
       comboTime.end_time = expiresAt;
       comboTime.status = ComboTimeStatus.ACTIVE;
       comboTime.computer_id = computerId;
@@ -633,12 +713,14 @@ class ComboTimeService {
         success: true,
         comboTime,
         computer,
-        startedAt: now,
+        startedAt,
         expiresAt,
         durationMinutes: durationMin
       };
     } catch (error) {
-      await transaction.rollback();
+      if (transaction && !transaction.finished) {
+        await transaction.rollback();
+      }
       throw error;
     }
   }

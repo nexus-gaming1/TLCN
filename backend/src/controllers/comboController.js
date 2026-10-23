@@ -126,6 +126,7 @@ class ComboController {
         memberId,
         comboId,
         paymentMethod: req.body.payment_method || 'WALLET',
+        computerId: req.body.computer_id || req.body.computerId || null,
         staffUserId
       });
 
@@ -134,7 +135,9 @@ class ComboController {
         data: result,
         message: result.isExtension
           ? 'Gia hạn gói Combo Time thành công! Thời gian đã được cộng dồn.'
-          : 'Mua gói Combo Time thành công! Vui lòng chọn máy để bắt đầu sử dụng.'
+          : (result.comboTime && result.comboTime.computer_id)
+            ? 'Mua gói Combo Time thành công! Máy trạm đã mở khóa và thời gian bắt đầu đếm.'
+            : 'Mua gói Combo Time thành công! Thời gian đã bắt đầu được tính ngay từ bây giờ.'
       });
     } catch (error) {
       next(error);

@@ -155,24 +155,32 @@ test('3. Combo chưa thanh toán không được kích hoạt', async () => {
 });
 
 // --------------------------------------------------------------------------
-// 4. Combo đã thanh toán nhưng chưa sử dụng vẫn chưa bắt đầu đếm
+// 4. Combo đã thanh toán bắt đầu đếm giờ ngay tại thời điểm mua
 // --------------------------------------------------------------------------
-test('4. Combo đã thanh toán nhưng chưa sử dụng vẫn chưa bắt đầu đếm', async () => {
-  // Mua combo cho Member 2 bằng ví
+test('4. Combo đã thanh toán bắt đầu đếm giờ ngay tại thời điểm mua', async () => {
+  const beforeTime = Date.now();
   const purchase = await comboTimeService.purchaseCombo({
     memberId: 2,
     comboId: 1, // Combo Đêm: 360 phút
     paymentMethod: 'CASH'
   });
+  const afterTime = Date.now();
 
   const comboTime = purchase.comboTime;
-  assert.strictEqual(comboTime.status, ComboTimeStatus.PENDING);
-  assert.strictEqual(comboTime.start_time, null);
-  assert.strictEqual(comboTime.end_time, null);
+  assert.strictEqual(comboTime.status, ComboTimeStatus.ACTIVE);
+  assert.ok(comboTime.start_time !== null);
+  assert.ok(comboTime.end_time !== null);
 
-  // calculateRemainingMinutes trả về nguyên thời lượng đã mua (360 phút), chưa bị trừ
+  const startMs = new Date(comboTime.start_time).getTime();
+  assert.ok(startMs >= beforeTime - 1000 && startMs <= afterTime + 1000);
+
+  const expectedEndMs = startMs + 360 * 60 * 1000;
+  const actualEndMs = new Date(comboTime.end_time).getTime();
+  assert.strictEqual(Math.floor(actualEndMs / 1000), Math.floor(expectedEndMs / 1000));
+
+  // calculateRemainingMinutes trả về thời lượng khoảng 360 phút
   const remaining = comboTime.calculateRemainingMinutes();
-  assert.strictEqual(remaining, 360);
+  assert.ok(remaining >= 359 && remaining <= 360);
 
   // Dọn dẹp
   await comboTime.destroy();
@@ -181,9 +189,10 @@ test('4. Combo đã thanh toán nhưng chưa sử dụng vẫn chưa bắt đầ
 });
 
 // --------------------------------------------------------------------------
-// 5. Bắt đầu sử dụng lần đầu kích hoạt đúng thời điểm
+// 5. Bắt đầu sử dụng lần đầu gán máy trạm và bảo toàn thời gian đã đếm từ lúc mua
 // --------------------------------------------------------------------------
-test('5. Bắt đầu sử dụng lần đầu kích hoạt đúng thời điểm', async () => {
+test('5. Bắt đầu sử dụng lần đầu gán máy trạm và bảo toàn thời gian đã đếm từ lúc mua', async () => {
+  const beforeTime = Date.now();
   const purchase = await comboTimeService.purchaseCombo({
     memberId: 2,
     comboId: 1, // 360 min, allowed_tier: 1
@@ -196,21 +205,19 @@ test('5. Bắt đầu sử dụng lần đầu kích hoạt đúng thời điể
   });
   assert.ok(computer, 'Tìm thấy máy trạm Zone 3');
 
-  const beforeTime = Date.now();
   const activateRes = await comboTimeService.activateSession({
     comboTimeId: purchase.comboTime.combo_time_id,
     memberId: 2,
     computerId: computer.computer_id
   });
-  const afterTime = Date.now();
 
   assert.strictEqual(activateRes.success, true);
   assert.strictEqual(activateRes.comboTime.status, ComboTimeStatus.ACTIVE);
   assert.strictEqual(activateRes.comboTime.computer_id, computer.computer_id);
 
-  // StartedAt nằm trong khoảng beforeTime và afterTime
+  // StartedAt bảo toàn mốc thời gian lúc mua
   const startedAtMs = new Date(activateRes.startedAt).getTime();
-  assert.ok(startedAtMs >= beforeTime - 1000 && startedAtMs <= afterTime + 1000);
+  assert.ok(startedAtMs >= beforeTime - 1000);
 
   // ExpiresAt = startedAt + 360 phút
   const expectedEndMs = startedAtMs + 360 * 60 * 1000;
@@ -262,7 +269,7 @@ test('6. Nhiều request bắt đầu đồng thời không kích hoạt nhiều
         computerId: computer.computer_id
       });
     },
-    /không ở trạng thái chờ kích hoạt/
+    /đang hoạt động trên máy trạm khác hoặc đã được gán máy/
   );
 
   // Dọn dẹp

@@ -58,7 +58,7 @@ export default function PurchaseComboModal({
             </div>
             <div>
               <h3 className="text-base font-extrabold">Xác Nhận Mua Gói Combo Time</h3>
-              <p className="text-xs text-slate-400">Gói trả trước — Thời gian chỉ bắt đầu đếm khi kích hoạt vào máy</p>
+              <p className="text-xs text-slate-400">Gói trả trước — Thời gian bắt đầu đếm ngay sau khi thanh toán thành công</p>
             </div>
           </div>
           <button
@@ -193,9 +193,9 @@ export default function PurchaseComboModal({
               <span>Quy chế sử dụng gói Combo Time:</span>
             </div>
             <ul className="list-disc pl-5 space-y-0.5 text-[10px] text-slate-500">
-              <li>Thời gian chỉ kích hoạt khi bạn đăng nhập vào máy trạm.</li>
+              <li>Thời gian được tính ngay lập tức từ thời điểm thanh toán thành công.</li>
               <li>Được phép chuyển đổi giữa các máy có cấp Zone ≤ {combo.allowed_tier || 1}.</li>
-              <li>Thời gian trôi liên tục theo đồng hồ thực sau khi kích hoạt.</li>
+              <li>Thời gian trôi liên tục theo đồng hồ thực sau khi mua.</li>
             </ul>
           </div>
 

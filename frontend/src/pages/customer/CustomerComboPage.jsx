@@ -209,7 +209,7 @@ export default function CustomerComboPage({ user, onLogout }) {
                 {/* PC and Zone badges */}
                 <div className="flex items-center gap-2">
                   <span className="px-3 py-1 rounded-xl bg-indigo-500/20 text-indigo-300 font-mono font-black text-sm border border-indigo-500/30">
-                    Máy: {activeCombo.computer?.computer_name || `PC-${activeCombo.computer_id}`}
+                    Máy: {activeCombo.computer?.computer_name || (activeCombo.computer_id ? `PC-${activeCombo.computer_id}` : 'Chưa chọn máy')}
                   </span>
                   <span className="px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-bold text-xs border border-amber-500/30">
                     Zone Cấp ≤ {activeCombo.allowed_tier || 1}
@@ -223,7 +223,7 @@ export default function CustomerComboPage({ user, onLogout }) {
                   <div className="flex items-center justify-between text-xs text-slate-300">
                     <span className="font-bold flex items-center gap-1.5">
                       <Timer className="w-4 h-4 text-emerald-400" />
-                      Thời Gian Còn Lại
+                      Thời Gian Còn Lại (Đang chạy liên tục)
                     </span>
                     <span className="font-mono text-emerald-400 font-extrabold">{progressPercent.toFixed(0)}%</span>
                   </div>
@@ -252,14 +252,25 @@ export default function CustomerComboPage({ user, onLogout }) {
 
                 {/* Action Controls */}
                 <div className="flex flex-col justify-between gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setIsSwitchModalOpen(true)}
-                    className="flex-1 px-4 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                  >
-                    <ArrowRightLeft className="w-4 h-4" />
-                    <span>Đổi Máy Trạm</span>
-                  </button>
+                  {!activeCombo.computer_id ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedComboForActivate(activeCombo)}
+                      className="flex-1 px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer animate-pulse"
+                    >
+                      <Play className="w-4 h-4 fill-current" />
+                      <span>Chọn Máy Trạm Ngồi Chơi</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsSwitchModalOpen(true)}
+                      className="flex-1 px-4 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
+                    >
+                      <ArrowRightLeft className="w-4 h-4" />
+                      <span>Đổi Máy Trạm</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"

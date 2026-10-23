@@ -55,14 +55,16 @@ class ComboTime extends Model {
   }
 
   activate(computerId = null) {
-    if (this.status !== ComboTimeStatus.PENDING) {
-      throw new Error('ComboTime đã được kích hoạt hoặc không ở trạng thái chờ');
+    if (this.status !== ComboTimeStatus.PENDING && this.status !== ComboTimeStatus.ACTIVE) {
+      throw new Error('ComboTime đã kết thúc hoặc không ở trạng thái hợp lệ');
     }
-    const now = new Date();
-    this.start_time = now;
-    const duration = this.duration_minutes || 60;
-    this.end_time = new Date(now.getTime() + duration * 60 * 1000);
-    this.status = ComboTimeStatus.ACTIVE;
+    if (this.status === ComboTimeStatus.PENDING) {
+      const now = new Date();
+      this.start_time = now;
+      const duration = this.duration_minutes || 60;
+      this.end_time = new Date(now.getTime() + duration * 60 * 1000);
+      this.status = ComboTimeStatus.ACTIVE;
+    }
     if (computerId) {
       this.computer_id = computerId;
     }
