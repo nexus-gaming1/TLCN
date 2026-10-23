@@ -366,7 +366,7 @@ class ComboTimeService {
 
       // Handle payment deduction
       if (paymentMethod === 'WALLET') {
-        const totalBalance = parseFloat(lockedMember.real_balance || 0) + parseFloat(lockedMember.bonus_balance || 0);
+        const totalBalance = parseFloat(lockedMember.real_balance || 0);
         if (totalBalance < comboPrice) {
           const err = new Error(`Số dư tài khoản (${totalBalance.toLocaleString('vi-VN')}đ) không đủ để thanh toán gói combo (${comboPrice.toLocaleString('vi-VN')}đ).`);
           err.statusCode = 400;
