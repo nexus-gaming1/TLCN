@@ -1,20 +1,23 @@
 import React, { useState } from 'react';
-import { X, Power, Lock, Unlock, ArrowRightLeft, Clock, User, Gamepad2, Cpu, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, Power, Lock, Unlock, ArrowRightLeft, Clock, User, Gamepad2, Cpu, CheckCircle2, AlertCircle , MemoryStick, HardDrive, MonitorCog} from 'lucide-react';
 import { STATION_TYPES } from '../../../shared/constants/stationConstants';
 
-export default function StationDrawer({ station, isOpen, onClose, onAction, onSwitchStation, availableStations = [] }) {
+export default function StationDrawer({ station, isOpen, onClose, onAction, onSwitchStation, availableStations, machines = [] }) {
     const [isSwitchModalOpen, setIsSwitchModalOpen] = useState(false);
     const [selectedTargetId, setSelectedTargetId] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
-
     if (!station || !isOpen) return null;
+    console.log('Station Data:', station);
+const currentMachine = Object.values(machines).find(
+    machine => machine.localIp === station?.ip
+    && machine.macAddress === station?.mac_address
+);
 
     const currentStatusUpper = String(station.status || '').toUpperCase();
     const isOffline = currentStatusUpper === 'OFFLINE';
     const isOnline = currentStatusUpper === 'ONLINE' || currentStatusUpper === 'READY';
     const isLocked = currentStatusUpper === 'LOCKED' || currentStatusUpper === 'PAUSE';
-
     const typeDef = STATION_TYPES[station.type] || {
         label: isOffline ? 'Tắt nguồn' : isLocked ? 'Tạm khóa' : 'Sẵn sàng',
         color: isOffline ? 'slate' : isLocked ? 'amber' : 'emerald',
@@ -79,11 +82,10 @@ export default function StationDrawer({ station, isOpen, onClose, onAction, onSw
                 {/* Toast Notification inside Drawer */}
                 {toastMessage && (
                     <div
-                        className={`absolute top-4 left-4 right-4 z-50 p-3 rounded-xl border font-semibold text-xs flex items-center gap-2 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 ${
-                            toastMessage.isError
+                        className={`absolute top-4 left-4 right-4 z-50 p-3 rounded-xl border font-semibold text-xs flex items-center gap-2 shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 ${toastMessage.isError
                                 ? 'bg-rose-50 border-rose-200 text-rose-800'
                                 : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                        }`}
+                            }`}
                     >
                         {toastMessage.isError ? (
                             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
@@ -171,7 +173,59 @@ export default function StationDrawer({ station, isOpen, onClose, onAction, onSw
                         </div>
                     </div>
                 </div>
+                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/70 space-y-3">
+                    <h4 className="text-xs font-extrabold uppercase text-slate-400 font-mono tracking-wider">
+                        Hiệu Năng Máy
+                    </h4>
 
+                    <div className="flex items-center justify-between text-xs py-1 border-b border-slate-200/50">
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                            <Cpu className="w-3.5 h-3.5 text-slate-400" />
+                            CPU:
+                        </span>
+                        <span className="font-mono font-bold text-slate-800">
+                            {currentMachine?.performance?.cpuUsage != null
+                                ? `${currentMachine.performance.cpuUsage}%`
+                                : '—'}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs py-1 border-b border-slate-200/50">
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                            <MemoryStick className="w-3.5 h-3.5 text-slate-400" />
+                            RAM:
+                        </span>
+                        <span className="font-mono font-bold text-slate-800">
+                            {currentMachine?.performance?.ramUsage != null
+                                ? `${currentMachine.performance.ramUsage}%`
+                                : '—'}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs py-1 border-b border-slate-200/50">
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                            <HardDrive className="w-3.5 h-3.5 text-slate-400" />
+                            Disk:
+                        </span>
+                        <span className="font-mono font-bold text-slate-800">
+                            {currentMachine?.performance?.diskUsage != null
+                                ? `${currentMachine.performance.diskUsage}%`
+                                : '—'}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs py-1">
+                        <span className="text-slate-500 flex items-center gap-1.5">
+                            <MonitorCog className="w-3.5 h-3.5 text-slate-400" />
+                            GPU:
+                        </span>
+                        <span className="font-mono font-bold text-slate-800">
+                            {currentMachine?.performance?.gpuUsage != null
+                                ? `${currentMachine.performance.gpuUsage}%`
+                                : '—'}
+                        </span>
+                    </div>
+                </div>
                 {/* Footer Action - Clean single close button */}
                 <div className="pt-4 border-t border-slate-100">
                     <button

@@ -63,6 +63,7 @@ export function mapComputerToMachineDTO(c) {
   else if (c.status === 'LOCKED') type = 'locked';
 
   const pricePerHour = Number(c.ComputerZone?.PricingPlan?.price_per_hour || c.price_per_hour || (zoneId === 2 ? 15000 : zoneId === 3 ? 10000 : zoneId === 4 ? 20000 : zoneId === 5 ? 25000 : 12000));
+  const tierLevel = Number(c.ComputerZone?.tier_level || (zoneId === 3 ? 1 : (zoneId === 1 || zoneId === 2) ? 2 : zoneId === 4 ? 3 : 4));
 
   return {
     id: c.computer_name || c.id || `PC-${c.computer_id}`,
@@ -72,8 +73,10 @@ export function mapComputerToMachineDTO(c) {
     mac_address: c.mac_address || 'F4:D4:88:5A:00:00',
     port: `Port #${c.computer_id || 1}`,
     zoneId: `zone-${zoneId}`,
+    zone_id: zoneId,
     zoneName,
     zoneIcon,
+    tier_level: tierLevel,
     specDescription: zoneDesc,
     price_per_hour: pricePerHour,
     is_remote_enabled: Boolean(c.is_remote_enabled),

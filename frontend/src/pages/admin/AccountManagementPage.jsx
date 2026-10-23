@@ -13,6 +13,7 @@ import Pagination from '../../shared/ui/Pagination';
 import CreateMemberModal from '../../features/members/ui/CreateMemberModal';
 import EditMemberModal from '../../features/members/ui/EditMemberModal';
 import MemberDetailModal from '../../features/members/ui/MemberDetailModal';
+import { useMachines } from '../../shared/hooks/useMachines';
 import ExportMemberModal from '../../features/members/ui/ExportMemberModal';
 import MemberPrintView from '../../features/members/ui/MemberPrintView';
 
@@ -81,7 +82,7 @@ export default function AccountManagementPage({ user, onLogout }) {
   useEffect(() => {
     fetchMemberData();
   }, []);
-
+  const { data: machines = {} } = useMachines();
   // Filtered members calculation
   const filteredMembers = useMemo(() => {
     return members.filter((m) => {

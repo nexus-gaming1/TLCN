@@ -215,7 +215,7 @@ const seedData = async (db) => {
       { zone_id: 3, zone_name: 'Zone 3: Tiêu Chuẩn Combat', description: 'Khu vực phổ thông i5 14400F, RTX 4060, Màn 240Hz', tier_level: 1 },
       { zone_id: 4, zone_name: 'Zone 4: Stream Studio', description: 'Phòng Studio cách âm, Cam 4K, GoXLR, RTX 4090 24GB', tier_level: 3 },
       { zone_id: 5, zone_name: 'Zone 5: Cloud Remote Nodes', description: 'Cụm Cloud vGPU stream WebRTC 1.1ms AV1 Dual EPYC', tier_level: 4 }
-    ]);
+    ], ['zone_name', 'description', 'tier_level']);
 
     // 4.5. Seed Hardware Profiles into MySQL CSDL
     if (db.HardwareProfile) {
@@ -370,9 +370,16 @@ const seedData = async (db) => {
 
     // 9. Seed Combo Packages
     await safeSeed(db.ComboPackage, [
-      { combo_id: 1, name: 'Combo Đêm Xuyên Màn Đêm', price: 50000.00, duration_minutes: 360, allowed_tier: 1, is_active: true },
-      { combo_id: 2, name: 'Combo Chiến Game 3H + Nước', price: 40000.00, duration_minutes: 180, allowed_tier: 1, is_active: true }
+      { combo_id: 1, name: 'Combo Đêm Xuyên Màn Đêm', description: 'Gói xuyên đêm 6 tiếng dành cho cú đêm chiến game thả ga', price: 50000.00, duration_minutes: 360, allowed_tier: 1, is_active: true },
+      { combo_id: 2, name: 'Combo Chiến Game 3H + Nước', description: 'Gói 3 tiếng chơi game kèm 1 phần nước Sting dâu mát lạnh', price: 40000.00, duration_minutes: 180, allowed_tier: 1, is_active: true }
     ]);
+
+    // 9.1 Seed Combo Items (Dịch vụ đi kèm thực tế: Combo 2 kèm 1x Sting Dâu Ướp Lạnh)
+    if (db.ComboItem) {
+      await safeSeed(db.ComboItem, [
+        { combo_id: 2, service_item_id: 2, quantity: 1 }
+      ]);
+    }
 
     // 10. Seed Hardware Components Catalog directly into MySQL CSDL
     if (db.HardwareComponent) {

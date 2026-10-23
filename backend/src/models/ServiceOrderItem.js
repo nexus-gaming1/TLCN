@@ -17,7 +17,8 @@ module.exports = (sequelize) => {
     service_item_id: { type: DataTypes.INTEGER, primaryKey: true },
     quantity: { type: DataTypes.INTEGER, allowNull: false },
     item_name: { type: DataTypes.STRING(100), allowNull: false },
-    price: { type: DataTypes.DECIMAL(10, 2), allowNull: false }
+    price: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
+    is_combo_item: { type: DataTypes.BOOLEAN, defaultValue: false }
   }, {
     sequelize,
     modelName: 'ServiceOrderItem',
@@ -26,8 +27,8 @@ module.exports = (sequelize) => {
   });
 
   ServiceOrderItem.associate = (models) => {
-    ServiceOrderItem.belongsTo(models.ServiceOrder, { foreignKey: 'order_id' });
-    ServiceOrderItem.belongsTo(models.ServiceItem, { foreignKey: 'service_item_id' });
+    ServiceOrderItem.belongsTo(models.ServiceOrder, { foreignKey: 'order_id', as: 'order' });
+    ServiceOrderItem.belongsTo(models.ServiceItem, { foreignKey: 'service_item_id', as: 'serviceItem' });
   };
 
   return ServiceOrderItem;

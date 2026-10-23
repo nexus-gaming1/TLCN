@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { User, Shield, Receipt, Award, Gamepad2, Radio } from 'lucide-react';
+import { User, Shield, Receipt, Award, Gamepad2, Radio, Clock } from 'lucide-react';
 
 /**
  * CustomerSidebar Widget
@@ -13,6 +13,7 @@ export default function CustomerSidebar({ activeTab, onTabChange }) {
 
   const navItems = [
     { id: 'profile', label: 'Hồ sơ cá nhân', icon: User, path: '/customer/profile' },
+    { id: 'combos', label: 'Gói Combo Time', icon: Clock, path: '/customer/combos' },
     { id: 'security', label: 'Bảo mật', icon: Shield, path: '/customer/security' },
     { id: 'transactions', label: 'Lịch sử giao dịch', icon: Receipt, path: '/customer/transactions' },
     { id: 'rewards', label: 'Điểm thưởng', icon: Award, path: '/customer/rewards' }
