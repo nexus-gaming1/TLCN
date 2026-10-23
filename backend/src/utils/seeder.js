@@ -252,68 +252,112 @@ const seedData = async (db) => {
 
     // 4.5. Seed Hardware Profiles into MySQL CSDL
     if (db.HardwareProfile) {
-      await safeSeed(db.HardwareProfile, [
-        {
-          profile_id: 1,
-          profile_name: 'Dàn Thi Đấu Esports Pro',
-          description: 'Cấu hình cao cấp thi đấu giải FPS, màn 240Hz Fast-IPS, i9 + RTX 4080 Super',
-          cpu_model: 'Intel Core i9-14900K (24 Cores / 32 Threads @ 5.8GHz)',
-          gpu_model: 'RTX 4080 Super 16GB (ASUS ROG Strix OC)',
-          ram_capacity: '64GB DDR5 6000MHz CL30 (Kingston Beast)',
-          storage_type: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)',
-          monitor: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)',
-          gear: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II',
-          zone_id: 1
-        },
-        {
-          profile_id: 2,
-          profile_name: 'Dàn VIP Gaming Pro',
-          description: 'Cấu hình VIP Pro phòng riêng biệt, i7 + RTX 4070 Ti Super',
-          cpu_model: 'Intel Core i7-14700K (20 Cores / 28 Threads @ 5.6GHz)',
-          gpu_model: 'RTX 4070 Ti Super 16GB (MSI Gaming X Slim)',
-          ram_capacity: '32GB DDR5 6000MHz CL30 (Kingston Beast)',
-          storage_type: 'High Throughput Cache 1TB SAN Boot',
-          monitor: '27" 2K OLED 240Hz (ASUS ROG Swift PG27AQDM)',
-          gear: 'Chuột Razer DeathAdder V3 + Phím Huntsman + Tai Kraken',
-          zone_id: 2
-        },
-        {
-          profile_id: 3,
-          profile_name: 'Dàn Phổ Thông Standard',
-          description: 'Cấu hình tiêu chuẩn phổ thông combat game online i5 + RTX 4060',
-          cpu_model: 'Intel Core i5-13400F (10 Cores / 16 Threads @ 4.6GHz)',
-          gpu_model: 'RTX 4060 8GB (Zotac Gaming Twin Edge)',
-          ram_capacity: '32GB DDR4 3200MHz Dual Channel TeamGroup',
-          storage_type: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)',
-          monitor: '24" Full HD 180Hz (ViewSonic Gaming)',
-          gear: 'Bộ Peripherals Standard Cyber Gaming',
-          zone_id: 3
-        },
-        {
-          profile_id: 4,
-          profile_name: 'Dàn Stream Studio Pro',
-          description: 'Cụm máy Studio Livestream 4K, Ryzen 9 + RTX 4090 24GB',
-          cpu_model: 'AMD Ryzen 9 7950X (16 Cores / 32 Threads @ 5.7GHz)',
-          gpu_model: 'RTX 4090 24GB (Gigabyte AORUS Master)',
-          ram_capacity: '64GB DDR5 6000MHz (G.Skill Trident Z5 Neo)',
-          storage_type: 'Dual NVMe 2TB PCIe 4.0 Direct Capture',
-          monitor: '25" 360Hz BenQ ZOWIE XL2566K',
-          gear: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II',
-          zone_id: 4
-        },
-        {
-          profile_id: 5,
-          profile_name: 'Dàn Cloud Remote Nodes',
-          description: 'Cụm máy Cloud vGPU WebRTC Hypervisor',
-          cpu_model: 'AMD EPYC 7763 (64 Cores / 128 Threads Hypervisor)',
-          gpu_model: 'RTX 4090 24GB (Gigabyte AORUS Master)',
-          ram_capacity: '128GB ECC Reg Quad-Channel',
-          storage_type: '40Gbps Fiber SAN (Direct RDMA Ultra-low Latency)',
-          monitor: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)',
-          gear: 'Bộ Peripherals Standard Cyber Gaming',
-          zone_id: 5
-        }
-      ]);
+      await safeSeed(
+        db.HardwareProfile,
+        [
+          {
+            profile_id: 1,
+            profile_name: 'Dàn Thi Đấu Esports Pro',
+            description: 'Cấu hình cao cấp thi đấu giải FPS, màn 240Hz Fast-IPS, i9 + RTX 4080 Super',
+            cpu_model: 'Intel Core i9-14900K (24 Cores / 32 Threads @ 5.8GHz)',
+            gpu_model: 'RTX 4080 Super 16GB (ASUS ROG Strix OC)',
+            ram_capacity: '64GB DDR5 6000MHz CL30 (Kingston Beast)',
+            storage_type: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)',
+            monitor: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)',
+            gear: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II',
+            zone_id: 1
+          },
+          {
+            profile_id: 2,
+            profile_name: 'Dàn VIP Gaming Pro',
+            description: 'Cấu hình VIP Pro phòng riêng biệt, i7 + RTX 4070 Ti Super',
+            cpu_model: 'Intel Core i7-14700K (20 Cores / 28 Threads @ 5.6GHz)',
+            gpu_model: 'RTX 4070 Ti Super 16GB (MSI Gaming X Slim)',
+            ram_capacity: '32GB DDR5 6000MHz CL30 (Kingston Beast)',
+            storage_type: 'High Throughput Cache 1TB SAN Boot',
+            monitor: '27" 2K OLED 240Hz (ASUS ROG Swift PG27AQDM)',
+            gear: 'Chuột Razer DeathAdder V3 + Phím Huntsman + Tai Kraken',
+            zone_id: 2
+          },
+          {
+            profile_id: 3,
+            profile_name: 'Dàn Phổ Thông Standard',
+            description: 'Cấu hình tiêu chuẩn phổ thông combat game online i5 + RTX 4060',
+            cpu_model: 'Intel Core i5-13400F (10 Cores / 16 Threads @ 4.6GHz)',
+            gpu_model: 'RTX 4060 8GB (Zotac Gaming Twin Edge)',
+            ram_capacity: '32GB DDR4 3200MHz Dual Channel TeamGroup',
+            storage_type: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)',
+            monitor: '24" Full HD 180Hz (ViewSonic Gaming)',
+            gear: 'Bộ Peripherals Standard Cyber Gaming',
+            zone_id: 3
+          },
+          {
+            profile_id: 4,
+            profile_name: 'Dàn Stream Studio Pro',
+            description: 'Cụm máy Studio Livestream 4K, Ryzen 9 + RTX 4090 24GB',
+            cpu_model: 'AMD Ryzen 9 7950X (16 Cores / 32 Threads @ 5.7GHz)',
+            gpu_model: 'RTX 4090 24GB (Gigabyte AORUS Master)',
+            ram_capacity: '64GB DDR5 6000MHz (G.Skill Trident Z5 Neo)',
+            storage_type: 'Dual NVMe 2TB PCIe 4.0 Direct Capture',
+            monitor: '25" 360Hz BenQ ZOWIE XL2566K',
+            gear: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II',
+            zone_id: 4
+          },
+          {
+            profile_id: 5,
+            profile_name: 'Dàn Cloud Remote Nodes',
+            description: 'Cụm máy Cloud vGPU WebRTC Hypervisor',
+            cpu_model: 'AMD EPYC 7763 (64 Cores / 128 Threads Hypervisor)',
+            gpu_model: 'RTX 4090 24GB (Gigabyte AORUS Master)',
+            ram_capacity: '128GB ECC Reg Quad-Channel',
+            storage_type: '40Gbps Fiber SAN (Direct RDMA Ultra-low Latency)',
+            monitor: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)',
+            gear: 'Bộ Peripherals Standard Cyber Gaming',
+            zone_id: 5
+          }
+        ],
+        ['profile_name', 'description', 'cpu_model', 'gpu_model', 'ram_capacity', 'storage_type', 'monitor', 'gear', 'zone_id']
+      );
+    }
+
+    // 4.6. Seed Hardware Component Presets (CPUs, GPUs, RAMs, Storages, Monitors, Gears)
+    if (db.HardwareComponent) {
+      await safeSeed(
+        db.HardwareComponent,
+        [
+          // CPU
+          { component_id: 1, category: 'cpu', name: 'Intel Core i9-14900K (24 Cores / 32 Threads @ 5.8GHz)' },
+          { component_id: 2, category: 'cpu', name: 'Intel Core i7-14700K (20 Cores / 28 Threads @ 5.6GHz)' },
+          { component_id: 3, category: 'cpu', name: 'Intel Core i5-13400F (10 Cores / 16 Threads @ 4.6GHz)' },
+          { component_id: 4, category: 'cpu', name: 'AMD Ryzen 9 7950X (16 Cores / 32 Threads @ 5.7GHz)' },
+          { component_id: 5, category: 'cpu', name: 'AMD EPYC 7763 (64 Cores / 128 Threads Hypervisor)' },
+          // GPU
+          { component_id: 6, category: 'gpu', name: 'RTX 4090 24GB (Gigabyte AORUS Master)' },
+          { component_id: 7, category: 'gpu', name: 'RTX 4080 Super 16GB (ASUS ROG Strix OC)' },
+          { component_id: 8, category: 'gpu', name: 'RTX 4070 Ti Super 16GB (MSI Gaming X Slim)' },
+          { component_id: 9, category: 'gpu', name: 'RTX 4060 8GB (Zotac Gaming Twin Edge)' },
+          // RAM
+          { component_id: 10, category: 'ram', name: '64GB DDR5 6000MHz CL30 (Kingston Beast)' },
+          { component_id: 11, category: 'ram', name: '32GB DDR5 6000MHz CL30 (Kingston Beast)' },
+          { component_id: 12, category: 'ram', name: '32GB DDR4 3200MHz Dual Channel TeamGroup' },
+          { component_id: 13, category: 'ram', name: '128GB ECC Reg Quad-Channel Server' },
+          // Storage
+          { component_id: 14, category: 'storage', name: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)' },
+          { component_id: 15, category: 'storage', name: 'High Throughput Cache 1TB SAN Boot' },
+          { component_id: 16, category: 'storage', name: 'Dual NVMe 2TB PCIe 4.0 Direct Capture' },
+          { component_id: 17, category: 'storage', name: '40Gbps Fiber SAN (Direct RDMA Ultra-low Latency)' },
+          // Monitor
+          { component_id: 18, category: 'monitor', name: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)' },
+          { component_id: 19, category: 'monitor', name: '27" 2K OLED 240Hz (ASUS ROG Swift PG27AQDM)' },
+          { component_id: 20, category: 'monitor', name: '24" Full HD 180Hz (ViewSonic Gaming)' },
+          { component_id: 21, category: 'monitor', name: '25" 360Hz BenQ ZOWIE XL2566K' },
+          // Gear
+          { component_id: 22, category: 'gear', name: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II' },
+          { component_id: 23, category: 'gear', name: 'Chuột Razer DeathAdder V3 + Phím Huntsman + Tai Kraken' },
+          { component_id: 24, category: 'gear', name: 'Bộ Peripherals Standard Cyber Gaming' }
+        ],
+        ['category', 'name', 'is_active']
+      );
     }
 
     // 6. Seed Computers (Rich set of 36 computers with MAC addresses & Hardware Profile mapping)

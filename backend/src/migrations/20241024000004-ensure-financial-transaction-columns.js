@@ -2,7 +2,7 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up(queryInterface, Sequelize) {
+  async up(queryInterface, _Sequelize) {
     const addCol = async (colName, colType) => {
       try {
         await queryInterface.sequelize.query(`ALTER TABLE \`financial_transaction\` ADD COLUMN \`${colName}\` ${colType}`);
@@ -20,6 +20,6 @@ module.exports = {
     await addCol('notes', 'TEXT NULL');
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(_queryInterface, _Sequelize) {
   }
 };

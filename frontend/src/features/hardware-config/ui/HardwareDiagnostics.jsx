@@ -1,4 +1,3 @@
-import React from 'react';
 import { Thermometer, Zap, AlertTriangle, ArrowRight } from 'lucide-react';
 
 /**
@@ -22,7 +21,7 @@ export default function HardwareDiagnostics({ diagnostics = {} }) {
       description: 'Cảnh báo nhiệt độ CPU vượt 78°C khi chơi Cyberpunk 2077. Đã tạm tắt nhận khách.',
       schedule: 'Chủ Nhật 02:00'
     }
-  } = diagnostics;
+  } = diagnostics || {};
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">

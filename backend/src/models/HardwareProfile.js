@@ -7,6 +7,12 @@ module.exports = (sequelize) => {
     profile_id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     profile_name: { type: DataTypes.STRING(100), allowNull: false, unique: true },
     description: { type: DataTypes.TEXT },
+    cpu_model: { type: DataTypes.STRING(255), allowNull: true },
+    gpu_model: { type: DataTypes.STRING(255), allowNull: true },
+    ram_capacity: { type: DataTypes.STRING(100), allowNull: true },
+    storage_type: { type: DataTypes.STRING(255), allowNull: true },
+    monitor: { type: DataTypes.STRING(255), allowNull: true },
+    gear: { type: DataTypes.STRING(255), allowNull: true },
     zone_id: { type: DataTypes.INTEGER, allowNull: true }
   }, {
     sequelize,

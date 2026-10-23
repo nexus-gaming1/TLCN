@@ -1,34 +1,31 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
 
 // Hardware Config Service, Components & Models
 import hardwareService from '../../shared/api/hardwareService';
-import {
-  MOCK_HARDWARE_METRICS,
-  MOCK_HARDWARE_SPECS,
-  MOCK_HARDWARE_DIAGNOSTICS
-} from '../../features/hardware-config/model/mockHardwareData';
+import toast from 'react-hot-toast';
+import { Loader2 } from 'lucide-react';
 import HardwareKpiBento from '../../features/hardware-config/ui/HardwareKpiBento';
 import HardwareFilterBar from '../../features/hardware-config/ui/HardwareFilterBar';
 import HardwareSpecsTable from '../../features/hardware-config/ui/HardwareSpecsTable';
 import HardwareDiagnostics from '../../features/hardware-config/ui/HardwareDiagnostics';
 import HardwareTelemetryModal from '../../features/hardware-config/ui/HardwareTelemetryModal';
-import CreateHardwareModal from '../../features/hardware-config/ui/CreateHardwareModal';
-import EditHardwareModal from '../../features/hardware-config/ui/EditHardwareModal';
+import HardwareProfileFormModal from '../../features/hardware-config/ui/HardwareProfileFormModal';
 
 /**
  * ManageConfigPage (Quản Lý Cấu Hình Máy & BootROM SAN Telemetry)
- * Built with FSD Architecture, Clean Code & DRY Principles
+ * Built with FSD Architecture, Clean Code & Real Database Synchronization
  */
 export default function ManageConfigPage({ user, onLogout }) {
-  const [specs, setSpecs] = useState(MOCK_HARDWARE_SPECS);
-  const [metrics, setMetrics] = useState(MOCK_HARDWARE_METRICS);
-  const [diagnostics, setDiagnostics] = useState(MOCK_HARDWARE_DIAGNOSTICS);
+  const [specs, setSpecs] = useState([]);
+  const [metrics, setMetrics] = useState(null);
+  const [diagnostics, setDiagnostics] = useState(null);
   const [zones, setZones] = useState([]);
   const [computers, setComputers] = useState([]);
   const [hardwarePresets, setHardwarePresets] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [zoneFilter, setZoneFilter] = useState('all');
@@ -42,14 +39,22 @@ export default function ManageConfigPage({ user, onLogout }) {
 
   // Fetch real specs & zone & computer & presets data from Backend API on mount
   const fetchHardwareData = useCallback(async () => {
-    const result = await hardwareService.getHardwareSpecs();
-    if (result) {
-      if (result.specs && result.specs.length > 0) setSpecs(result.specs);
-      if (result.metrics) setMetrics(result.metrics);
-      if (result.diagnostics) setDiagnostics(result.diagnostics);
-      if (result.zones) setZones(result.zones);
-      if (result.computers) setComputers(result.computers);
-      if (result.hardwarePresets) setHardwarePresets(result.hardwarePresets);
+    try {
+      setIsLoading(true);
+      const result = await hardwareService.getHardwareSpecs();
+      if (result) {
+        setSpecs(result.specs || []);
+        if (result.metrics) setMetrics(result.metrics);
+        if (result.diagnostics) setDiagnostics(result.diagnostics);
+        if (result.zones) setZones(result.zones || []);
+        if (result.computers) setComputers(result.computers || []);
+        if (result.hardwarePresets) setHardwarePresets(result.hardwarePresets);
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải thông số cấu hình từ CSDL API:', err);
+      toast.error('Không thể tải dữ liệu cấu hình máy từ máy chủ.');
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -71,13 +76,18 @@ export default function ManageConfigPage({ user, onLogout }) {
   }, []);
 
   // Filtered Specs Calculation
+  // Filtered Specs Calculation
   const filteredSpecs = useMemo(() => {
     return specs.filter((item) => {
       const query = searchQuery.toLowerCase().trim();
+      const itemIdStr = String(item.id || '').toLowerCase();
+      const profileNameStr = String(item.profileName || '').toLowerCase();
+
       const matchSearch =
         !query ||
-        item.id.toLowerCase().includes(query) ||
-        (item.profileName && item.profileName.toLowerCase().includes(query)) ||
+        itemIdStr.includes(query) ||
+        profileNameStr.includes(query) ||
+        (item.assignedComputers && item.assignedComputers.some((c) => String(c).toLowerCase().includes(query))) ||
         (item.cpu?.model && item.cpu.model.toLowerCase().includes(query)) ||
         (item.gpu?.model && item.gpu.model.toLowerCase().includes(query)) ||
         (item.ram?.capacity && item.ram.capacity.toLowerCase().includes(query)) ||
@@ -104,12 +114,12 @@ export default function ManageConfigPage({ user, onLogout }) {
   const handleSaveEditHardware = async (updatedItem) => {
     try {
       await hardwareService.updateHardwareSpec(updatedItem.id, updatedItem);
-      setSpecs((prev) =>
-        prev.map((item) => (item.id === updatedItem.id ? updatedItem : item))
-      );
+      toast.success('Cập nhật mẫu cấu hình phần cứng thành công!');
       await fetchHardwareData();
     } catch (err) {
       console.error('Lỗi khi cập nhật mẫu cấu hình máy:', err);
+      const msg = err.response?.data?.message || err.message || 'Không thể cập nhật cấu hình máy. Vui lòng thử lại!';
+      toast.error(msg);
     }
   };
 
@@ -117,10 +127,12 @@ export default function ManageConfigPage({ user, onLogout }) {
     if (window.confirm(`Bạn có chắc chắn muốn xóa mẫu cấu hình phần cứng ${id}?`)) {
       try {
         await hardwareService.deleteHardwareSpec(id);
-        setSpecs((prev) => prev.filter((item) => item.id !== id));
+        toast.success(`Đã xóa cấu hình phần cứng ${id} thành công!`);
         await fetchHardwareData();
       } catch (err) {
         console.error('Lỗi khi xóa mẫu cấu hình máy:', err);
+        const msg = err.response?.data?.message || err.message || 'Không thể xóa cấu hình phần cứng.';
+        toast.error(msg);
       }
     }
   };
@@ -128,28 +140,40 @@ export default function ManageConfigPage({ user, onLogout }) {
   const handleCreateHardware = async (newHardware) => {
     try {
       await hardwareService.createHardwareSpec(newHardware);
-      setSpecs((prev) => [newHardware, ...prev]);
+      toast.success('Thêm mẫu cấu hình phần cứng mới thành công!');
       await fetchHardwareData();
     } catch (err) {
       console.error('Lỗi khi tạo mẫu cấu hình máy:', err);
+      const msg = err.response?.data?.message || err.message || 'Không thể tạo cấu hình máy. Vui lòng thử lại!';
+      toast.error(msg);
     }
   };
 
   const handleExportReport = () => {
+
+    const sanitizeCsvCell = (val) => {
+      if (val === null || val === undefined) return '""';
+      let str = String(val).trim();
+      if (/^[=@+\-\t\r]/.test(str)) {
+        str = `'${str}`;
+      }
+      return `"${str.replace(/"/g, '""')}"`;
+    };
+
     const headers = ['Tên Cấu Hình / Mã Máy', 'Phân Khu', 'Status', 'CPU Model', 'RAM', 'GPU', 'Storage', 'Màn hình', 'Peripherals'];
     const csvRows = [
-      headers.join(','),
+      headers.map(sanitizeCsvCell).join(','),
       ...filteredSpecs.map((item) =>
         [
-          `"${item.profileName || item.id}"`,
-          `"${item.zoneName}"`,
-          `"${item.statusLabel || item.status}"`,
-          `"${item.cpu?.model || ''}"`,
-          `"${item.ram?.capacity || ''}"`,
-          `"${item.gpu?.model || ''}"`,
-          `"${item.storage?.type || ''}"`,
-          `"${item.monitor || ''}"`,
-          `"${item.gear || ''}"`
+          sanitizeCsvCell(item.profileName || item.id),
+          sanitizeCsvCell(item.zoneName),
+          sanitizeCsvCell(item.statusLabel || item.status),
+          sanitizeCsvCell(item.cpu?.model || ''),
+          sanitizeCsvCell(item.ram?.capacity || ''),
+          sanitizeCsvCell(item.gpu?.model || ''),
+          sanitizeCsvCell(item.storage?.type || ''),
+          sanitizeCsvCell(item.monitor || ''),
+          sanitizeCsvCell(item.gear || '')
         ].join(',')
       )
     ];
@@ -181,7 +205,12 @@ export default function ManageConfigPage({ user, onLogout }) {
       <div className="pl-[240px]">
         <main className="relative pt-16 min-h-screen bg-slate-100 w-full px-6 py-6 pb-24 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
-
+            {isLoading && (
+              <div className="flex items-center gap-2 text-xs font-semibold text-sky-600 bg-sky-50 px-3 py-1.5 rounded-md w-fit border border-sky-200 shadow-sm">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-500" />
+                <span>Đang đồng bộ dữ liệu cấu hình máy & BootROM SAN...</span>
+              </div>
+            )}
 
             {/* Telemetry Summary Bento Grid */}
             <HardwareKpiBento metrics={metrics} />
@@ -223,19 +252,21 @@ export default function ManageConfigPage({ user, onLogout }) {
         hardware={selectedTelemetry}
       />
 
-      <CreateHardwareModal
+      <HardwareProfileFormModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateHardware}
+        mode="create"
         zones={zones}
         computers={computers}
         hardwarePresets={hardwarePresets}
       />
 
-      <EditHardwareModal
+      <HardwareProfileFormModal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         onSubmit={handleSaveEditHardware}
+        mode="edit"
         hardware={selectedHardwareForEdit}
         zones={zones}
         computers={computers}

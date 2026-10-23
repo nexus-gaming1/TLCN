@@ -2,11 +2,11 @@ const { Model, DataTypes } = require('sequelize');
 const { OrderStatus, PaymentStatus } = require('../constants/enums');
 
 class ServiceOrder extends Model {
-  addOrderItem(item, quantity) {
+  addOrderItem(_item, _quantity) {
     /* Logic tạo item trong đơn hàng */
   }
 
-  attachComboTime(comboTime) {
+  attachComboTime(_comboTime) {
     /* Liên kết comboTime với order */
   }
 
