@@ -1,8 +1,7 @@
 const computerService = require('../services/computerService');
+const stationControlService = require('../services/stationControlService');
 const computerSocketService = require('../services/computerSocketService');
 const machineStore = require('../stores/machineStore');
-const stationControlService = require('../services/stationControlService');
-
 /**
  * ComputerController
  * Handles HTTP requests and delegates logic to specialized Services (SRP & Clean Code)
@@ -328,7 +327,7 @@ class ComputerController {
           error: 'Command is required'
         });
       }
-      console.log("MAchineID" + machineId);
+      console.log("MachineID " + machineId);
       const machine = machineStore.get(machineId);
 
       if (!machine || !machine.socketId) {
@@ -459,6 +458,7 @@ class ComputerController {
     }
   }
 
+      
   async deleteHardwareSpec(req, res, next) {
     try {
       const { id } = req.params;
@@ -477,10 +477,18 @@ class ComputerController {
       next(error);
     }
   }
+  async getMachines(req, res, next) {
+    try {
+      const machines = machineStore.getAll();
+      return res.json({
+        status: 'success',
+        data: machines,
+        message: 'Lấy danh sách máy trạm đang kết nối thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
-
 module.exports = new ComputerController();
-
-
-

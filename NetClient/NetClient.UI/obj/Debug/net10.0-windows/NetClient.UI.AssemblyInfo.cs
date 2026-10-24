@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NetClient.UI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e8d20e2ed732408a9e2780855ab04f15ae4eab13")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+999c247d34b07b68e9e221b73c85643285dd2243")]
 [assembly: System.Reflection.AssemblyProductAttribute("NetClient.UI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NetClient.UI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

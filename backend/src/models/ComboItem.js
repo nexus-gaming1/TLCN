@@ -24,8 +24,8 @@ module.exports = (sequelize) => {
   });
 
   ComboItem.associate = (models) => {
-    ComboItem.belongsTo(models.ComboPackage, { foreignKey: 'combo_id' });
-    ComboItem.belongsTo(models.ServiceItem, { foreignKey: 'service_item_id' });
+    ComboItem.belongsTo(models.ComboPackage, { foreignKey: 'combo_id', as: 'comboPackage' });
+    ComboItem.belongsTo(models.ServiceItem, { foreignKey: 'service_item_id', as: 'serviceItem' });
   };
 
   return ComboItem;

@@ -12,7 +12,7 @@ public partial class LockOverlay : Form
     private readonly System.Windows.Forms.Timer _clockTimer;
     private readonly System.Windows.Forms.Timer _notifTimer;
 
-    public event Action<string>? OnLoginRequested;
+    public event Action<string, string>? OnLoginRequested;
 
     // Win32 API to ensure topmost window positioning
     [DllImport("user32.dll", SetLastError = true)]
@@ -53,9 +53,10 @@ public partial class LockOverlay : Form
             pnlNotification.Visible = false;
         };
 
-        // Wire Fake Login UI events
+        // Wire login UI events
         btnLogin.Click += btnLogin_Click;
         txtUsername.KeyDown += txtUsername_KeyDown;
+        txtPassword.KeyDown += txtPassword_KeyDown;
 
         Load += (_, _) =>
         {
@@ -89,6 +90,7 @@ public partial class LockOverlay : Form
         catch { }
 
         txtUsername.Clear();
+        txtPassword.Clear();
         lblLoginError.Visible = false;
         txtUsername.Focus();
     }
@@ -189,6 +191,7 @@ public partial class LockOverlay : Form
     private void btnLogin_Click(object? sender, EventArgs e)
     {
         var username = txtUsername.Text?.Trim();
+        var password = txtPassword.Text?.Trim();
         if (string.IsNullOrWhiteSpace(username))
         {
             lblLoginError.Text = "Vui lòng nhập tên tài khoản!";
@@ -196,21 +199,18 @@ public partial class LockOverlay : Form
             txtUsername.Focus();
             return;
         }
+        else if(string.IsNullOrWhiteSpace(password))
+        {
+            lblLoginError.Text = "Vui lòng nhập mật khẩu!";
+            lblLoginError.Visible= true;
+            txtPassword.Focus();
+            return;
+        }    
 
         lblLoginError.Visible = false;
 
-        // Cập nhật trạng thái hiển thị
-        SetUsername(username);
-        SetStatus(MachineStatus.IN_USE.ToString());
-
-        // Ẩn lớp phủ overlay mở máy
-        HideOverlay();
-
-        // Xóa text cho lần sau
-        txtUsername.Clear();
-
-        // Gửi sự kiện yêu cầu đăng nhập qua IPC
-        OnLoginRequested?.Invoke(username);
+        btnLogin.Enabled = false;
+        OnLoginRequested?.Invoke(username, password);
     }
 
     private void txtUsername_KeyDown(object? sender, KeyEventArgs e)
@@ -220,6 +220,41 @@ public partial class LockOverlay : Form
             e.SuppressKeyPress = true;
             btnLogin.PerformClick();
         }
+    }
+
+    private void txtPassword_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode == Keys.Enter)
+        {
+            e.SuppressKeyPress = true;
+            btnLogin.PerformClick();
+        }
+    }
+
+    public void ShowLoginResult(bool success, string? message)
+    {
+        if (InvokeRequired)
+        {
+            BeginInvoke(new Action<bool, string?>(ShowLoginResult), success, message);
+            return;
+        }
+
+        btnLogin.Enabled = true;
+        if (!success)
+        {
+            lblLoginError.Text = string.IsNullOrWhiteSpace(message)
+                ? "Đăng nhập thất bại."
+                : message;
+            lblLoginError.Visible = true;
+            txtPassword.SelectAll();
+            txtPassword.Focus();
+            return;
+        }
+
+        lblLoginError.Visible = false;
+        txtUsername.Clear();
+        txtPassword.Clear();
+        HideOverlay();
     }
 
     protected override void OnFormClosing(FormClosingEventArgs e)
@@ -244,6 +279,16 @@ public partial class LockOverlay : Form
 
     }
 
+    private void label2_Click(object sender, EventArgs e)
+    {
+
+    }
+
+    private void label1_Click(object sender, EventArgs e)
+    {
+
+    }
+
     protected override CreateParams CreateParams
     {
         get
@@ -256,4 +301,3 @@ public partial class LockOverlay : Form
         }
     }
 }
-

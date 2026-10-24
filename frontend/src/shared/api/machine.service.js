@@ -131,6 +131,10 @@ class MachineService {
     const response = await apiClient.delete(`/computers/${computerId}`);
     return response.data;
   }
+  async getMachineStore() {
+    const response = await apiClient.get('/computers/machinestore');
+    return response.data;
+  }
 }
 
 export default new MachineService();

@@ -19,10 +19,10 @@ const runMigrations = async () => {
 
         if (oldCol && desc[oldCol] && !desc[newCol]) {
           console.log(`🛠️ Renaming column '${oldCol}' -> '${newCol}' in table '${table}'...`);
-          await db.sequelize.query(`ALTER TABLE \`${table}\` RENAME COLUMN \`${oldCol}\` TO \`${newCol}\``).catch(() => {});
+          await db.sequelize.query(`ALTER TABLE \`${table}\` RENAME COLUMN \`${oldCol}\` TO \`${newCol}\``).catch(() => { });
         } else if (!desc[newCol]) {
           console.log(`🛠️ Adding missing column '${newCol}' to table '${table}'...`);
-          await db.sequelize.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${newCol}\` ${colDefSql}`).catch(() => {});
+          await db.sequelize.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${newCol}\` ${colDefSql}`).catch(() => { });
         }
       } catch (e) {
         // Ignore column alteration warnings if table is created fresh
@@ -60,9 +60,38 @@ const runMigrations = async () => {
     await ensureColumn('pricing_plan', null, 'apply_date', 'DATE NULL');
     await ensureColumn('pricing_plan', null, 'is_active', 'TINYINT(1) DEFAULT 1');
 
+    // 3.1. computer_zone: tier_level
+    await ensureColumn('computer_zone', null, 'tier_level', 'INT NOT NULL DEFAULT 1');
+    try {
+      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 2 WHERE `zone_id` IN (1, 2)");
+      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 1 WHERE `zone_id` = 3");
+      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 3 WHERE `zone_id` = 4");
+      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 4 WHERE `zone_id` = 5");
+    } catch (e) { }
 
-    // 4. combo_package: duration_time -> duration_minutes
+
+
+    // 4. combo_package: duration_time -> duration_minutes, description
     await ensureColumn('combo_package', 'duration_time', 'duration_minutes', 'INT NOT NULL DEFAULT 60');
+    await ensureColumn('combo_package', null, 'description', 'TEXT NULL');
+
+    // 4.1. service_order: combo_id, total_amount
+    await ensureColumn('service_order', null, 'combo_id', 'INT NULL');
+    await ensureColumn('service_order', null, 'total_amount', 'DECIMAL(10, 2) NOT NULL DEFAULT 0.00');
+
+    // 4.2. service_order_item: is_combo_item
+    await ensureColumn('service_order_item', null, 'is_combo_item', 'TINYINT(1) DEFAULT 0');
+
+    // 4.3. combo_time: combo_id, computer_id, duration_minutes, status ENUM
+    await ensureColumn('combo_time', null, 'combo_id', 'INT NULL');
+    await ensureColumn('combo_time', null, 'computer_id', 'INT NULL');
+    await ensureColumn('combo_time', null, 'duration_minutes', 'INT NULL');
+    try {
+      await db.sequelize.query("ALTER TABLE `combo_time` MODIFY COLUMN `status` ENUM('PENDING', 'ACTIVE', 'EXPIRED', 'CANCELLED') NOT NULL DEFAULT 'PENDING'");
+    } catch (e) {
+      // Ignored if table does not exist yet or already up to date
+    }
+
 
     // 5. membership_rank: required_point, rank_level, discount_percent
     await ensureColumn('membership_rank', null, 'required_point', 'INT NOT NULL DEFAULT 0');
@@ -75,9 +104,20 @@ const runMigrations = async () => {
     await ensureColumn('computer', null, 'is_remote_enabled', 'TINYINT(1) DEFAULT 0');
 
 
-    // 7. financial_transaction: member_id -> used_by
+    // 7. financial_transaction: member_id -> used_by, order_id, ENUM update
     await ensureColumn('financial_transaction', 'member_id', 'used_by', 'INT NOT NULL DEFAULT 1');
     await ensureColumn('financial_transaction', null, 'processed_by', 'INT NULL');
+
+    // Thêm cột order_id để liên kết với đơn F&B
+    await ensureColumn('financial_transaction', null, 'order_id', 'INT NULL');
+    // Ép MySQL cập nhật lại ENUM của cột payment_method
+    try {
+      //// Dọn rác dữ liệu cũ trước khi ép kiểu ENUM mới để tránh lỗi "Data truncated"
+      await db.sequelize.query("UPDATE `financial_transaction` SET `payment_method` = 'VIETQR' WHERE `payment_method` IN ('MOMO', 'POS')");
+      await db.sequelize.query("ALTER TABLE `financial_transaction` MODIFY COLUMN `payment_method` ENUM('CASH', 'VIETQR', 'WALLET') NOT NULL DEFAULT 'CASH'");
+    } catch (e) {
+      console.warn('⚠️ ENUM payment_method update skipped or already updated.');
+    }
 
     // Perform Sequelize sync with alter fallback
     await db.sequelize.sync({ alter: true }).catch((err) => {

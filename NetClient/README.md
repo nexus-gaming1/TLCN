@@ -43,6 +43,8 @@ NetClient/
 ├── start-all.bat                   # Script khởi chạy cả Service và UI cùng lúc (phát triển/test)
 ├── install-service.bat             # Script cài đặt tự động toàn diện: Service + UI LockOverlay tự chạy cùng Win
 ├── uninstall-service.bat           # Script gỡ bỏ sạch sẽ Service và UI LockOverlay khỏi Windows
+├── install-app.bat                 # Script cài đặt NetClientApp, publish và tạo icon Shortcut ngoài Desktop
+├── uninstall-app.bat               # Script gỡ bỏ NetClientApp và xóa icon Shortcut ngoài Desktop
 │
 ├── NetClient.Shared/               # Thư viện DTOs & Models dùng chung
 │   ├── Models/
@@ -210,7 +212,15 @@ Chỉ cần bấm chuột phải vào `install-service.bat` và chọn **Run as 
 3. Đăng ký `NetClient.UI.exe` vào Windows Startup Registry (`HKLM` & `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`) để màn hình khóa luôn tự mở khi người dùng mở máy/đăng nhập.
 4. Tự động khởi chạy Service và hiển thị lớp phủ **LockOverlay** ngay lập tức trên màn hình.
 
+### Cài đặt NetClientApp (Ứng dụng cho khách / Tạo icon Desktop):
+Chạy file `install-app.bat` (hoặc `install-netclientapp.bat` ở thư mục gốc). Script sẽ tự động:
+1. Publish bản Release của `NetClientApp`.
+2. Tạo icon shortcut `NetClient App` trực tiếp ngoài màn hình **Desktop** (tương thích cả OneDrive Desktop và Windows Desktop).
+3. Đăng ký tự khởi động cùng Windows (`HKCU Startup`).
+4. Khởi chạy ứng dụng ngay sau khi cài đặt.
+
 ### Gỡ cài đặt:
-Bấm chuột phải vào `uninstall-service.bat` và chọn **Run as administrator** để tự động dừng/xóa Service, tắt UI và gỡ bỏ khóa Startup trong Registry.
+- Để gỡ bỏ Service & LockOverlay: Chạy `uninstall-service.bat` bằng **Run as administrator**.
+- Để gỡ bỏ NetClientApp & icon Desktop: Chạy `uninstall-app.bat`.
 
 

@@ -64,8 +64,7 @@ const SessionType = Object.freeze({
 const PaymentMethodEnum = Object.freeze({
   CASH: 'CASH',
   VIETQR: 'VIETQR',
-  POS: 'POS',
-  MOMO: 'MOMO',
+  WALLET: 'WALLET'
 });
 
 const TransactionStatusEnum = Object.freeze({
@@ -77,6 +76,7 @@ const TransactionStatusEnum = Object.freeze({
 
 
 const ComboTimeStatus = Object.freeze({
+  PENDING: 'PENDING',
   ACTIVE: 'ACTIVE',
   EXPIRED: 'EXPIRED',
   CANCELLED: 'CANCELLED',

@@ -13,6 +13,8 @@ router.get('/grid', computerController.getRoomLayoutGrid);
 router.get('/zones', computerController.getZones);
 router.get('/bootrom-logs', computerController.getBootromLogs);
 router.post('/wake-on-lan', computerController.wakeOnLan);
+router.get('/machinestore',
+    computerController.getMachines);
 router.patch('/:id/status', computerController.changeStatus);
 router.post('/:id/switch', computerController.switchStation);
 
@@ -48,6 +50,7 @@ router.post(
     "/:machineId/notification",
     computerController.sendNotification
 );
+
 
 
 module.exports = router;

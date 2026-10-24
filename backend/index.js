@@ -20,6 +20,9 @@ const healthRoutes = require('./src/routes/healthRoutes');
 const profileRoutes = require('./src/routes/profileRoutes');
 const serviceCatalogRoutes = require('./src/routes/serviceCatalogRoutes');
 const webhookRoutes = require('./src/routes/webhookRoutes');
+const reportRoutes = require('./src/routes/reportRoutes');
+const comboRoutes = require('./src/routes/comboRoutes');
+const comboTimeService = require('./src/services/comboTimeService');
 
 const errorHandler = require('./src/middleware/errorHandler');
 const computerSocketService = require('./src/services/computerSocketService');
@@ -49,8 +52,11 @@ app.use('/api/computers', computerRoutes);
 app.use('/api/pricing-plans', pricingPlanRoutes);
 app.use('/api/promotions', pricingPlanRoutes);
 app.use('/api/transactions', transactionRoutes);
+app.use('/api/catalog/combos', comboRoutes);
+app.use('/api/combos', comboRoutes);
 app.use('/api/catalog', serviceCatalogRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Centralized Error Handler
 app.use(errorHandler);
@@ -82,7 +88,23 @@ async function startServer() {
     // 3. Chạy seeder nạp dữ liệu mẫu
     await seedData(db);
 
-    // 4. Bật server
+    // 4. Quét & xử lý các combo đã hết hạn trong lúc backend tắt/restart (Rule 2.6)
+    const expiredCount = await comboTimeService.checkAndExpireCombos();
+    if (expiredCount > 0) {
+      console.log(`⚡ [ComboTime Sweeper] Đã phát hiện và xử lý ${expiredCount} gói Combo hết hạn khi server khởi động lại.`);
+    }
+
+    // 5. Khởi chạy scheduler định kỳ kiểm tra combo hết hạn (mỗi 5 giây, unref để không treo tiến trình)
+    const expirationScheduler = setInterval(async () => {
+      try {
+        await comboTimeService.checkAndExpireCombos();
+      } catch (err) {
+        console.error('[ComboTime Scheduler Error]:', err.message);
+      }
+    }, 5000);
+    if (expirationScheduler.unref) expirationScheduler.unref();
+
+    // 6. Bật server
     server.listen(PORT, () => {
       console.log(`🚀 Server is running on http://localhost:${PORT}`);
     });

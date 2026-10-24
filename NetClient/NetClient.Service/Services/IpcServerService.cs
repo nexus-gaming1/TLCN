@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.IO.Pipes;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -15,11 +16,12 @@ public class IpcServerService : BackgroundService
     private readonly ILogger<IpcServerService> _logger;
     private readonly SessionService _sessionService;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
-    private NamedPipeServerStream? _currentPipe;
-    private StreamWriter? _currentWriter;
+    private readonly ConcurrentDictionary<NamedPipeServerStream, StreamWriter> _connectedClients = new();
 
     public event Action? ClientConnected;
     public event Action? ClientDisconnected;
+    public event Func<string, string, Task>? LoginRequested;
+    public event Func<Task>? LogoutRequested;
 
     public IpcServerService(ILogger<IpcServerService> logger, SessionService sessionService)
     {
@@ -63,14 +65,16 @@ public class IpcServerService : BackgroundService
 
                 _logger.LogInformation("UI client connected via IPC.");
 
+                var writer = new StreamWriter(pipeStream, Encoding.UTF8, leaveOpen: true)
+                {
+                    AutoFlush = true
+                };
+
                 await _sendLock.WaitAsync(stoppingToken);
                 try
                 {
-                    _currentPipe = pipeStream;
-                    _currentWriter = new StreamWriter(pipeStream, Encoding.UTF8, leaveOpen: true)
-                    {
-                        AutoFlush = true
-                    };
+                    _connectedClients.TryAdd(pipeStream, writer);
+                    await SyncCurrentStateToClientAsync(writer, stoppingToken);
                 }
                 finally
                 {
@@ -79,21 +83,8 @@ public class IpcServerService : BackgroundService
 
                 ClientConnected?.Invoke();
 
-                // Synchronize current state to UI immediately
-                await SyncCurrentStateAsync(stoppingToken);
-
-                // Read incoming messages loop
-                using var reader = new StreamReader(pipeStream, Encoding.UTF8, leaveOpen: true);
-                while (!stoppingToken.IsCancellationRequested && pipeStream.IsConnected)
-                {
-                    var line = await reader.ReadLineAsync(stoppingToken);
-                    if (line == null) break;
-
-                    if (!string.IsNullOrWhiteSpace(line))
-                    {
-                        HandleIncomingMessage(line);
-                    }
-                }
+                // Start reader loop for this client in background task
+                _ = Task.Run(() => ReadClientLoopAsync(pipeStream, writer, stoppingToken), stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -102,26 +93,6 @@ public class IpcServerService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "IPC Pipe connection encountered an error");
-            }
-            finally
-            {
-                await _sendLock.WaitAsync(CancellationToken.None);
-                try
-                {
-                    _currentWriter?.Dispose();
-                    _currentWriter = null;
-                    _currentPipe?.Dispose();
-                    _currentPipe = null;
-                }
-                finally
-                {
-                    _sendLock.Release();
-                }
-
-                _logger.LogInformation("UI client disconnected from IPC.");
-                ClientDisconnected?.Invoke();
-
-                // Brief pause before creating next server instance
                 try
                 {
                     await Task.Delay(1000, stoppingToken);
@@ -131,6 +102,81 @@ public class IpcServerService : BackgroundService
         }
 
         _logger.LogInformation("IPC Server stopped.");
+    }
+
+    private async Task ReadClientLoopAsync(NamedPipeServerStream pipeStream, StreamWriter writer, CancellationToken ct)
+    {
+        try
+        {
+            using var reader = new StreamReader(pipeStream, Encoding.UTF8, leaveOpen: true);
+            while (!ct.IsCancellationRequested && pipeStream.IsConnected)
+            {
+                var line = await reader.ReadLineAsync(ct);
+                if (line == null) break;
+
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    await HandleIncomingMessageAsync(line);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested) { }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "IPC client connection closed or error");
+        }
+        finally
+        {
+            _connectedClients.TryRemove(pipeStream, out _);
+            try
+            {
+                writer.Dispose();
+                pipeStream.Dispose();
+            }
+            catch { }
+
+            _logger.LogInformation("UI client disconnected from IPC.");
+            ClientDisconnected?.Invoke();
+        }
+    }
+
+    private async Task SyncCurrentStateToClientAsync(StreamWriter writer, CancellationToken ct)
+    {
+        try
+        {
+            if (_sessionService.CurrentStatus == MachineStatus.IN_USE)
+            {
+                var msgUser = JsonSerializer.Serialize(new IpcMessage
+                {
+                    Action = IpcAction.SetUsername,
+                    Username = _sessionService.CurrentUser
+                });
+                await writer.WriteLineAsync(msgUser.AsMemory(), ct);
+
+                var msgHide = JsonSerializer.Serialize(new IpcMessage
+                {
+                    Action = IpcAction.HideOverlay
+                });
+                await writer.WriteLineAsync(msgHide.AsMemory(), ct);
+            }
+            else
+            {
+                var msgStatus = JsonSerializer.Serialize(new IpcMessage
+                {
+                    Action = IpcAction.SetStatus,
+                    Status = _sessionService.CurrentStatus.ToString(),
+                    MachineId = _sessionService.MachineId
+                });
+                await writer.WriteLineAsync(msgStatus.AsMemory(), ct);
+
+                var msgShow = JsonSerializer.Serialize(new IpcMessage
+                {
+                    Action = IpcAction.ShowOverlay
+                });
+                await writer.WriteLineAsync(msgShow.AsMemory(), ct);
+            }
+        }
+        catch { }
     }
 
     private async Task SyncCurrentStateAsync(CancellationToken ct)
@@ -164,7 +210,7 @@ public class IpcServerService : BackgroundService
         }
     }
 
-    private void HandleIncomingMessage(string json)
+    private async Task HandleIncomingMessageAsync(string json)
     {
         try
         {
@@ -182,10 +228,33 @@ public class IpcServerService : BackgroundService
             }
             else if (msg.Action == IpcAction.ClientLogin && !string.IsNullOrWhiteSpace(msg.Username))
             {
-                _logger.LogInformation("IPC received ClientLogin from UI for user: {User}", msg.Username);
+                if (string.IsNullOrWhiteSpace(msg.Password))
+                {
+                    await SendLoginResultAsync(false, "Vui lòng nhập mật khẩu.");
+                    return;
+                }
+
+                if (LoginRequested == null)
+                {
+                    await SendLoginResultAsync(false, "Dịch vụ xác thực chưa sẵn sàng.");
+                    return;
+                }
+
+                await LoginRequested.Invoke(msg.Username, msg.Password);
+            }
+            else if (msg.Action == IpcAction.LegacyClientLogin && !string.IsNullOrWhiteSpace(msg.Username))
+            {
+                _logger.LogInformation("IPC received legacy local login for user: {User}", msg.Username);
                 _sessionService.Login(msg.Username);
-                _ = SetUsernameAsync(msg.Username, CancellationToken.None);
-                _ = HideOverlayAsync(CancellationToken.None);
+                await SetUsernameAsync(msg.Username);
+            }
+            else if (msg.Action == IpcAction.ClientLogout)
+            {
+                _logger.LogInformation("IPC received ClientLogout request from UI client.");
+                if (LogoutRequested != null)
+                {
+                    await LogoutRequested.Invoke();
+                }
             }
         }
         catch (Exception ex)
@@ -199,18 +268,33 @@ public class IpcServerService : BackgroundService
         await _sendLock.WaitAsync(ct);
         try
         {
-            if (_currentWriter == null || _currentPipe == null || !_currentPipe.IsConnected)
+            if (_connectedClients.IsEmpty)
             {
-                _logger.LogDebug("IPC client not connected; skipped message: {Action}", message.Action);
+                _logger.LogDebug("No IPC clients connected; skipped message: {Action}", message.Action);
                 return;
             }
 
             var json = JsonSerializer.Serialize(message);
-            await _currentWriter.WriteLineAsync(json.AsMemory(), ct);
+            foreach (var kvp in _connectedClients)
+            {
+                var pipe = kvp.Key;
+                var writer = kvp.Value;
+                if (pipe.IsConnected)
+                {
+                    try
+                    {
+                        await writer.WriteLineAsync(json.AsMemory(), ct);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to send IPC message to a UI client");
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to send IPC message to UI");
+            _logger.LogWarning(ex, "Failed to send IPC message to UI clients");
         }
         finally
         {
@@ -232,5 +316,12 @@ public class IpcServerService : BackgroundService
 
     public Task ShowNotificationAsync(string message, string? title = null, CancellationToken ct = default)
         => SendMessageAsync(new IpcMessage { Action = IpcAction.ShowNotification, Message = message, Title = title }, ct);
-}
 
+    public Task SendLoginResultAsync(bool success, string? message, CancellationToken ct = default)
+        => SendMessageAsync(new IpcMessage
+        {
+            Action = IpcAction.LoginResult,
+            Success = success,
+            Message = message
+        }, ct);
+}
