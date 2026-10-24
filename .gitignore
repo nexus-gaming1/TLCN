@@ -145,8 +145,8 @@ vite.config.ts.timestamp-*
 .vite/
 
 # Visual Studio
-NetClient/.vs/
+.vs/
 
 # .NET build output
-NetClient/**/bin/
-NetClient/**/obj/
+[Bb]in/
+[Oo]bj/

@@ -14,7 +14,8 @@ public enum IpcAction
     UiReady,
     ClientLogin,
     LoginResult,
-    LegacyClientLogin
+    LegacyClientLogin,
+    ClientLogout
 }
 
 public class IpcMessage

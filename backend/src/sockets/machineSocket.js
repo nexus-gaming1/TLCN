@@ -54,12 +54,19 @@ function registerMachineSocket(io) {
 
     async function findComputer(machine) {
         if (!machine) return null;
+        const orConditions = [];
+
+        if (machine.localIp) {
+            orConditions.push({ ip_address: machine.localIp });
+        }
+        if (machine.macAddress) {
+            orConditions.push({ mac_address: machine.macAddress });
+        }
+
+        if (orConditions.length === 0) return null;
         return Computer.findOne({
             where: {
-                [Op.or]: [
-                    { ip_address: machine.localIp },
-                    { mac_address: machine.macAddress }
-                ]
+                [Op.or]: orConditions
             }
         });
     }
@@ -82,7 +89,7 @@ function registerMachineSocket(io) {
 
             console.log(
                 `[Socket.IO] Register received from machine: ` +
-                `${data.machineId} (IP: ${data.localIp})`
+                `${data.machineId} (IP: ${data.localIp}, MAC: ${data.macAddress})`
             );
 
             const machine =
@@ -94,14 +101,7 @@ function registerMachineSocket(io) {
             if (!machine) {
                 return;
             }
-            const computer = await Computer.findOne({
-                where: {
-                    [Op.or]: [
-                        { ip_address: data.localIp },
-                        { mac_address: data.macAddress }
-                    ]
-                }
-            });
+            const computer = await findComputer(machine);
             if (computer) {
                 const activeCombo = await db.ComboTime.findOne({
                     where: {
@@ -265,37 +265,53 @@ function registerMachineSocket(io) {
 
 
         // ========================================
-        // 5. Logout ACK
+        // 5. Logout ACK & Client Logout
         // ========================================
 
-        socket.on('logout:ack', async (data) => {
-            if (!data || !data.machineId) return;
+        const handleLogout = async (data) => {
+            const machineId = data?.machineId || machineStore.socketMap.get(socket.id);
+            if (!machineId) return;
 
             console.log(
-                `[Socket.IO] Logout ACK from ` +
-                `${data.machineId}: ` +
-                `Success=${data.success}` +
-                (data.error ? `, Error=${data.error}` : '')
+                `[Socket.IO] Logout event from ` +
+                `${machineId}: ` +
+                `Success=${data?.success !== false}` +
+                (data?.error ? `, Error=${data.error}` : '')
             );
 
-            if (data.success) {
-                const machine =
-                    machineStore.get(
-                        data.machineId
-                    );
+            if (data?.success !== false) {
+                const machine = machineStore.get(machineId);
 
-                // Chỉ cho phép cập nhật nếu ACK gửi từ đúng socket hiện tại của machine
+                // Chỉ cho phép cập nhật nếu gửi từ đúng socket hiện tại của machine
                 if (machine && machine.socketId === socket.id) {
                     const computer = await findComputer(machine);
                     if (computer) {
                         const previousStatus = computer.status;
                         computer.status = ComputerStatus.ONLINE;
                         await computer.save();
+
+                        // Lấy thông tin user / member trước khi xóa khỏi machine
+                        let memberId = null;
+                        const usernameToLog = data?.username || machine.currentUser;
+                        if (usernameToLog) {
+                            const user = await db.User.findOne({
+                                where: { username: usernameToLog },
+                                attributes: ['user_id'],
+                                include: [{
+                                    model: db.Member,
+                                    as: 'memberProfile',
+                                    attributes: ['member_id'],
+                                    required: false
+                                }]
+                            });
+                            memberId = user?.memberProfile?.member_id || null;
+                        }
+
                         await recordStatusChange(
                             computer,
                             previousStatus,
                             ComputerStatus.ONLINE,
-                            null
+                            memberId
                         );
                     }
                     machine.status = ComputerStatus.ONLINE;
@@ -305,7 +321,10 @@ function registerMachineSocket(io) {
                     broadcastUpdate();
                 }
             }
-        });
+        };
+
+        socket.on('logout:ack', handleLogout);
+        socket.on('client:logout', handleLogout);
 
 
         // ========================================

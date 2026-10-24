@@ -197,4 +197,10 @@ public class IpcClientService
             Action = IpcAction.LegacyClientLogin,
             Username = username
         }, ct);
+
+    public Task SendLogoutAsync(CancellationToken ct = default)
+        => SendMessageAsync(new IpcMessage
+        {
+            Action = IpcAction.ClientLogout
+        }, ct);
 }
