@@ -49,6 +49,7 @@ public class SocketService : BackgroundService
         // Subscribe to local session state changes
         _sessionService.StatusChanged += OnLocalStatusChanged;
         _ipcServerService.LoginRequested += AuthenticateLocalLoginAsync;
+        _ipcServerService.LogoutRequested += HandleLocalLogoutAsync;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -394,6 +395,46 @@ public class SocketService : BackgroundService
         {
             _logger.LogError(ex, "Unexpected error while authenticating local login");
             await _ipcServerService.SendLoginResultAsync(false, "Đăng nhập thất bại.");
+        }
+    }
+
+    private async Task HandleLocalLogoutAsync()
+    {
+        try
+        {
+            var currentUser = _sessionService.CurrentUser;
+            var machineId = _sessionService.MachineId;
+
+            _logger.LogInformation("Processing local logout for user {User} on machine {MachineId}", currentUser, machineId);
+
+            // 1. Session service logout (triggers StatusChanged -> status:update event)
+            _sessionService.Logout();
+
+            // 2. Notify IPC UI clients to lock and clear state
+            await _ipcServerService.SetUsernameAsync(string.Empty);
+            await _ipcServerService.SetStatusAsync(MachineStatus.ONLINE.ToString());
+            await _ipcServerService.ShowOverlayAsync();
+
+            // 3. Emit logout events to backend Socket.IO
+            if (_client != null && _client.Connected)
+            {
+                await _client.EmitAsync("logout:ack", [new LogoutAck
+                {
+                    MachineId = machineId,
+                    Success = true
+                }]);
+
+                await _client.EmitAsync("client:logout", [new
+                {
+                    MachineId = machineId,
+                    Username = currentUser,
+                    Success = true
+                }]);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error occurred during local logout processing");
         }
     }
 }

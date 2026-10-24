@@ -19,10 +19,10 @@ const runMigrations = async () => {
 
         if (oldCol && desc[oldCol] && !desc[newCol]) {
           console.log(`🛠️ Renaming column '${oldCol}' -> '${newCol}' in table '${table}'...`);
-          await db.sequelize.query(`ALTER TABLE \`${table}\` RENAME COLUMN \`${oldCol}\` TO \`${newCol}\``).catch(() => {});
+          await db.sequelize.query(`ALTER TABLE \`${table}\` RENAME COLUMN \`${oldCol}\` TO \`${newCol}\``).catch(() => { });
         } else if (!desc[newCol]) {
           console.log(`🛠️ Adding missing column '${newCol}' to table '${table}'...`);
-          await db.sequelize.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${newCol}\` ${colDefSql}`).catch(() => {});
+          await db.sequelize.query(`ALTER TABLE \`${table}\` ADD COLUMN \`${newCol}\` ${colDefSql}`).catch(() => { });
         }
       } catch (e) {
         // Ignore column alteration warnings if table is created fresh
@@ -67,7 +67,7 @@ const runMigrations = async () => {
       await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 1 WHERE `zone_id` = 3");
       await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 3 WHERE `zone_id` = 4");
       await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 4 WHERE `zone_id` = 5");
-    } catch (e) {}
+    } catch (e) { }
 
 
 
