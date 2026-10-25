@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "d:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\NetClient.Shared.csproj": {}
+    "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\NetClient.Shared.csproj": {}
   },
   "projects": {
-    "d:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\NetClient.Shared.csproj": {
+    "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\NetClient.Shared.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "d:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\NetClient.Shared.csproj",
+        "projectUniqueName": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\NetClient.Shared.csproj",
         "projectName": "NetClient.Shared",
-        "projectPath": "d:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\NetClient.Shared.csproj",
+        "projectPath": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\NetClient.Shared.csproj",
         "packagesPath": "C:\\Users\\trinh\\.nuget\\packages\\",
-        "outputPath": "d:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\obj\\",
+        "outputPath": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

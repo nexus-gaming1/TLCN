@@ -67,7 +67,9 @@ const runMigrations = async () => {
       await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 1 WHERE `zone_id` = 3");
       await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 3 WHERE `zone_id` = 4");
       await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 4 WHERE `zone_id` = 5");
-    } catch (e) { }
+    } catch (e) { 
+      // Ignore if table/column does not exist yet
+    }
 
 
 
