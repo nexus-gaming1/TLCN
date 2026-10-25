@@ -2,7 +2,7 @@ const { Model, DataTypes } = require('sequelize');
 const { UserRole, UserStatus } = require('../constants/enums');
 
 class User extends Model {
-  login(password) {
+  login(_password) {
     return true;
   }
 
@@ -10,7 +10,7 @@ class User extends Model {
     return true;
   }
 
-  changePassword(oldPass, newPass) {
+  changePassword(_oldPass, _newPass) {
     return true;
   }
 

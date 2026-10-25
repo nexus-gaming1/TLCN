@@ -1,4 +1,3 @@
-import React from 'react';
 import { Monitor, Cpu, MemoryStick, HardDrive } from 'lucide-react';
 
 /**
@@ -7,19 +6,19 @@ import { Monitor, Cpu, MemoryStick, HardDrive } from 'lucide-react';
  */
 export default function HardwareKpiBento({ metrics = {} }) {
   const {
-    totalMachines = 120,
-    activeZones = 4,
+    totalMachines = 0,
+    activeZones = 0,
     availability = '100%',
     topGpuRatio = 'RTX 4090 / 4080S',
-    topGpuCount = 30,
-    topGpuPercent = '25%',
+    topGpuCount = 0,
+    topGpuPercent = '0%',
     avgRamRange = '32GB - 64GB',
-    ramSpeed = 'DDR5 6000MHz Low-CL',
-    totalRamCapacity = '4.8 TB Total',
+    ramSpeed = 'DDR5 / DDR4 High-Speed',
+    totalRamCapacity = '0 GB Total',
     bootromHealth = '100% Đồng Bộ',
-    sanNetwork = 'Dual SAN NVMe 40Gbps Fiber',
+    sanNetwork = 'Dual SAN NVMe',
     ioErrors = 0
-  } = metrics;
+  } = metrics || {};
 
   const cards = [
     {
@@ -38,7 +37,7 @@ export default function HardwareKpiBento({ metrics = {} }) {
       label: 'CẤU HÌNH ĐỒ HỌA ĐỈNH CAO',
       title: topGpuRatio,
       icon: Cpu,
-      subText: `${topGpuCount} Nodes Thi Đấu & Stream`,
+      subText: `${topGpuCount} Máy Thi Đấu & Stream`,
       badge: `${topGpuPercent} Hạm đội`,
       iconBg: 'bg-indigo-50 text-indigo-600 border border-indigo-200/80',
       dotColor: 'bg-indigo-500',

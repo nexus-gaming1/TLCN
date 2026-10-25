@@ -20,7 +20,9 @@
     "coverage:combo": "c8 --include=src/controllers/comboController.js --include=src/services/comboTimeService.js --include=src/routes/comboRoutes.js --include=src/models/ComboPackage.js --include=src/models/ComboItem.js --include=src/models/ComboTime.js node --test tests/comboTime.test.js",
     "coverage:pricing": "c8 --include=src/controllers/pricingPlanController.js --include=src/routes/pricingPlanRoutes.js --include=src/services/pricingPlanService.js --include=src/models/PricingPlan.js --include=src/models/ZonePricingPlan.js node --test tests/admin/pricing-plans/**/*.test.js",
     "coverage:transactions": "c8 --include=src/controllers/transactionController.js --include=src/services/transactionService.js --include=src/routes/transactionRoutes.js --include=src/models/FinancialTransaction.js node --test tests/admin/transactions/**/*.test.js",
-    "coverage:members": "c8 --include=src/controllers/memberController.js --include=src/routes/memberRoutes.js --include=src/services/memberService.js --include=src/models/Member.js node --test tests/admin/members/**/*.test.js"
+    "coverage:members": "c8 --include=src/controllers/memberController.js --include=src/routes/memberRoutes.js --include=src/services/memberService.js --include=src/models/Member.js node --test tests/admin/members/**/*.test.js",
+    "test:hardware": "node --test tests/admin/hardware-config/**/*.test.js",
+    "coverage:hardware": "c8 --include=src/services/hardwareProfileService.js --include=src/services/telemetryService.js --include=src/validators/hardwareSpecValidator.js --include=src/dtos/hardwareProfileDto.js node --test tests/admin/hardware-config/**/*.test.js"
   },
   "keywords": [],
   "author": "",

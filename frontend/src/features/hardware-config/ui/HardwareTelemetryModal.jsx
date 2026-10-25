@@ -1,4 +1,3 @@
-import React from 'react';
 import { X, Cpu, MemoryStick, Gamepad2, HardDrive, Thermometer, Activity } from 'lucide-react';
 
 export default function HardwareTelemetryModal({ isOpen, onClose, hardware }) {
@@ -60,21 +59,21 @@ export default function HardwareTelemetryModal({ isOpen, onClose, hardware }) {
               <span className="text-slate-600 font-medium flex items-center gap-2">
                 <Cpu className="w-4 h-4 text-sky-600" /> CPU Model
               </span>
-              <span className="font-bold text-slate-900">{hardware.cpu?.model}</span>
+              <span className="font-bold text-slate-900">{hardware.cpu?.model || 'Chưa thiết lập'}</span>
             </div>
 
             <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-50 border border-slate-200/60">
               <span className="text-slate-600 font-medium flex items-center gap-2">
                 <Gamepad2 className="w-4 h-4 text-indigo-600" /> Card Đồ Họa
               </span>
-              <span className="font-bold text-slate-900">{hardware.gpu?.model}</span>
+              <span className="font-bold text-slate-900">{hardware.gpu?.model || 'Chưa thiết lập'}</span>
             </div>
 
             <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-50 border border-slate-200/60">
               <span className="text-slate-600 font-medium flex items-center gap-2">
                 <MemoryStick className="w-4 h-4 text-purple-600" /> RAM Dung Lượng
               </span>
-              <span className="font-bold text-slate-900">{hardware.ram?.capacity}</span>
+              <span className="font-bold text-slate-900">{hardware.ram?.capacity || 'Chưa thiết lập'}</span>
             </div>
 
             <div className="flex items-center justify-between text-xs p-2.5 rounded-lg bg-slate-50 border border-slate-200/60">

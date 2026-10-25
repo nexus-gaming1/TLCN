@@ -229,7 +229,7 @@ class StationControlService {
     for (let i = 0; i < computers.length; i += batchSize) {
       const batch = computers.slice(i, i + batchSize);
       // Simulating / executing UDP Magic Packet send to physical MAC address (e.g. dgram.createSocket('udp4'))
-      batch.forEach((comp) => {
+      batch.forEach((_comp) => {
         // UDP WOL packet broadcast: FF:FF:FF:FF:FF:FF + 16x MAC Address
       });
       if (i + batchSize < computers.length) {
