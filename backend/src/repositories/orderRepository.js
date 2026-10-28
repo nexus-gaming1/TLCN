@@ -27,7 +27,7 @@ class OrderRepository {
         {
           model: this.models.User,
           as: 'userInfo',
-          attributes: ['user_id', 'username', 'full_name', 'email']
+          attributes: ['user_id', 'username', 'full_name']
         }
       ]
     });
@@ -66,6 +66,7 @@ class OrderRepository {
       include: [
         {
           model: this.models.ServiceOrderItem,
+          as: 'orderItems',
           include: [
             {
               model: this.models.ServiceItem,
@@ -75,6 +76,7 @@ class OrderRepository {
         },
         {
           model: this.models.Member,
+          as: 'member',
           include: [
             {
               model: this.models.User,
@@ -85,11 +87,12 @@ class OrderRepository {
         },
         {
           model: this.models.User,
+          as: 'processedBy',
           attributes: ['user_id', 'username', 'full_name', 'role']
         },
         {
           model: this.models.FinancialTransaction,
-          as: 'financialTransactions',
+          as: 'transactions',
           required: false
         }
       ],
@@ -104,11 +107,12 @@ class OrderRepository {
       transaction,
       include: [
         {
-          model: this.models.ServiceOrderItem
+          model: this.models.ServiceOrderItem,
+          as: 'orderItems'
         },
         {
           model: this.models.FinancialTransaction,
-          as: 'financialTransactions',
+          as: 'transactions',
           required: false
         }
       ]
@@ -134,6 +138,7 @@ class OrderRepository {
     // Include để phục vụ search theo tên khách hoặc mã đơn
     const memberInclude = {
       model: this.models.Member,
+      as: 'member',
       include: [
         {
           model: this.models.User,
@@ -145,35 +150,32 @@ class OrderRepository {
 
     if (search) {
       const q = `%${search.trim()}%`;
-      // Nếu search là số, có thể tìm theo order_id
+      const searchConditions = [
+        { '$member.userInfo.full_name$': { [Op.like]: q } }, 
+        { '$member.userInfo.username$': { [Op.like]: q } }  
+      ];
       if (!isNaN(parseInt(search, 10))) {
-        where[Op.or] = [
-          { order_id: parseInt(search, 10) },
-          { '$Member.userInfo.full_name$': { [Op.like]: q } },
-          { '$Member.userInfo.username$': { [Op.like]: q } }
-        ];
-      } else {
-        where[Op.or] = [
-          { '$Member.userInfo.full_name$': { [Op.like]: q } },
-          { '$Member.userInfo.username$': { [Op.like]: q } }
-        ];
+        searchConditions.unshift({ order_id: parseInt(search, 10) });
       }
+      where[Op.or] = searchConditions;
     }
 
     return await this.models.ServiceOrder.findAndCountAll({
       where,
       include: [
         {
-          model: this.models.ServiceOrderItem
+          model: this.models.ServiceOrderItem,
+          as: 'orderItems'    
         },
         memberInclude,
         {
           model: this.models.User,
+          as: 'processedBy', 
           attributes: ['user_id', 'username', 'full_name']
         },
         {
           model: this.models.FinancialTransaction,
-          as: 'financialTransactions',
+          as: 'transactions',
           required: false
         }
       ],

@@ -115,12 +115,11 @@ class OrderService {
         // Trừ tiền ví hội viên
         member.real_balance = currentBalance - totalAmount;
         await this.orderRepo.save(member, t);
-
-        // Quy tắc: Ví trừ tiền thành công -> Bếp làm luôn (PREPARING + PAID)
-        initialStatus = OrderStatus.PREPARING;
+      
+        // Quy tắc: Khởi tạo PENDING (đã PAID) để khách có cửa sổ tự hủy nếu bấm nhầm
+        initialStatus = OrderStatus.PENDING;
         initialPaymentStatus = PaymentStatus.PAID;
       } else {
-        // Quy tắc: Tiền mặt -> Chờ nhân viên thu tiền tại bàn (PENDING + UNPAID)
         initialStatus = OrderStatus.PENDING;
         initialPaymentStatus = PaymentStatus.UNPAID;
       }
@@ -214,7 +213,7 @@ class OrderService {
       // Xử lý hủy đơn (CANCELLED): Hoàn kho và hoàn ví nếu đã thanh toán
       if (newStatus === OrderStatus.CANCELLED) {
         // 1. Hoàn lại số lượng tồn kho cho các món ăn
-        const orderItems = order.ServiceOrderItems || [];
+        const orderItems = order.orderItems || order.ServiceOrderItems || [];
         for (const oi of orderItems) {
           const item = await this.orderRepo.models.ServiceItem.findByPk(oi.service_item_id, {
             lock: t.LOCK ? t.LOCK.UPDATE : true,
@@ -229,7 +228,8 @@ class OrderService {
 
         // 2. Nếu đơn đã thanh toán bằng ví (WALLET) -> Hoàn tiền ví cho khách
         if (order.payment_status === PaymentStatus.PAID) {
-          const walletTxn = (order.financialTransactions || []).find(
+          const txList = order.transactions || order.financialTransactions || [];
+          const walletTxn = txList.find(
             tx => tx.payment_method === PaymentMethodEnum.WALLET && tx.category === TransactionCategory.SERVICE_SALE
           );
 
@@ -329,31 +329,37 @@ class OrderService {
     }
 
     const totalAmount = this.calculateTotal(order.ServiceOrderItems || []);
+    //Phòng thủ lấy theo alias hoặc theo tên model
+    const orderItemsList = order.orderItems || order.ServiceOrderItems || [];
+    const memberObj = order.member || order.Member;
+    const staffObj = order.processedBy || order.User;
+    const txList = order.transactions || order.financialTransactions || [];
+    
     return {
       order_id: order.order_id,
       status: order.status,
       payment_status: order.payment_status,
       created_at: order.created_at,
       total_amount: totalAmount,
-      member: order.Member ? {
-        member_id: order.Member.member_id,
-        username: order.Member.userInfo?.username || '',
-        full_name: order.Member.userInfo?.full_name || '',
-        phone: order.Member.userInfo?.phone || ''
+      member: memberObj ? {
+        member_id: memberObj.member_id,
+        username: memberObj.userInfo?.username || '',
+        full_name: memberObj.userInfo?.full_name || '',
+        phone: memberObj.userInfo?.phone || ''
       } : null,
-      processedBy: order.User ? {
-        user_id: order.User.user_id,
-        username: order.User.username,
-        full_name: order.User.full_name
+      processedBy: staffObj ? {
+        user_id: staffObj.user_id,
+        username: staffObj.username,
+        full_name: staffObj.full_name
       } : null,
-      items: (order.ServiceOrderItems || []).map(oi => ({
+      items: orderItemsList.map(oi => ({
         service_item_id: oi.service_item_id,
         item_name: oi.item_name,
         price: parseFloat(oi.price || 0),
         quantity: oi.quantity,
         subtotal: parseFloat(oi.price || 0) * oi.quantity
       })),
-      transactions: (order.financialTransactions || []).map(tx => ({
+      transactions: txList.map(tx => ({
         transaction_id: tx.transaction_id,
         type: tx.type,
         amount: parseFloat(tx.amount || 0),
@@ -369,10 +375,12 @@ class OrderService {
     const { count, rows } = await this.orderRepo.findOrders(filters, pagination);
 
     const data = rows.map(order => {
-      const totalAmount = this.calculateTotal(order.ServiceOrderItems || []);
-      const paymentMethod = (order.financialTransactions && order.financialTransactions.length > 0)
-        ? order.financialTransactions[0].payment_method
-        : 'CASH';
+      const orderItemsList = order.orderItems || order.ServiceOrderItems || [];
+      const totalAmount = this.calculateTotal(orderItemsList);
+      const txList = order.transactions || order.financialTransactions || [];
+      const paymentMethod = txList.length > 0 ? txList[0].payment_method : 'CASH';
+      const memberObj = order.member || order.Member;
+      const staffObj = order.processedBy || order.User;
 
       return {
         order_id: order.order_id,
@@ -381,10 +389,10 @@ class OrderService {
         payment_method: paymentMethod,
         total_amount: totalAmount,
         created_at: order.created_at,
-        customer_name: order.Member?.userInfo?.full_name || order.Member?.userInfo?.username || `Hội viên #${order.used_by}`,
-        staff_name: order.User?.full_name || null,
-        items_summary: (order.ServiceOrderItems || []).map(i => `${i.quantity}x ${i.item_name}`).join(', '),
-        item_count: (order.ServiceOrderItems || []).reduce((acc, curr) => acc + curr.quantity, 0)
+        customer_name: memberObj?.userInfo?.full_name || memberObj?.userInfo?.username || `Hội viên #${order.used_by}`,
+        staff_name: staffObj?.full_name || null,
+        items_summary: orderItemsList.map(i => `${i.quantity}x ${i.item_name}`).join(', '),
+        item_count: orderItemsList.reduce((acc, curr) => acc + curr.quantity, 0)
       };
     });
 
@@ -394,6 +402,211 @@ class OrderService {
       limit: pagination.limit || 20,
       data
     };
+  }
+
+  //Lấy thực đơn sẵn sàng phục vụ cho màn hình gọi món C# NetClient
+  async getAvailableMenu() {
+    const items = await this.orderRepo.models.ServiceItem.findAll({
+      where: {
+        is_available: true,
+        stock_quantity: { [this.orderRepo.models.Sequelize.Op.gt]: 0 }
+      },
+      include: [
+        {
+          model: this.orderRepo.models.ServiceCategory,
+          attributes: ['category_id', 'name']
+        }
+      ],
+      order: [
+        [{ model: this.orderRepo.models.ServiceCategory }, 'name', 'ASC'],
+        ['name', 'ASC']
+      ]
+    });
+
+    return items.map(it => ({
+      service_item_id: it.service_item_id,
+      name: it.name,
+      price: parseFloat(it.price || 0),
+      stock_quantity: it.stock_quantity,
+      category_id: it.category_id,
+      category_name: it.ServiceCategory ? it.ServiceCategory.name : ''
+    }));
+  }
+
+  //Khách hàng xem lịch sử đơn hàng của chính mình (C# NetClient)
+  async getMyOrders(memberId, query = {}) {
+    const { limit = 20, page = 1 } = query;
+    const offset = (Math.max(1, parseInt(page, 10)) - 1) * parseInt(limit, 10);
+    return await this.getOrderHistory({ memberId }, { limit, offset });
+  }
+
+  //Khách hàng tự hủy đơn  (C# NetClient) - Chỉ được hủy khi đơn đang PENDING
+  async customerCancelOrder(orderId, memberId) {
+    const parsedOrderId = parseInt(orderId, 10);
+    const parsedMemberId = parseInt(memberId, 10);
+
+    return await this.orderRepo.runInTransaction(async (t) => {
+      const order = await this.orderRepo.findOrderByIdWithLock(parsedOrderId, t);
+      if (!order) throw new NotFoundError(`Không tìm thấy đơn hàng #${parsedOrderId}`);
+
+      if (order.used_by !== parsedMemberId) {
+        throw new BusinessLogicError('Bạn không có quyền hủy đơn hàng của người khác');
+      }
+
+      if (order.status !== OrderStatus.PENDING) {
+        throw new BusinessLogicError(
+          'Bếp đã tiếp nhận hoặc xử lý đơn hàng này, bạn không thể tự hủy. Vui lòng liên hệ nhân viên.'
+        );
+      }
+
+      // 1. Hoàn kho
+      const orderItems = order.orderItems || order.ServiceOrderItems || [];
+      for (const oi of orderItems) {
+        const item = await this.orderRepo.models.ServiceItem.findByPk(oi.service_item_id, {
+          lock: t.LOCK ? t.LOCK.UPDATE : true,
+          transaction: t
+        });
+        if (item) {
+          item.stock_quantity = (item.stock_quantity || 0) + oi.quantity;
+          if (item.stock_quantity > 0) item.is_available = true;
+          await this.orderRepo.save(item, t);
+        }
+      }
+
+      // 2. Hoàn tiền ví nếu đã thanh toán
+      if (order.payment_status === PaymentStatus.PAID) {
+        const refundAmount = this.calculateTotal(orderItems);
+        const member = await this.orderRepo.findMemberByIdWithLock(parsedMemberId, t);
+        if (member) {
+          member.real_balance = parseFloat(member.real_balance || 0) + refundAmount;
+          await this.orderRepo.save(member, t);
+        }
+
+        await this.orderRepo.createFinancialTransaction({
+          type: TransactionType.EXPENSE,
+          category: TransactionCategory.REFUND,
+          amount: refundAmount,
+          payment_method: PaymentMethodEnum.WALLET,
+          status: TransactionStatusEnum.COMPLETED,
+          order_id: order.order_id,
+          used_by: parsedMemberId,
+          processed_by: null,
+          description: `[Khách tự hủy #${order.order_id}] Hoàn tiền ví tự động do khách hủy khi đơn đang chờ xử lý`
+        }, { transaction: t });
+      }
+
+      order.status = OrderStatus.CANCELLED;
+      await this.orderRepo.save(order, t);
+
+      return {
+        order_id: order.order_id,
+        status: order.status,
+        message: 'Đã tự hủy đơn hàng và hoàn tiền ví (nếu có) thành công'
+      };
+    });
+  }
+
+  // Nhân viên từ chối, hủy đơn (C# NetStaff) - Kèm lý do (reason)
+  async staffCancelOrder(orderId, staffId, reason) {
+    const parsedOrderId = parseInt(orderId, 10);
+    if (!reason || !String(reason).trim()) {
+      throw new ValidationError('Vui lòng nhập lý do từ chối/hủy đơn hàng');
+    }
+
+    return await this.orderRepo.runInTransaction(async (t) => {
+      const order = await this.orderRepo.findOrderByIdWithLock(parsedOrderId, t);
+      if (!order) throw new NotFoundError(`Không tìm thấy đơn hàng #${parsedOrderId}`);
+
+      if (order.status === OrderStatus.COMPLETED) {
+        throw new BusinessLogicError('Đơn hàng đã hoàn thành, không thể hủy');
+      }
+      if (order.status === OrderStatus.CANCELLED) {
+        throw new BusinessLogicError('Đơn hàng đã bị hủy trước đó');
+      }
+
+      // 1. Hoàn kho
+      const orderItems = order.orderItems || order.ServiceOrderItems || [];
+      for (const oi of orderItems) {
+        const item = await this.orderRepo.models.ServiceItem.findByPk(oi.service_item_id, {
+          lock: t.LOCK ? t.LOCK.UPDATE : true,
+          transaction: t
+        });
+        if (item) {
+          item.stock_quantity = (item.stock_quantity || 0) + oi.quantity;
+          if (item.stock_quantity > 0) item.is_available = true;
+          await this.orderRepo.save(item, t);
+        }
+      }
+
+      // 2. Hoàn tiền ví nếu đã thanh toán
+      if (order.payment_status === PaymentStatus.PAID) {
+        const refundAmount = this.calculateTotal(orderItems);
+        const member = await this.orderRepo.findMemberByIdWithLock(order.used_by, t);
+        if (member) {
+          member.real_balance = parseFloat(member.real_balance || 0) + refundAmount;
+          await this.orderRepo.save(member, t);
+        }
+
+        await this.orderRepo.createFinancialTransaction({
+          type: TransactionType.EXPENSE,
+          category: TransactionCategory.REFUND,
+          amount: refundAmount,
+          payment_method: PaymentMethodEnum.WALLET,
+          status: TransactionStatusEnum.COMPLETED,
+          order_id: order.order_id,
+          used_by: order.used_by,
+          processed_by: staffId,
+          description: `[Bếp/Nhân viên hủy #${order.order_id}] Lý do: ${reason.trim()} (Xử lý bởi NV #${staffId})`
+        }, { transaction: t });
+      }
+
+      order.status = OrderStatus.CANCELLED;
+      order.processed_by = staffId;
+      await this.orderRepo.save(order, t);
+
+      return {
+        order_id: order.order_id,
+        status: order.status,
+        reason: reason.trim(),
+        processed_by: staffId,
+        message: 'Đã hủy đơn hàng và hoàn tiền ví (nếu có) thành công'
+      };
+    });
+  }
+
+  // Lấy danh sách đơn hàng cho Bếp / Thu ngân (C# NetStaff)
+  async getStaffPendingOrders(query = {}) {
+    const { status } = query;
+    const filter = {};
+
+    if (status && status !== 'ALL') {
+      filter.status = status;
+    } else {
+      filter.status = [OrderStatus.PENDING, OrderStatus.PREPARING];
+    }
+
+    const { count, rows } = await this.orderRepo.findOrders(filter, { limit: 50, offset: 0 });
+
+    const data = rows.map(order => {
+      const orderItemsList = order.orderItems || order.ServiceOrderItems || [];
+      const memberObj = order.member || order.Member;
+
+      return {
+        order_id: order.order_id,
+        status: order.status,
+        payment_status: order.payment_status,
+        total_amount: this.calculateTotal(orderItemsList),
+        created_at: order.created_at,
+        customer_name: memberObj?.userInfo?.full_name || memberObj?.userInfo?.username || `Khách #${order.used_by}`,
+        items: orderItemsList.map(oi => ({
+          item_name: oi.item_name,
+          quantity: oi.quantity,
+          price: parseFloat(oi.price || 0)
+        }))
+      };
+    });
+
+    return { total: count, data };
   }
 }
 

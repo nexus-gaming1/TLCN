@@ -23,6 +23,7 @@ const webhookRoutes = require('./src/routes/webhookRoutes');
 const reportRoutes = require('./src/routes/reportRoutes');
 const comboRoutes = require('./src/routes/comboRoutes');
 const comboTimeService = require('./src/services/comboTimeService');
+const orderRoutes = require('./src/routes/orderRoutes');
 
 const errorHandler = require('./src/middleware/errorHandler');
 const computerSocketService = require('./src/services/computerSocketService');
@@ -57,6 +58,7 @@ app.use('/api/combos', comboRoutes);
 app.use('/api/catalog', serviceCatalogRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Centralized Error Handler
 app.use(errorHandler);
