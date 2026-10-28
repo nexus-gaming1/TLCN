@@ -148,5 +148,5 @@ vite.config.ts.timestamp-*
 .vs/
 
 # .NET build output
-[Bb]in/
-[Oo]bj/
+**/[Bb]in/
+**/[Oo]bj/

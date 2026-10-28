@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NetClient.UI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6ea7058f1ecec58c13a84de2c8504002231cc40f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9866c45206d051e286edd3eecb8c355fe8057783")]
 [assembly: System.Reflection.AssemblyProductAttribute("NetClient.UI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NetClient.UI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
