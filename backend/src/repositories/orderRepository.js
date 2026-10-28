@@ -66,13 +66,7 @@ class OrderRepository {
       include: [
         {
           model: this.models.ServiceOrderItem,
-          as: 'orderItems',
-          include: [
-            {
-              model: this.models.ServiceItem,
-              attributes: ['service_item_id', 'name', 'price', 'category_id']
-            }
-          ]
+          as: 'orderItems'
         },
         {
           model: this.models.Member,
@@ -81,7 +75,7 @@ class OrderRepository {
             {
               model: this.models.User,
               as: 'userInfo',
-              attributes: ['user_id', 'username', 'full_name', 'phone']
+              attributes: ['user_id', 'username', 'full_name']
             }
           ]
         },
@@ -143,7 +137,7 @@ class OrderRepository {
         {
           model: this.models.User,
           as: 'userInfo',
-          attributes: ['user_id', 'username', 'full_name', 'phone']
+          attributes: ['user_id', 'username', 'full_name']
         }
       ]
     };

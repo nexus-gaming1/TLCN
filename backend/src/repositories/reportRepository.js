@@ -43,7 +43,7 @@ class ReportRepository {
         [
           this.sequelize.fn(
             'SUM',
-            this.sequelize.literal('`ServiceOrderItems`.`quantity` * `ServiceOrderItems`.`price`')
+            this.sequelize.literal('`orderItems`.`quantity` * `orderItems`.`price`')
           ),
           'serviceRevenue'
         ]
@@ -51,6 +51,7 @@ class ReportRepository {
       include: [
         {
           model: this.models.ServiceOrderItem,
+          as: 'orderItems',
           attributes: [],
           required: true // INNER JOIN để chỉ tính những đơn có món
         }
@@ -108,6 +109,7 @@ class ReportRepository {
       include: [
         {
           model: this.models.ServiceOrder,
+          as: 'order', //đồng bộ với ServiceOrderItem 
           attributes: [],
           where: {
             payment_status: PaymentStatus.PAID,
