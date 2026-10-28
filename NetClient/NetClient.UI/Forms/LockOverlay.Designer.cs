@@ -15,7 +15,6 @@ partial class LockOverlay
     private Label lblLoginTitle;
     private Label lblUsername;
     private TextBox txtUsername;
-    private Label lblLoginError;
     private Button btnLogin;
     private Label lblHint;
     private Panel pnlNotification;
@@ -37,9 +36,11 @@ partial class LockOverlay
     {
         pnlCenterCard = new Panel();
         pnlLogin = new Panel();
+        lblLoginError = new Label();
+        txtPassword = new TextBox();
+        lbl_matkhau = new Label();
         lblHint = new Label();
         btnLogin = new Button();
-        lblLoginError = new Label();
         txtUsername = new TextBox();
         lblUsername = new Label();
         lblLoginTitle = new Label();
@@ -73,33 +74,70 @@ partial class LockOverlay
         pnlCenterCard.Location = new Point(114, 100);
         pnlCenterCard.Margin = new Padding(3, 4, 3, 4);
         pnlCenterCard.Name = "pnlCenterCard";
-        pnlCenterCard.Size = new Size(777, 650);
+        pnlCenterCard.Size = new Size(777, 708);
         pnlCenterCard.TabIndex = 1;
         // 
         // pnlLogin
         // 
         pnlLogin.BackColor = Color.FromArgb(15, 23, 42);
+        pnlLogin.Controls.Add(lblLoginError);
+        pnlLogin.Controls.Add(txtPassword);
+        pnlLogin.Controls.Add(lbl_matkhau);
         pnlLogin.Controls.Add(lblHint);
         pnlLogin.Controls.Add(btnLogin);
-        pnlLogin.Controls.Add(lblLoginError);
         pnlLogin.Controls.Add(txtUsername);
         pnlLogin.Controls.Add(lblUsername);
         pnlLogin.Controls.Add(lblLoginTitle);
         pnlLogin.Location = new Point(148, 325);
         pnlLogin.Margin = new Padding(3, 4, 3, 4);
         pnlLogin.Name = "pnlLogin";
-        pnlLogin.Size = new Size(480, 280);
+        pnlLogin.Size = new Size(480, 356);
         pnlLogin.TabIndex = 7;
+        // 
+        // lblLoginError
+        // 
+        lblLoginError.Font = new Font("Segoe UI", 9F);
+        lblLoginError.ForeColor = Color.FromArgb(248, 113, 113);
+        lblLoginError.Location = new Point(35, 202);
+        lblLoginError.Name = "lblLoginError";
+        lblLoginError.Size = new Size(410, 22);
+        lblLoginError.TabIndex = 8;
+        lblLoginError.Text = "Vui lòng nhập tên tài khoản!";
+        lblLoginError.TextAlign = ContentAlignment.MiddleCenter;
+        lblLoginError.Visible = false;
+        lblLoginError.Click += label1_Click;
+        // 
+        // txtPassword
+        // 
+        txtPassword.BackColor = Color.FromArgb(30, 41, 59);
+        txtPassword.BorderStyle = BorderStyle.FixedSingle;
+        txtPassword.Font = new Font("Segoe UI", 12.5F);
+        txtPassword.ForeColor = Color.White;
+        txtPassword.Location = new Point(35, 162);
+        txtPassword.Name = "txtPassword";
+        txtPassword.Size = new Size(410, 35);
+        txtPassword.TabIndex = 7;
+        // 
+        // lbl_matkhau
+        // 
+        lbl_matkhau.Font = new Font("Segoe UI", 9.5F);
+        lbl_matkhau.ForeColor = Color.FromArgb(203, 213, 225);
+        lbl_matkhau.Location = new Point(35, 132);
+        lbl_matkhau.Name = "lbl_matkhau";
+        lbl_matkhau.Size = new Size(410, 24);
+        lbl_matkhau.TabIndex = 6;
+        lbl_matkhau.Text = "Mật khẩu:";
+        lbl_matkhau.Click += label2_Click;
         // 
         // lblHint
         // 
         lblHint.Font = new Font("Segoe UI", 8.5F, FontStyle.Italic);
         lblHint.ForeColor = Color.FromArgb(148, 163, 184);
-        lblHint.Location = new Point(20, 218);
+        lblHint.Location = new Point(20, 302);
         lblHint.Name = "lblHint";
         lblHint.Size = new Size(440, 24);
         lblHint.TabIndex = 5;
-        lblHint.Text = "💡 Chế độ thử nghiệm: Nhập bất kỳ username nào và nhấn Enter";
+        lblHint.Text = "💡 Đăng nhập bằng tài khoản hội viên đã đăng ký";
         lblHint.TextAlign = ContentAlignment.MiddleCenter;
         // 
         // btnLogin
@@ -110,24 +148,12 @@ partial class LockOverlay
         btnLogin.FlatStyle = FlatStyle.Flat;
         btnLogin.Font = new Font("Segoe UI", 11.5F, FontStyle.Bold);
         btnLogin.ForeColor = Color.White;
-        btnLogin.Location = new Point(35, 155);
+        btnLogin.Location = new Point(35, 239);
         btnLogin.Name = "btnLogin";
         btnLogin.Size = new Size(410, 48);
         btnLogin.TabIndex = 4;
         btnLogin.Text = "⚡ ĐĂNG NHẬP (MỞ MÁY)";
         btnLogin.UseVisualStyleBackColor = false;
-        // 
-        // lblLoginError
-        // 
-        lblLoginError.Font = new Font("Segoe UI", 9F);
-        lblLoginError.ForeColor = Color.FromArgb(248, 113, 113);
-        lblLoginError.Location = new Point(35, 122);
-        lblLoginError.Name = "lblLoginError";
-        lblLoginError.Size = new Size(410, 22);
-        lblLoginError.TabIndex = 3;
-        lblLoginError.Text = "Vui lòng nhập tên tài khoản!";
-        lblLoginError.TextAlign = ContentAlignment.MiddleCenter;
-        lblLoginError.Visible = false;
         // 
         // txtUsername
         // 
@@ -286,5 +312,7 @@ partial class LockOverlay
         ResumeLayout(false);
     }
 
+    private Label lblLoginError;
+    private TextBox txtPassword;
+    private Label lbl_matkhau;
 }
-

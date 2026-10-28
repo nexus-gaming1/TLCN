@@ -76,7 +76,7 @@ class MachineStore {
 
         // Cập nhật lastHeartbeat theo server time để tính timeout chuẩn xác
         machine.lastHeartbeat = new Date().toISOString();
-
+        console.log(`[MachineStore] Heartbeat updated for machine ${machineId}:`, machine);
         this.machines.set(machineId, machine);
 
         return machine;
@@ -174,6 +174,7 @@ class MachineStore {
                 if (now - lastHeartbeatTime > timeoutMs) {
                     machine.previousStatus = machine.status;
                     machine.status = 'OFFLINE';
+                    machine.performance = null;
                     machine.disconnectedAt = new Date().toISOString();
 
                     this.machines.set(machineId, machine);

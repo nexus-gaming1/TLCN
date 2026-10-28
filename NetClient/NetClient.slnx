@@ -3,4 +3,5 @@
   <Project Path="NetClient.Shared/NetClient.Shared.csproj" />
   <Project Path="NetClient.Tests/NetClient.Tests.csproj" />
   <Project Path="NetClient.UI/NetClient.UI.csproj" />
+  <Project Path="NetClientApp/NetClient.App.csproj" Id="b64bfaeb-e80d-4c4f-aade-a5141024ef3b" />
 </Solution>

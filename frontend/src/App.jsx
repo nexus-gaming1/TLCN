@@ -13,6 +13,7 @@ import TransactionManagementPage from './pages/admin/TransactionManagementPage';
 import StaffDashboardPage from './pages/staff/StaffDashboardPage';
 import CustomerDashboardPage from './pages/customer/CustomerDashboardPage';
 import CustomerProfilePage from './pages/customer/CustomerProfilePage';
+import CustomerComboPage from './pages/customer/CustomerComboPage';
 import ServiceCatalogPage from './pages/admin/ServiceCatalogPage';
 import RevenueReportPage from './pages/admin/RevenueReportPage';
 
@@ -129,6 +130,11 @@ const CustomerProfileWrapper = () => {
   return <CustomerProfilePage user={currentUser} onLogout={logout} />;
 };
 
+const CustomerComboWrapper = () => {
+  const { currentUser, logout } = useAuth();
+  return <CustomerComboPage user={currentUser} onLogout={logout} />;
+};
+
 const ServiceCatalogWrapper = () => {
   const { currentUser, logout } = useAuth();
   return <ServiceCatalogPage user={currentUser} onLogout={logout} />;
@@ -242,6 +248,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CUSTOMER', 'MEMBER']}>
                 <CustomerProfileWrapper />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/customer/combos"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'MEMBER']}>
+                <CustomerComboWrapper />
               </ProtectedRoute>
             }
           />

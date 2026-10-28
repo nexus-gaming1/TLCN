@@ -76,6 +76,7 @@ const TransactionStatusEnum = Object.freeze({
 
 
 const ComboTimeStatus = Object.freeze({
+  PENDING: 'PENDING',
   ACTIVE: 'ACTIVE',
   EXPIRED: 'EXPIRED',
   CANCELLED: 'CANCELLED',

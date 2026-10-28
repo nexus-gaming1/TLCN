@@ -99,7 +99,9 @@ public class LoginAck
 
     [JsonPropertyName("username")]
     public string? Username { get; set; }
+    [JsonPropertyName("password")]
 
+    public string? Password { get; set; }
     [JsonPropertyName("success")]
     public bool Success { get; set; }
 

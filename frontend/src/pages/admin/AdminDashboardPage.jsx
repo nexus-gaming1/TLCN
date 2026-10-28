@@ -11,7 +11,8 @@ import BootromLogModal from '../../features/bootrom/BootromLogModal';
 import dashboardService from '../../shared/api/dashboard.service';
 import machineService from '../../shared/api/machine.service';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
-
+import { useMachines } from '../../shared/hooks/useMachines';
+import { useMachineSocket } from '../../shared/hooks/useMachineSocket';
 export default function AdminDashboardPage({ user, onLogout }) {
     const [filter, setFilter] = useState('all');
     const [sortBy, setSortBy] = useState('name_asc');
@@ -28,7 +29,11 @@ export default function AdminDashboardPage({ user, onLogout }) {
         setToastMessage({ text, isError });
         setTimeout(() => setToastMessage(null), 3500);
     };
-
+const {
+        data: machines = {},
+        isLoading,
+        isError,
+    } = useMachines();
     const loadDashboardData = useCallback(async (showLoading = true) => {
         if (showLoading) setLoading(true);
         const data = await dashboardService.getOverview();
@@ -39,6 +44,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
         }
         if (showLoading) setLoading(false);
     }, []);
+  useMachineSocket();
 
     useEffect(() => {
         loadDashboardData();
@@ -283,6 +289,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
                 onAction={handleStationAction}
                 onSwitchStation={handleStationSwitch}
                 availableStations={allStationsList}
+                machines= {machines}
             />
 
             {/* BOOTROM LOGS TECHNICAL MODAL */}

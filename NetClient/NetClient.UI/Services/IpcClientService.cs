@@ -17,6 +17,7 @@ public class IpcClientService
     public event Action<string>? OnSetUsername;
     public event Action<string, string?>? OnSetStatus;
     public event Action<string, string?>? OnShowNotification;
+    public event Action<bool, string?>? OnLoginResult;
     public event Action? OnConnected;
     public event Action? OnDisconnected;
 
@@ -152,6 +153,10 @@ public class IpcClientService
                     }
                     break;
 
+                case IpcAction.LoginResult:
+                    OnLoginResult?.Invoke(msg.Success == true, msg.Message);
+                    break;
+
                 case IpcAction.Ping:
                     _ = SendMessageAsync(new IpcMessage { Action = IpcAction.Pong });
                     break;
@@ -178,11 +183,24 @@ public class IpcClientService
         }
     }
 
-    public Task SendLoginAsync(string username, CancellationToken ct = default)
+    public Task SendLoginAsync(string username, string password, CancellationToken ct = default)
         => SendMessageAsync(new IpcMessage
         {
             Action = IpcAction.ClientLogin,
+            Username = username,
+            Password = password
+        }, ct);
+
+    public Task SendLoginAsync(string username, CancellationToken ct = default)
+        => SendMessageAsync(new IpcMessage
+        {
+            Action = IpcAction.LegacyClientLogin,
             Username = username
         }, ct);
-}
 
+    public Task SendLogoutAsync(CancellationToken ct = default)
+        => SendMessageAsync(new IpcMessage
+        {
+            Action = IpcAction.ClientLogout
+        }, ct);
+}

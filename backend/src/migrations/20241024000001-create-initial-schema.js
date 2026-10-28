@@ -57,7 +57,7 @@ module.exports = {
     }).catch(() => {});
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface, _Sequelize) {
     await queryInterface.dropTable('financial_transaction').catch(() => {});
     await queryInterface.dropTable('members').catch(() => {});
     await queryInterface.dropTable('pricing_plans').catch(() => {});

@@ -341,8 +341,7 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
           "Microsoft.Extensions.Logging": "10.0.12",
           "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Options": "10.0.12",
-          "System.Diagnostics.EventLog": "10.0.12"
+          "Microsoft.Extensions.Options": "10.0.12"
         },
         "runtime": {
           "lib/net10.0/Microsoft.Extensions.Logging.EventLog.dll": {
@@ -691,34 +690,7 @@
           }
         }
       },
-      "System.CodeDom/10.0.12": {
-        "runtime": {
-          "lib/net10.0/System.CodeDom.dll": {
-            "assemblyVersion": "10.0.0.0",
-            "fileVersion": "10.0.1226.42308"
-          }
-        }
-      },
-      "System.Diagnostics.EventLog/10.0.12": {
-        "runtime": {
-          "lib/net10.0/System.Diagnostics.EventLog.dll": {
-            "assemblyVersion": "10.0.0.0",
-            "fileVersion": "10.0.1226.42308"
-          }
-        },
-        "runtimeTargets": {
-          "runtimes/win/lib/net10.0/System.Diagnostics.EventLog.dll": {
-            "rid": "win",
-            "assetType": "runtime",
-            "assemblyVersion": "10.0.0.0",
-            "fileVersion": "10.0.1226.42308"
-          }
-        }
-      },
       "System.Management/10.0.12": {
-        "dependencies": {
-          "System.CodeDom": "10.0.12"
-        },
         "runtime": {
           "lib/net10.0/System.Management.dll": {
             "assemblyVersion": "10.0.0.12",
@@ -735,9 +707,6 @@
         }
       },
       "System.ServiceProcess.ServiceController/10.0.12": {
-        "dependencies": {
-          "System.Diagnostics.EventLog": "10.0.12"
-        },
         "runtime": {
           "lib/net10.0/System.ServiceProcess.ServiceController.dll": {
             "assemblyVersion": "10.0.0.12",
@@ -1096,20 +1065,6 @@
       "sha512": "sha512-+p1xnwSkX8UQQLgqr2Em6dIATl5pR7awHj1nbaRd/9aA2iAHGgy7HsseN8eblv3NHlPtTP9Y3IFDl5JKfWSYjg==",
       "path": "socketioclient.serializer/4.0.0.1",
       "hashPath": "socketioclient.serializer.4.0.0.1.nupkg.sha512"
-    },
-    "System.CodeDom/10.0.12": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-Kk3yEavoGHXCAFTLLegxztgSdj24JrkAHelwgWnu+YMFxezcU2DbABEOOIMdy04PExUtKQtlazaKqo0qSa1X6A==",
-      "path": "system.codedom/10.0.12",
-      "hashPath": "system.codedom.10.0.12.nupkg.sha512"
-    },
-    "System.Diagnostics.EventLog/10.0.12": {
-      "type": "package",
-      "serviceable": true,
-      "sha512": "sha512-sOZM+VyRj1pg/ItlHsvrSbjws6oGqZveTzTNBGZ9ziwRDyKsOF3ub6vhvOdxotCIqtlnyHAIwP5sLNvgiZC+pQ==",
-      "path": "system.diagnostics.eventlog/10.0.12",
-      "hashPath": "system.diagnostics.eventlog.10.0.12.nupkg.sha512"
     },
     "System.Management/10.0.12": {
       "type": "package",

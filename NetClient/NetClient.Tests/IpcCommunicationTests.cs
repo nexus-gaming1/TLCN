@@ -69,6 +69,21 @@ public class IpcCommunicationTests
         Assert.Equal("player999", sessionService.CurrentUser);
         Assert.Equal(NetClient.Shared.Models.MachineStatus.IN_USE, sessionService.CurrentStatus);
 
+        // 6. Test ClientLogout from UI to Server
+        var logoutRequestedTcs = new TaskCompletionSource<bool>();
+        ipcServer.LogoutRequested += () =>
+        {
+            sessionService.Logout();
+            logoutRequestedTcs.TrySetResult(true);
+            return Task.CompletedTask;
+        };
+
+        await ipcClient.SendLogoutAsync(cts.Token);
+        var logoutHandled = await Task.WhenAny(logoutRequestedTcs.Task, Task.Delay(2000, cts.Token)) == logoutRequestedTcs.Task;
+        Assert.True(logoutHandled, "LogoutRequested event should be fired on IPC server");
+        Assert.Null(sessionService.CurrentUser);
+        Assert.Equal(NetClient.Shared.Models.MachineStatus.ONLINE, sessionService.CurrentStatus);
+
         // Cleanup
         ipcClient.Stop();
         cts.Cancel();

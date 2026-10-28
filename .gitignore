@@ -144,3 +144,9 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 
+# Visual Studio
+.vs/
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
