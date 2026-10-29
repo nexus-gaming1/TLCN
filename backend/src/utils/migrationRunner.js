@@ -121,6 +121,15 @@ const runMigrations = async () => {
       console.warn('⚠️ ENUM payment_method update skipped or already updated.');
     }
 
+    // 8. game: cover_image_url TEXT, is_remote_supported, is_available
+    await ensureColumn('game', null, 'is_remote_supported', 'TINYINT(1) DEFAULT 0');
+    await ensureColumn('game', null, 'is_available', 'TINYINT(1) DEFAULT 1');
+    try {
+      await db.sequelize.query("ALTER TABLE `game` MODIFY COLUMN `cover_image_url` TEXT NULL");
+    } catch (e) {
+      // Ignored if table does not exist yet or already up to date
+    }
+
     // Perform Sequelize sync with alter fallback
     await db.sequelize.sync({ alter: true }).catch((err) => {
       console.warn('[Migration Warning] Sync alter notice:', err.message);
