@@ -39,6 +39,9 @@ module.exports = (sequelize) => {
     User.hasOne(models.Member, { foreignKey: 'member_id', onDelete: 'CASCADE', as: 'memberProfile' });
     User.hasMany(models.ServiceOrder, { foreignKey: 'processed_by' });
     User.hasMany(models.FinancialTransaction, { foreignKey: 'processed_by' });
+    if (models.RefreshToken) {
+      User.hasMany(models.RefreshToken, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+    }
   };
 
   return User;
