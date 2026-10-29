@@ -14,7 +14,7 @@ module.exports = {
     await addCol('game', 'is_available', 'TINYINT(1) DEFAULT 1');
 
     try {
-      await queryInterface.sequelize.query('ALTER TABLE `game` MODIFY COLUMN `cover_image_url` TEXT NULL');
+      await queryInterface.sequelize.query('ALTER TABLE `game` MODIFY COLUMN `cover_image_url` LONGTEXT NULL');
     } catch (err) {
       // Ignored
     }

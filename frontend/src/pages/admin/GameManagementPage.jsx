@@ -8,7 +8,6 @@ import GameFilterBar from '../../features/games/ui/GameFilterBar';
 import GameTable from '../../features/games/ui/GameTable';
 import GameTableSkeleton from '../../features/games/ui/GameTableSkeleton';
 import GameFormModal from '../../features/games/ui/GameFormModal';
-import GameDetailDrawer from '../../features/games/ui/GameDetailDrawer';
 import Pagination from '../../shared/ui/Pagination';
 
 import { AlertCircle, CheckCircle2, PauseCircle, X } from 'lucide-react';
@@ -32,8 +31,7 @@ export default function GameManagementPage({ user, onLogout }) {
   // Selection & Modals State
   const [selectedIds, setSelectedIds] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [drawerGame, setDrawerGame] = useState(null);
-  const [drawerInitialEdit, setDrawerInitialEdit] = useState(false);
+  const [editingGame, setEditingGame] = useState(null);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -206,8 +204,8 @@ export default function GameManagementPage({ user, onLogout }) {
     setAllGames((prev) =>
       prev.map((g) => (g.game_id === gameId ? { ...g, ...updateData } : g))
     );
-    if (drawerGame && drawerGame.game_id === gameId) {
-      setDrawerGame((prev) => ({ ...prev, ...updateData }));
+    if (editingGame && editingGame.game_id === gameId) {
+      setEditingGame((prev) => (prev ? { ...prev, ...updateData } : null));
     }
     fetchGamesData();
     return updated;
@@ -220,8 +218,8 @@ export default function GameManagementPage({ user, onLogout }) {
       setAllGames((prev) =>
         prev.map((g) => (g.game_id === game.game_id ? { ...g, is_available: !g.is_available } : g))
       );
-      if (drawerGame && drawerGame.game_id === game.game_id) {
-        setDrawerGame((prev) => ({ ...prev, is_available: !prev.is_available }));
+      if (editingGame && editingGame.game_id === game.game_id) {
+        setEditingGame((prev) => (prev ? { ...prev, is_available: !prev.is_available } : null));
       }
 
       const updated = await gameService.toggleAvailability(game.game_id);
@@ -388,17 +386,7 @@ export default function GameManagementPage({ user, onLogout }) {
               <div className="flex flex-col min-h-[460px]">
                 <GameTable
                   games={paginatedGames}
-                  selectedIds={selectedIds}
-                  onToggleSelect={handleToggleSelect}
-                  onToggleSelectAll={handleToggleSelectAll}
-                  onViewDetail={(game) => {
-                    setDrawerGame(game);
-                    setDrawerInitialEdit(false);
-                  }}
-                  onEditGame={(game) => {
-                    setDrawerGame(game);
-                    setDrawerInitialEdit(true);
-                  }}
+                  onEditGame={(game) => setEditingGame(game)}
                   onToggleAvailability={handleToggleAvailability}
                   onDeleteGame={handleDeleteGame}
                 />
@@ -416,7 +404,6 @@ export default function GameManagementPage({ user, onLogout }) {
                       setCurrentPage(1);
                     }}
                     itemLabel="trò chơi"
-                    selectedCount={selectedIds.length}
                   />
                 )}
               </div>
@@ -437,15 +424,15 @@ export default function GameManagementPage({ user, onLogout }) {
         onCategoryCreated={handleCategoryCreated}
       />
 
-      {/* DRAWER CHI TIẾT & CHỈNH SỬA TẠI CHỖ (Slide-in Right Panel) */}
-      <GameDetailDrawer
-        isOpen={Boolean(drawerGame)}
-        game={drawerGame}
+      {/* MODAL CHỈNH SỬA TRÒ CHƠI */}
+      <GameFormModal
+        isOpen={Boolean(editingGame)}
+        mode="edit"
+        game={editingGame}
+        onClose={() => setEditingGame(null)}
+        onSubmit={(formData) => handleUpdateGame(editingGame?.game_id, formData)}
         categories={categories}
-        initialEditMode={drawerInitialEdit}
-        onClose={() => setDrawerGame(null)}
-        onUpdateGame={handleUpdateGame}
-        onToggleAvailability={handleToggleAvailability}
+        onCategoryCreated={handleCategoryCreated}
       />
     </div>
   );

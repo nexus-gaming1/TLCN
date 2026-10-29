@@ -1,10 +1,31 @@
 // src/repositories/gameRepository.js
 const { Op } = require('sequelize');
 const db = require('../models');
+const categoryRepository = require('./categoryRepository');
+
+/**
+ * Escape các ký tự đặc biệt của SQL LIKE (%, _, \) để tránh SQL Injection gián tiếp & ReDoS
+ */
+function escapeLikePattern(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[%_\\]/g, '\\$&');
+}
 
 class GameRepository {
-  constructor(models = db) {
+  constructor(models = db, categoryRepo = categoryRepository) {
     this.models = models;
+    this.sequelize = models ? models.sequelize : null;
+    this.categoryRepository = categoryRepo;
+  }
+
+  /**
+   * Mở Managed Transaction đảm bảo ACID
+   */
+  async runInTransaction(callback) {
+    if (this.sequelize && typeof this.sequelize.transaction === 'function') {
+      return await this.sequelize.transaction(callback);
+    }
+    return await callback(null);
   }
 
   async findAll(filter = {}) {
@@ -15,8 +36,9 @@ class GameRepository {
       where.is_deleted = false;
     }
 
-    if (filter.search) {
-      const searchPattern = `%${filter.search.trim()}%`;
+    if (filter.search && typeof filter.search === 'string') {
+      const sanitized = escapeLikePattern(filter.search.trim());
+      const searchPattern = `%${sanitized}%`;
       where[Op.or] = [
         { name: { [Op.like]: searchPattern } },
         { executable_path: { [Op.like]: searchPattern } }
@@ -56,7 +78,7 @@ class GameRepository {
   /**
    * Tìm game theo ID (mặc định chỉ tìm game chưa bị xóa mềm)
    */
-  async findById(gameId, includeDeleted = false) {
+  async findById(gameId, includeDeleted = false, options = {}) {
     const where = { game_id: gameId };
     if (!includeDeleted) {
       where.is_deleted = false;
@@ -64,6 +86,7 @@ class GameRepository {
 
     return await this.models.Game.findOne({
       where,
+      ...options,
       include: [
         {
           model: this.models.GameCategory,
@@ -96,63 +119,55 @@ class GameRepository {
   /**
    * Tạo game mới
    */
-  async create(gameData) {
-    return await this.models.Game.create(gameData);
+  async create(gameData, options = {}) {
+    return await this.models.Game.create(gameData, options);
   }
 
   /**
    * Cập nhật game
    */
-  async update(gameInstance, updateData) {
-    return await gameInstance.update(updateData);
+  async update(gameInstance, updateData, options = {}) {
+    return await gameInstance.update(updateData, options);
   }
 
   /**
    * Xóa mềm game (Soft Delete)
-   * Không xóa trực tiếp khỏi database, mà đánh dấu is_deleted = true và ghi nhận deleted_at
+   * Đánh dấu is_deleted = true, ghi nhận deleted_at, đặt is_available = false.
+   * KHÔNG xóa bảng trung gian ComputerGame để bảo toàn liên kết máy trạm khi restore.
    */
-  async delete(gameId) {
-    const game = await this.models.Game.findByPk(gameId);
+  async delete(gameId, options = {}) {
+    const game = await this.models.Game.findByPk(gameId, options);
     if (!game) return null;
-
-    // Gỡ liên kết máy trạm (ComputerGame) để máy trạm không còn hiển thị game đã xóa
-    if (this.models.ComputerGame) {
-      await this.models.ComputerGame.destroy({ where: { game_id: gameId } });
-    }
-
-    if (typeof game.softDelete === 'function') {
-      return await game.softDelete();
-    }
 
     return await game.update({
       is_deleted: true,
       deleted_at: new Date(),
       is_available: false
-    });
+    }, options);
   }
 
   /**
    * Khôi phục game đã xóa mềm (Restore)
+   * Đánh dấu is_deleted = false, xóa deleted_at, kích hoạt lại is_available = true.
    */
-  async restore(gameId) {
-    const game = await this.models.Game.findByPk(gameId);
+  async restore(gameId, options = {}) {
+    const game = await this.models.Game.findByPk(gameId, options);
     if (!game) return null;
-
-    if (typeof game.restore === 'function') {
-      return await game.restore();
-    }
 
     return await game.update({
       is_deleted: false,
       deleted_at: null,
       is_available: true
-    });
+    }, options);
   }
 
   /**
-   * Lấy tất cả danh mục game (chỉ tính kèm game chưa bị xóa mềm)
+   * Lấy tất cả danh mục game (Ủy quyền CategoryRepository - SRP)
    */
-  async findAllCategories() {
+  async findAllCategories(options = {}) {
+    if (this.categoryRepository && typeof this.categoryRepository.findAll === 'function') {
+      return await this.categoryRepository.findAll(options);
+    }
     return await this.models.GameCategory.findAll({
       include: [
         {
@@ -162,45 +177,56 @@ class GameRepository {
           attributes: ['game_id', 'name', 'is_available']
         }
       ],
-      order: [['category_id', 'ASC']]
+      order: [['category_id', 'ASC']],
+      ...options
     });
   }
 
   /**
-   * Tìm danh mục theo ID
+   * Tìm danh mục theo ID (Ủy quyền CategoryRepository - SRP)
    */
-  async findCategoryById(categoryId) {
-    return await this.models.GameCategory.findByPk(categoryId);
+  async findCategoryById(categoryId, options = {}) {
+    if (this.categoryRepository && typeof this.categoryRepository.findById === 'function') {
+      return await this.categoryRepository.findById(categoryId, options);
+    }
+    return await this.models.GameCategory.findByPk(categoryId, options);
   }
 
   /**
-   * Tìm danh mục theo tên
+   * Tìm danh mục theo tên (Ủy quyền CategoryRepository - SRP)
    */
-  async findCategoryByName(name) {
+  async findCategoryByName(name, options = {}) {
+    if (this.categoryRepository && typeof this.categoryRepository.findByName === 'function') {
+      return await this.categoryRepository.findByName(name, options);
+    }
     return await this.models.GameCategory.findOne({
-      where: { name }
+      where: { name: name?.trim() },
+      ...options
     });
   }
 
   /**
-   * Tạo thể loại game mới
+   * Tạo thể loại game mới (Ủy quyền CategoryRepository - SRP)
    */
-  async createCategory(data) {
-    return await this.models.GameCategory.create(data);
+  async createCategory(data, options = {}) {
+    if (this.categoryRepository && typeof this.categoryRepository.create === 'function') {
+      return await this.categoryRepository.create(data, options);
+    }
+    return await this.models.GameCategory.create(data, options);
   }
 
   /**
    * Gán hoặc đồng bộ danh sách máy trạm cho game
    */
-  async setComputersForGame(gameId, computerIds = []) {
+  async setComputersForGame(gameId, computerIds = [], options = {}) {
     if (!this.models.ComputerGame) return;
-    await this.models.ComputerGame.destroy({ where: { game_id: gameId } });
+    await this.models.ComputerGame.destroy({ where: { game_id: gameId }, ...options });
     if (computerIds && computerIds.length > 0) {
       const records = computerIds.map((cid) => ({
         computer_id: cid,
         game_id: gameId
       }));
-      await this.models.ComputerGame.bulkCreate(records);
+      await this.models.ComputerGame.bulkCreate(records, options);
     }
   }
 
@@ -281,4 +307,8 @@ class GameRepository {
   }
 }
 
-module.exports = new GameRepository();
+const defaultInstance = new GameRepository();
+defaultInstance.GameRepository = GameRepository;
+defaultInstance.escapeLikePattern = escapeLikePattern;
+GameRepository.escapeLikePattern = escapeLikePattern;
+module.exports = defaultInstance;

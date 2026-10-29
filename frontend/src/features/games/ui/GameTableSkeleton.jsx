@@ -12,9 +12,6 @@ export default function GameTableSkeleton({ rows = 6 }) {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-slate-100/90 text-slate-800 text-[11px] uppercase tracking-wider border-b border-slate-200 font-extrabold select-none">
-              <th className="py-3.5 px-4 w-12 text-center">
-                <div className="w-4 h-4 bg-slate-200 rounded mx-auto animate-pulse" />
-              </th>
               <th className="py-3.5 px-4 min-w-[240px]">Trò Chơi &amp; Ảnh Bìa</th>
               <th className="py-3.5 px-4 min-w-[150px]">Thể Loại</th>
               <th className="py-3.5 px-4 min-w-[220px]">Đường Dẫn Thực Thi (.exe)</th>
@@ -26,11 +23,6 @@ export default function GameTableSkeleton({ rows = 6 }) {
           <tbody className="divide-y divide-slate-100 text-xs">
             {Array.from({ length: rows }).map((_, idx) => (
               <tr key={idx} className="animate-pulse">
-                {/* Checkbox */}
-                <td className="py-3.5 px-4 text-center">
-                  <div className="w-4 h-4 bg-slate-200 rounded mx-auto" />
-                </td>
-
                 {/* Trò chơi & ảnh bìa */}
                 <td className="py-3.5 px-4">
                   <div className="flex items-center gap-3">

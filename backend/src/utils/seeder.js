@@ -418,30 +418,26 @@ const seedData = async (db) => {
       { game_id: 12, name: 'Naraka: Bladepoint', category_id: 3, cover_image_url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Steam\\steamapps\\common\\NARAKA BLADEPOINT\\NarakaBladepoint.exe', is_remote_supported: true, is_available: false }
     ], ['name', 'category_id', 'cover_image_url', 'executable_path', 'is_remote_supported', 'is_available']);
 
-    // 7.1 Seed ComputerGame (Gán game vào trạm máy trên phân khu)
-    if (db.ComputerGame) {
+    // 7.1 Seed ComputerGame (Gán game vào toàn bộ trạm máy hiện có trong hệ thống)
+    if (db.ComputerGame && db.Computer && db.Game) {
+      const [allComputers, allGames] = await Promise.all([
+        db.Computer.findAll({ attributes: ['computer_id'] }).catch(() => []),
+        db.Game.findAll({ attributes: ['game_id'] }).catch(() => [])
+      ]);
+
+      const computerIds = allComputers.length > 0
+        ? allComputers.map((c) => c.computer_id)
+        : Array.from({ length: 36 }, (_, i) => i + 1);
+
+      const gameIds = allGames.length > 0
+        ? allGames.map((g) => g.game_id)
+        : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
       const computerGameMappings = [];
-      // Phổ biến Esports (Game 1, 2, 3, 9) cài trên toàn bộ 36 máy
-      for (let c = 1; c <= 36; c++) {
-        computerGameMappings.push({ computer_id: c, game_id: 1 });
-        computerGameMappings.push({ computer_id: c, game_id: 2 });
-        computerGameMappings.push({ computer_id: c, game_id: 3 });
-        computerGameMappings.push({ computer_id: c, game_id: 9 });
-      }
-      // AAA Games (Game 5, 6, 8, 11) cài trên Zone 1 (ESP 1-8), Zone 2 (VIP 9-16), Zone 4 (Stream 27-30), Zone 5 (Cloud 31-36)
-      const highEndComputers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36];
-      for (const compId of highEndComputers) {
-        computerGameMappings.push({ computer_id: compId, game_id: 5 });
-        computerGameMappings.push({ computer_id: compId, game_id: 6 });
-        computerGameMappings.push({ computer_id: compId, game_id: 8 });
-        computerGameMappings.push({ computer_id: compId, game_id: 11 });
-      }
-      // Game 4, 7, 10, 12 trên các trạm còn lại
-      for (let c = 1; c <= 26; c++) {
-        computerGameMappings.push({ computer_id: c, game_id: 4 });
-        computerGameMappings.push({ computer_id: c, game_id: 7 });
-        computerGameMappings.push({ computer_id: c, game_id: 10 });
-        computerGameMappings.push({ computer_id: c, game_id: 12 });
+      for (const compId of computerIds) {
+        for (const gId of gameIds) {
+          computerGameMappings.push({ computer_id: compId, game_id: gId });
+        }
       }
       await safeSeed(db.ComputerGame, computerGameMappings);
     }

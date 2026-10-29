@@ -1,87 +1,79 @@
 // src/services/gameService.js
 const gameRepository = require('../repositories/gameRepository');
+const categoryService = require('./categoryService');
+const { ValidationError, NotFoundError, ConflictError } = require('../utils/errors');
 
 class GameService {
-  constructor(repository = gameRepository) {
+  constructor(repository = gameRepository, catService) {
     this.repository = repository;
+    if (catService) {
+      this.categoryService = catService;
+    } else if (repository && repository !== gameRepository && typeof repository.findCategoryById === 'function') {
+      this.categoryService = new categoryService.CategoryService(repository);
+    } else {
+      this.categoryService = categoryService;
+    }
+  }
+
+  /**
+   * Helper kiểm tra tính hợp lệ của ID (Tuân thủ DRY)
+   */
+  _validateId(id, entityName = 'game') {
+    const parsedId = Number(id);
+    if (!Number.isInteger(parsedId) || parsedId <= 0) {
+      throw new ValidationError(`ID ${entityName} không hợp lệ`);
+    }
+    return parsedId;
   }
 
   /**
    * Lấy danh sách games kèm filter và metrics
    */
   async getGames(filter = {}) {
-    try {
-      const games = await this.repository.findAll(filter);
-      const metrics = await this.repository.getMetrics();
-      return {
-        games,
-        metrics
-      };
-    } catch (error) {
-      console.error('Lỗi khi lấy danh sách games:', error);
-      throw error;
-    }
+    const games = await this.repository.findAll(filter);
+    const metrics = await this.repository.getMetrics();
+    return {
+      games,
+      metrics
+    };
   }
 
   /**
    * Lấy chi tiết game theo ID
    */
   async getGameById(id) {
-    try {
-      const parsedId = Number(id);
-      if (!parsedId || isNaN(parsedId)) {
-        const error = new Error('ID game không hợp lệ');
-        error.statusCode = 400;
-        throw error;
-      }
-
-      const game = await this.repository.findById(parsedId);
-      if (!game) {
-        const error = new Error(`Không tìm thấy game với ID: ${parsedId}`);
-        error.statusCode = 404;
-        throw error;
-      }
-
-      return game;
-    } catch (error) {
-      console.error('Lỗi khi lấy chi tiết game:', error);
-      throw error;
+    const parsedId = this._validateId(id, 'game');
+    const game = await this.repository.findById(parsedId);
+    if (!game) {
+      throw new NotFoundError(`Không tìm thấy game với ID: ${parsedId}`);
     }
+    return game;
   }
 
   /**
-   * Tạo game mới
+   * Tạo game mới (Được bọc trong Managed Database Transaction đảm bảo tính toàn vẹn ACID)
    */
   async createGame(data) {
-    try {
-      const { name, category_id, cover_image_url, executable_path, is_remote_supported, is_available, computer_ids } = data;
+    const { name, category_id, cover_image_url, executable_path, is_remote_supported, is_available, computer_ids } = data || {};
 
-      if (!name || !name.trim()) {
-        const error = new Error('Tên game không được để trống');
-        error.statusCode = 400;
-        throw error;
-      }
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      throw new ValidationError('Tên game không được để trống');
+    }
 
-      if (!category_id) {
-        const error = new Error('Vui lòng chọn thể loại cho game');
-        error.statusCode = 400;
-        throw error;
-      }
+    if (!category_id || Number(category_id) <= 0) {
+      throw new ValidationError('Vui lòng chọn thể loại cho game');
+    }
 
-      const category = await this.repository.findCategoryById(Number(category_id));
-      if (!category) {
-        const error = new Error('Thể loại game được chọn không tồn tại');
-        error.statusCode = 404;
-        throw error;
-      }
+    // Xác thực thể loại qua CategoryService chuyên trách
+    await this.categoryService.getCategoryById(Number(category_id));
 
-      const existingGame = await this.repository.findByName(name.trim());
-      if (existingGame) {
-        const error = new Error(`Game với tên "${name.trim()}" đã tồn tại trong hệ thống`);
-        error.statusCode = 409;
-        throw error;
-      }
+    const existingGame = await this.repository.findByName(name.trim());
+    if (existingGame) {
+      throw new ConflictError(`Game với tên "${name.trim()}" đã tồn tại trong hệ thống`);
+    }
 
+    // Thực thi trong Transaction
+    return await this.repository.runInTransaction(async (transaction) => {
       const newGame = await this.repository.create({
         name: name.trim(),
         category_id: Number(category_id),
@@ -89,228 +81,131 @@ class GameService {
         executable_path: executable_path?.trim() || null,
         is_remote_supported: Boolean(is_remote_supported),
         is_available: is_available !== undefined ? Boolean(is_available) : true
-      });
+      }, { transaction });
 
       if (Array.isArray(computer_ids) && computer_ids.length > 0) {
-        await this.repository.setComputersForGame(newGame.game_id, computer_ids);
+        await this.repository.setComputersForGame(newGame.game_id, computer_ids, { transaction });
       }
 
-      return await this.repository.findById(newGame.game_id);
-    } catch (error) {
-      console.error('Lỗi khi tạo game mới:', error);
-      throw error;
-    }
+      return await this.repository.findById(newGame.game_id, false, { transaction });
+    });
   }
 
   /**
-   * Cập nhật thông tin game
+   * Cập nhật thông tin game (Được bọc trong Managed Database Transaction đảm bảo ACID)
    */
   async updateGame(id, data) {
-    try {
-      const parsedId = Number(id);
-      if (!parsedId || isNaN(parsedId)) {
-        const error = new Error('ID game không hợp lệ');
-        error.statusCode = 400;
-        throw error;
+    const parsedId = this._validateId(id, 'game');
+
+    const { name, category_id, cover_image_url, executable_path, is_remote_supported, is_available, computer_ids } = data || {};
+
+    if (name !== undefined) {
+      if (typeof name !== 'string' || !name.trim()) {
+        throw new ValidationError('Tên game không được để trống');
       }
 
-      const game = await this.repository.findById(parsedId);
+      const existingGame = await this.repository.findByName(name.trim());
+      if (existingGame && existingGame.game_id !== parsedId) {
+        throw new ConflictError(`Game với tên "${name.trim()}" đã tồn tại`);
+      }
+    }
+
+    if (category_id !== undefined) {
+      // Xác thực thể loại qua CategoryService chuyên trách
+      await this.categoryService.getCategoryById(Number(category_id));
+    }
+
+    // Thực thi trong Transaction
+    return await this.repository.runInTransaction(async (transaction) => {
+      const game = await this.repository.findById(parsedId, false, { transaction });
       if (!game) {
-        const error = new Error(`Không tìm thấy game với ID: ${parsedId}`);
-        error.statusCode = 404;
-        throw error;
+        throw new NotFoundError(`Không tìm thấy game với ID: ${parsedId}`);
       }
-
-      const { name, category_id, cover_image_url, executable_path, is_remote_supported, is_available, computer_ids } = data;
 
       const updatePayload = {};
+      if (name !== undefined) updatePayload.name = name.trim();
+      if (category_id !== undefined) updatePayload.category_id = Number(category_id);
+      if (cover_image_url !== undefined) updatePayload.cover_image_url = cover_image_url ? cover_image_url.trim() : null;
+      if (executable_path !== undefined) updatePayload.executable_path = executable_path ? executable_path.trim() : null;
+      if (is_remote_supported !== undefined) updatePayload.is_remote_supported = Boolean(is_remote_supported);
+      if (is_available !== undefined) updatePayload.is_available = Boolean(is_available);
 
-      if (name !== undefined) {
-        if (!name.trim()) {
-          const error = new Error('Tên game không được để trống');
-          error.statusCode = 400;
-          throw error;
-        }
-
-        const existingGame = await this.repository.findByName(name.trim());
-        if (existingGame && existingGame.game_id !== parsedId) {
-          const error = new Error(`Game với tên "${name.trim()}" đã tồn tại`);
-          error.statusCode = 409;
-          throw error;
-        }
-        updatePayload.name = name.trim();
-      }
-
-      if (category_id !== undefined) {
-        const category = await this.repository.findCategoryById(Number(category_id));
-        if (!category) {
-          const error = new Error('Thể loại game được chọn không tồn tại');
-          error.statusCode = 404;
-          throw error;
-        }
-        updatePayload.category_id = Number(category_id);
-      }
-
-      if (cover_image_url !== undefined) {
-        updatePayload.cover_image_url = cover_image_url ? cover_image_url.trim() : null;
-      }
-
-      if (executable_path !== undefined) {
-        updatePayload.executable_path = executable_path ? executable_path.trim() : null;
-      }
-
-      if (is_remote_supported !== undefined) {
-        updatePayload.is_remote_supported = Boolean(is_remote_supported);
-      }
-
-      if (is_available !== undefined) {
-        updatePayload.is_available = Boolean(is_available);
-      }
-
-      await this.repository.update(game, updatePayload);
+      await this.repository.update(game, updatePayload, { transaction });
 
       if (Array.isArray(computer_ids)) {
-        await this.repository.setComputersForGame(parsedId, computer_ids);
+        await this.repository.setComputersForGame(parsedId, computer_ids, { transaction });
       }
 
-      return await this.repository.findById(parsedId);
-    } catch (error) {
-      console.error('Lỗi khi cập nhật game:', error);
-      throw error;
-    }
+      return await this.repository.findById(parsedId, false, { transaction });
+    });
   }
 
   /**
    * Bật/Tắt trạng thái hoạt động của game
    */
   async toggleAvailability(id) {
-    try {
-      const parsedId = Number(id);
-      if (!parsedId || isNaN(parsedId)) {
-        const error = new Error('ID game không hợp lệ');
-        error.statusCode = 400;
-        throw error;
-      }
-
-      const game = await this.repository.findById(parsedId);
-      if (!game) {
-        const error = new Error(`Không tìm thấy game với ID: ${parsedId}`);
-        error.statusCode = 404;
-        throw error;
-      }
-
-      const nextStatus = !game.is_available;
-      await this.repository.update(game, { is_available: nextStatus });
-
-      return await this.repository.findById(parsedId);
-    } catch (error) {
-      console.error('Lỗi khi đổi trạng thái game:', error);
-      throw error;
+    const parsedId = this._validateId(id, 'game');
+    const game = await this.repository.findById(parsedId);
+    if (!game) {
+      throw new NotFoundError(`Không tìm thấy game với ID: ${parsedId}`);
     }
+
+    const nextStatus = !game.is_available;
+    await this.repository.update(game, { is_available: nextStatus });
+
+    return await this.repository.findById(parsedId);
   }
 
   /**
    * Xóa mềm game khỏi thư viện (Soft Delete)
    */
   async deleteGame(id) {
-    try {
-      const parsedId = Number(id);
-      if (!parsedId || isNaN(parsedId)) {
-        const error = new Error('ID game không hợp lệ');
-        error.statusCode = 400;
-        throw error;
-      }
-
-      const game = await this.repository.findById(parsedId);
-      if (!game) {
-        const error = new Error(`Không tìm thấy game với ID: ${parsedId}`);
-        error.statusCode = 404;
-        throw error;
-      }
-
-      await this.repository.delete(parsedId);
-      return { success: true, game_id: parsedId, message: 'Đã xóa trò chơi thành công' };
-    } catch (error) {
-      console.error('Lỗi khi xóa game:', error);
-      throw error;
+    const parsedId = this._validateId(id, 'game');
+    const game = await this.repository.findById(parsedId);
+    if (!game) {
+      throw new NotFoundError(`Không tìm thấy game với ID: ${parsedId}`);
     }
+
+    await this.repository.delete(parsedId);
+    return { success: true, game_id: parsedId, message: 'Đã xóa trò chơi thành công' };
   }
 
   /**
    * Khôi phục game đã bị xóa mềm (Restore)
    */
   async restoreGame(id) {
-    try {
-      const parsedId = Number(id);
-      if (!parsedId || isNaN(parsedId)) {
-        const error = new Error('ID game không hợp lệ');
-        error.statusCode = 400;
-        throw error;
-      }
-
-      const game = await this.repository.findById(parsedId, true);
-      if (!game) {
-        const error = new Error(`Không tìm thấy game với ID: ${parsedId}`);
-        error.statusCode = 404;
-        throw error;
-      }
-
-      await this.repository.restore(parsedId);
-      return { success: true, game_id: parsedId, message: 'Đã khôi phục trò chơi thành công' };
-    } catch (error) {
-      console.error('Lỗi khi khôi phục game:', error);
-      throw error;
+    const parsedId = this._validateId(id, 'game');
+    const game = await this.repository.findById(parsedId, true);
+    if (!game) {
+      throw new NotFoundError(`Không tìm thấy game với ID: ${parsedId}`);
     }
+
+    await this.repository.restore(parsedId);
+    return { success: true, game_id: parsedId, message: 'Đã khôi phục trò chơi thành công' };
   }
 
   /**
-   * Lấy danh sách thể loại game
+   * Lấy danh sách thể loại game (Ủy quyền CategoryService)
    */
-  async getCategories() {
-    try {
-      return await this.repository.findAllCategories();
-    } catch (error) {
-      console.error('Lỗi khi lấy danh mục game:', error);
-      throw error;
-    }
+  async getCategories(options = {}) {
+    return await this.categoryService.getCategories(options);
   }
 
   /**
-   * Tạo thể loại game mới
+   * Tạo thể loại game mới (Ủy quyền CategoryService)
    */
-  async createCategory(data) {
-    try {
-      const name = typeof data === 'string' ? data : data?.name;
-      if (!name || !name.trim()) {
-        const error = new Error('Tên thể loại game không được để trống');
-        error.statusCode = 400;
-        throw error;
-      }
-
-      const trimmedName = name.trim();
-      const existing = await this.repository.findCategoryByName(trimmedName);
-      if (existing) {
-        return existing;
-      }
-
-      return await this.repository.createCategory({ name: trimmedName });
-    } catch (error) {
-      console.error('Lỗi khi tạo thể loại game mới:', error);
-      throw error;
-    }
+  async createCategory(data, options = {}) {
+    return await this.categoryService.createCategory(data, options);
   }
 
   /**
    * Lấy KPI metrics
    */
   async getMetrics() {
-    try {
-      return await this.repository.getMetrics();
-    } catch (error) {
-      console.error('Lỗi khi tính toán KPI metrics game:', error);
-      throw error;
-    }
+    return await this.repository.getMetrics();
   }
 }
 
-module.exports = new GameService();
+const defaultInstance = new GameService();
+defaultInstance.GameService = GameService;
+module.exports = defaultInstance;

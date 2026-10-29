@@ -2,13 +2,14 @@
 const express = require('express');
 const router = express.Router();
 const gameController = require('../controllers/gameController');
+const categoryController = require('../controllers/categoryController');
 
 // Thống kê KPIs
 router.get('/metrics', gameController.getMetrics);
 
-// Danh mục trò chơi
-router.get('/categories', gameController.getCategories);
-router.post('/categories', gameController.createCategory);
+// Danh mục trò chơi (Ủy quyền cho CategoryController chuyên trách)
+router.get('/categories', categoryController.getCategories);
+router.post('/categories', categoryController.createCategory);
 
 // CRUD Trò chơi
 router.get('/', gameController.getGames);

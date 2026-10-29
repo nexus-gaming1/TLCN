@@ -23,6 +23,7 @@ const webhookRoutes = require('./src/routes/webhookRoutes');
 const reportRoutes = require('./src/routes/reportRoutes');
 const comboRoutes = require('./src/routes/comboRoutes');
 const gameRoutes = require('./src/routes/gameRoutes');
+const categoryRoutes = require('./src/routes/categoryRoutes');
 const comboTimeService = require('./src/services/comboTimeService');
 
 const errorHandler = require('./src/middleware/errorHandler');
@@ -58,6 +59,7 @@ app.use('/api/catalog/combos', comboRoutes);
 app.use('/api/combos', comboRoutes);
 app.use('/api/catalog', serviceCatalogRoutes);
 app.use('/api/games', gameRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/reports', reportRoutes);
 

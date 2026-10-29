@@ -33,7 +33,7 @@ const runMigrations = async () => {
     await ensureColumn('users', 'password', 'password_hash', 'VARCHAR(255) NOT NULL DEFAULT ""');
 
     try {
-      await db.sequelize.query("ALTER TABLE `users` MODIFY COLUMN `avatar_url` TEXT NULL");
+      await db.sequelize.query("ALTER TABLE `users` MODIFY COLUMN `avatar_url` LONGTEXT NULL");
     } catch (e) {
       // Ignore if table/column alter notice
     }
@@ -121,11 +121,11 @@ const runMigrations = async () => {
       console.warn('⚠️ ENUM payment_method update skipped or already updated.');
     }
 
-    // 8. game: cover_image_url TEXT, is_remote_supported, is_available
+    // 8. game: cover_image_url LONGTEXT, is_remote_supported, is_available
     await ensureColumn('game', null, 'is_remote_supported', 'TINYINT(1) DEFAULT 0');
     await ensureColumn('game', null, 'is_available', 'TINYINT(1) DEFAULT 1');
     try {
-      await db.sequelize.query("ALTER TABLE `game` MODIFY COLUMN `cover_image_url` TEXT NULL");
+      await db.sequelize.query("ALTER TABLE `game` MODIFY COLUMN `cover_image_url` LONGTEXT NULL");
     } catch (e) {
       // Ignored if table does not exist yet or already up to date
     }

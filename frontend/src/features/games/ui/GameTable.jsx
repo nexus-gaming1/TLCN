@@ -2,8 +2,6 @@ import React from 'react';
 import {
   Gamepad2,
   Wifi,
-  Monitor,
-  Eye,
   Edit,
   Power,
   FolderOpen,
@@ -14,16 +12,10 @@ import {
 
 export default function GameTable({
   games = [],
-  selectedIds = [],
-  onToggleSelect,
-  onToggleSelectAll,
-  onViewDetail,
   onEditGame,
   onToggleAvailability,
   onDeleteGame
 }) {
-  const isAllSelected = games.length > 0 && selectedIds.length === games.length;
-
   if (games.length === 0) {
     return (
       <div className="w-full bg-white rounded-xl shadow-xs border border-slate-200/90 p-12 flex flex-col items-center justify-center text-center min-h-[460px]">
@@ -44,46 +36,23 @@ export default function GameTable({
         <table className="w-full text-left border-collapse" id="gameFleetTable">
           <thead>
             <tr className="bg-slate-100/90 text-slate-800 text-[11px] uppercase tracking-wider border-b border-slate-200 font-extrabold select-none">
-              <th className="py-3.5 px-4 w-12 text-center">
-                <input
-                  type="checkbox"
-                  checked={isAllSelected}
-                  onChange={onToggleSelectAll}
-                  className="w-4 h-4 rounded accent-sky-600 cursor-pointer"
-                  id="check-all-games"
-                />
-              </th>
               <th className="py-3.5 px-4 min-w-[240px]">Trò Chơi &amp; Ảnh Bìa</th>
               <th className="py-3.5 px-4 min-w-[150px]">Thể Loại</th>
               <th className="py-3.5 px-4 min-w-[220px]">Đường Dẫn Thực Thi (.exe)</th>
               <th className="py-3.5 px-4 min-w-[130px] text-center">Remote Play</th>
-              <th className="py-3.5 px-4 min-w-[130px] text-center">Trạm Cài Đặt</th>
               <th className="py-3.5 px-4 min-w-[150px]">Trạng Thái</th>
               <th className="py-3.5 px-4 text-right pr-6 min-w-[140px]">Thao Tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
             {games.map((game) => {
-              const isSelected = selectedIds.includes(game.game_id);
               const isAvailable = Boolean(game.is_available);
-              const assignedComputersCount = game.Computers ? game.Computers.length : 0;
 
               return (
                 <tr
                   key={game.game_id}
-                  className={`hover:bg-sky-50/50 transition-colors ${
-                    isSelected ? 'bg-sky-50/70' : ''
-                  }`}
+                  className="hover:bg-sky-50/50 transition-colors"
                 >
-                  {/* Checkbox */}
-                  <td className="py-3 px-4 text-center">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => onToggleSelect(game.game_id)}
-                      className="w-4 h-4 rounded accent-sky-600 cursor-pointer"
-                    />
-                  </td>
 
                   {/* Trò chơi & Ảnh bìa */}
                   <td className="py-3 px-4">
@@ -110,7 +79,7 @@ export default function GameTable({
                       </div>
 
                       <div className="flex flex-col min-w-0">
-                        <span className="font-extrabold text-slate-900 text-sm truncate hover:text-sky-600 cursor-pointer" onClick={() => onViewDetail(game)}>
+                        <span className="font-extrabold text-slate-900 text-sm truncate hover:text-sky-600 cursor-pointer" onClick={() => onEditGame(game)}>
                           {game.name}
                         </span>
                         <div className="flex items-center gap-1.5 mt-0.5">
@@ -163,14 +132,6 @@ export default function GameTable({
                     )}
                   </td>
 
-                  {/* Trạm cài đặt */}
-                  <td className="py-3 px-4 text-center">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-extrabold bg-sky-50 text-sky-800 border border-sky-200/80">
-                      <Monitor className="w-3.5 h-3.5 text-sky-600" />
-                      {assignedComputersCount > 0 ? `${assignedComputersCount} trạm` : 'Toàn bộ'}
-                    </span>
-                  </td>
-
                   {/* Trạng thái (với direct Toggle Switch 1-click) */}
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
@@ -203,16 +164,6 @@ export default function GameTable({
                   {/* Thao tác */}
                   <td className="py-3 px-4 text-right pr-6">
                     <div className="flex items-center justify-end gap-1.5">
-                      {/* Xem chi tiết */}
-                      <button
-                        type="button"
-                        onClick={() => onViewDetail(game)}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-all cursor-pointer"
-                        title="Xem chi tiết game"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-
                       {/* Sửa thông tin */}
                       <button
                         type="button"
