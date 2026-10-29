@@ -1,6 +1,6 @@
 const db = require('../models');
 const { Op } = require('sequelize');
-const { TransactionType, TransactionCategory, TransactionStatusEnum, PaymentStatus } = require('../constants/enums');
+const { TransactionType, TransactionCategory, TransactionStatusEnum, PaymentStatus, OrderStatus } = require('../constants/enums');
 
 //ReportRepository : Đảm nhiệm truy vấn và tổng hợp dữ liệu doanh thu từ CSDL
 class ReportRepository {
@@ -58,6 +58,7 @@ class ReportRepository {
       ],
       where: {
         payment_status: PaymentStatus.PAID,
+        status: { [Op.ne]: OrderStatus.CANCELLED },
         created_at: {
           [Op.gte]: startDate,
           [Op.lte]: endDate
@@ -113,6 +114,7 @@ class ReportRepository {
           attributes: [],
           where: {
             payment_status: PaymentStatus.PAID,
+            status: { [Op.ne]: OrderStatus.CANCELLED },
             created_at: {
               [Op.gte]: startDate,
               [Op.lte]: endDate

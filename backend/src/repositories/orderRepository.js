@@ -21,7 +21,7 @@ class OrderRepository {
    // Chống lỗi Double spending khi trừ ví 
   async findMemberByIdWithLock(memberId, transaction) {
     return await this.models.Member.findByPk(memberId, {
-      lock: transaction.LOCK ? transaction.LOCK.UPDATE : true,
+      lock: transaction?.LOCK ? transaction.LOCK.UPDATE : true,
       transaction,
       include: [
         {
@@ -40,7 +40,7 @@ class OrderRepository {
       where: {
         service_item_id: { [Op.in]: itemIds }
       },
-      lock: transaction.LOCK ? transaction.LOCK.UPDATE : true,
+      lock: transaction?.LOCK ? transaction.LOCK.UPDATE : true,
       transaction
     });
   }
@@ -97,7 +97,7 @@ class OrderRepository {
   //Tìm đơn hàng theo ID kèm Lock để phục vụ cập nhật trạng thái / hủy đơn
   async findOrderByIdWithLock(orderId, transaction) {
     return await this.models.ServiceOrder.findByPk(orderId, {
-      lock: transaction.LOCK ? transaction.LOCK.UPDATE : true,
+      lock: transaction?.LOCK ? transaction.LOCK.UPDATE : true,
       transaction,
       include: [
         {

@@ -145,7 +145,6 @@ const RevenueReportWrapper = () => {
   return <RevenueReportPage user={currentUser} onLogout={logout} />;
 };
 
-
 function App() {
   return (
     <BrowserRouter>

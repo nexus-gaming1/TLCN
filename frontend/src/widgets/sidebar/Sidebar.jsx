@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutGrid, UserCheck, CreditCard, Cpu, Gamepad2, BarChart3, Settings, Sliders, Tag, Receipt, Coffee, UtensilsCrossed } from 'lucide-react';
+import { LayoutGrid, UserCheck, CreditCard, Cpu, Gamepad2, BarChart3, Settings, Sliders, Tag, Receipt, Coffee } from 'lucide-react';
 
 export default function Sidebar({ activeNav = 'grid', setActiveNav, bootromStatus = 'ONLINE' }) {
     const navigate = useNavigate();
@@ -13,6 +13,7 @@ export default function Sidebar({ activeNav = 'grid', setActiveNav, bootromStatu
         { id: 'promotions', label: 'Bảng giá & Giờ vàng', icon: Tag, path: '/admin/pricing-plans' },
         { id: 'transactions', label: 'Giao dịch', icon: Receipt, path: '/admin/transactions' },
         { id: 'catalog', label: 'Dịch vụ (F&B)', icon: Coffee, path: '/admin/catalog' },
+        { id: 'games', label: 'Kho game & BootROM', icon: Gamepad2 },
         { id: 'reports', label: 'Báo cáo doanh thu', icon: BarChart3,  path: '/admin/reports' },
     ];
 

@@ -1,5 +1,6 @@
 const orderRepository = require('../repositories/orderRepository');
 const {
+  UserRole,
   OrderStatus,
   PaymentStatus,
   PaymentMethodEnum,
@@ -46,10 +47,15 @@ class OrderService {
     // Gộp các item trùng lặp (nếu client gửi cùng 1 món 2 lần)
     const itemQuantityMap = new Map();
     for (const it of items) {
-      const itemId = parseInt(it.service_item_id, 10);
-      const qty = parseInt(it.quantity, 10);
-      if (!itemId || isNaN(itemId)) throw new ValidationError('Mã món dịch vụ không hợp lệ');
-      if (!qty || isNaN(qty) || qty <= 0) throw new ValidationError('Số lượng từng món phải lớn hơn 0');
+      const itemId = Number(it.service_item_id);
+      const qty = Number(it.quantity);
+
+      if (!Number.isSafeInteger(itemId) || itemId <= 0) {
+        throw new ValidationError('Mã món dịch vụ không hợp lệ (phải là số nguyên dương)');
+      }
+      if (!Number.isSafeInteger(qty) || qty <= 0) {
+        throw new ValidationError('Số lượng từng món phải là số nguyên dương');
+      }
 
       itemQuantityMap.set(itemId, (itemQuantityMap.get(itemId) || 0) + qty);
     }
@@ -186,8 +192,8 @@ class OrderService {
     });
   }
 
-  //Câp nhật trạng thái đơn hàng (Dành cho nhân viên trên Client C#))
-  //  //Xử lý hoàn kho và hoàn ví tự động nếu đơn bị CANCELLED
+  // Cập nhật trạng thái đơn hàng (Dành cho nhân viên trên Client C#)
+  // Chỉ cho phép chuyển trạng thái theo quy trình hợp lệ, chặn hoàn tất khi chưa thanh toán
   async updateOrderStatus(orderId, newStatus, staffId = null) {
     const validStatuses = Object.values(OrderStatus);
     if (!validStatuses.includes(newStatus)) {
@@ -209,52 +215,34 @@ class OrderService {
         throw new BusinessLogicError('Đơn hàng đã bị hủy trước đó, không thể chỉnh sửa');
       }
 
-      
-      // Xử lý hủy đơn (CANCELLED): Hoàn kho và hoàn ví nếu đã thanh toán
+      // Hủy đơn bắt buộc phải gọi API staffCancelOrder có lý do (reason) và xử lý hoàn tiền chuẩn
       if (newStatus === OrderStatus.CANCELLED) {
-        // 1. Hoàn lại số lượng tồn kho cho các món ăn
-        const orderItems = order.orderItems || order.ServiceOrderItems || [];
-        for (const oi of orderItems) {
-          const item = await this.orderRepo.models.ServiceItem.findByPk(oi.service_item_id, {
-            lock: t.LOCK ? t.LOCK.UPDATE : true,
-            transaction: t
-          });
-          if (item) {
-            item.stock_quantity = (item.stock_quantity || 0) + oi.quantity;
-            if (item.stock_quantity > 0) item.is_available = true;
-            await this.orderRepo.save(item, t);
-          }
-        }
+        throw new BusinessLogicError(
+          'Để hủy đơn hàng, vui lòng sử dụng chức năng Hủy đơn (POST /api/orders/staff/:id/cancel) và cung cấp lý do hủy'
+        );
+      }
 
-        // 2. Nếu đơn đã thanh toán bằng ví (WALLET) -> Hoàn tiền ví cho khách
-        if (order.payment_status === PaymentStatus.PAID) {
-          const txList = order.transactions || order.financialTransactions || [];
-          const walletTxn = txList.find(
-            tx => tx.payment_method === PaymentMethodEnum.WALLET && tx.category === TransactionCategory.SERVICE_SALE
-          );
+      // Ràng buộc quy trình chuyển trạng thái hợp lệ (State Machine)
+      const ALLOWED_TRANSITIONS = {
+        [OrderStatus.PENDING]: [OrderStatus.PREPARING],
+        [OrderStatus.PREPARING]: [OrderStatus.DELIVERED, OrderStatus.COMPLETED],
+        [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED],
+        [OrderStatus.COMPLETED]: [],
+        [OrderStatus.CANCELLED]: []
+      };
 
-          if (walletTxn) {
-            const refundAmount = parseFloat(walletTxn.amount || 0);
-            const member = await this.orderRepo.findMemberByIdWithLock(order.used_by, t);
-            if (member) {
-              member.real_balance = parseFloat(member.real_balance || 0) + refundAmount;
-              await this.orderRepo.save(member, t);
-            }
+      if (!ALLOWED_TRANSITIONS[order.status]?.includes(newStatus)) {
+        throw new BusinessLogicError(`Không thể chuyển trạng thái đơn hàng từ "${order.status}" sang "${newStatus}"`);
+      }
 
-            // Ghi sổ cái hoàn tiền REFUND (Loại EXPENSE)
-            await this.orderRepo.createFinancialTransaction({
-              type: TransactionType.EXPENSE,
-              category: TransactionCategory.REFUND,
-              amount: refundAmount,
-              payment_method: PaymentMethodEnum.WALLET,
-              status: TransactionStatusEnum.COMPLETED,
-              order_id: order.order_id,
-              used_by: order.used_by,
-              processed_by: staffId,
-              description: `[Hoàn tiền Đơn #${order.order_id}] Hủy đơn hàng dịch vụ F&B bởi nhân viên #${staffId || ''}`
-            }, { transaction: t });
-          }
-        }
+      // Ràng buộc thanh toán: Không cho chuyển vào bếp nếu đơn tiền mặt chưa thu
+      if (order.status === OrderStatus.PENDING && newStatus === OrderStatus.PREPARING && order.payment_status !== PaymentStatus.PAID) {
+        throw new BusinessLogicError('Đơn hàng chưa thanh toán không thể chuyển sang chế biến. Vui lòng xác nhận thu tiền mặt trước');
+      }
+
+      // Ràng buộc thanh toán: Không cho giao món hoặc hoàn tất đơn khi chưa thanh toán
+      if ((newStatus === OrderStatus.COMPLETED || newStatus === OrderStatus.DELIVERED) && order.payment_status !== PaymentStatus.PAID) {
+        throw new BusinessLogicError('Không thể giao món hoặc hoàn tất đơn hàng khi chưa được thanh toán');
       }
 
       // Cập nhật trạng thái và nhân viên phụ trách
@@ -289,7 +277,8 @@ class OrderService {
       }
 
       // Tính tổng tiền đơn từ các món đã đặt
-      const totalAmount = this.calculateTotal(order.ServiceOrderItems || []);
+      const orderItems = order.orderItems || order.ServiceOrderItems || [];
+      const totalAmount = this.calculateTotal(orderItems);
 
       // Cập nhật thanh toán và chuyển sang chế biến
       order.payment_status = PaymentStatus.PAID;
@@ -322,15 +311,24 @@ class OrderService {
   }
 
   //Xem chi tiết một đơn hàng kèm snapshot
-  async getOrderById(orderId) {
+  async getOrderById(orderId, requestingUser = null) {
     const order = await this.orderRepo.findOrderById(orderId);
     if (!order) {
       throw new NotFoundError(`Không tìm thấy đơn hàng #${orderId}`);
     }
 
-    const totalAmount = this.calculateTotal(order.ServiceOrderItems || []);
-    //Phòng thủ lấy theo alias hoặc theo tên model
+    // Bảo mật: Nếu người yêu cầu là MEMBER thì chỉ được xem đơn hàng của chính mình
+    if (
+      requestingUser &&
+      requestingUser.role === UserRole.MEMBER &&
+      order.used_by !== requestingUser.user_id
+    ) {
+      throw new BusinessLogicError('Bạn không có quyền truy cập vào thông tin đơn hàng này');
+    }
+
+    // Phòng thủ lấy theo alias hoặc theo tên model
     const orderItemsList = order.orderItems || order.ServiceOrderItems || [];
+    const totalAmount = this.calculateTotal(orderItemsList);
     const memberObj = order.member || order.Member;
     const staffObj = order.processedBy || order.User;
     const txList = order.transactions || order.financialTransactions || [];
@@ -538,25 +536,36 @@ class OrderService {
         }
       }
 
-      // 2. Hoàn tiền ví nếu đã thanh toán
+      // 2. Hoàn tiền theo phương thức thanh toán ban đầu nếu đã thanh toán
       if (order.payment_status === PaymentStatus.PAID) {
         const refundAmount = this.calculateTotal(orderItems);
-        const member = await this.orderRepo.findMemberByIdWithLock(order.used_by, t);
-        if (member) {
-          member.real_balance = parseFloat(member.real_balance || 0) + refundAmount;
-          await this.orderRepo.save(member, t);
+        const txList = order.transactions || order.financialTransactions || [];
+        const saleTxn = txList.find(
+          tx => tx.category === TransactionCategory.SERVICE_SALE
+        );
+        const originalMethod = saleTxn ? saleTxn.payment_method : PaymentMethodEnum.WALLET;
+
+        // Nếu thanh toán bằng ví -> hoàn tiền vào ví hội viên
+        if (originalMethod === PaymentMethodEnum.WALLET) {
+          const member = await this.orderRepo.findMemberByIdWithLock(order.used_by, t);
+          if (member) {
+            member.real_balance = parseFloat(member.real_balance || 0) + refundAmount;
+            await this.orderRepo.save(member, t);
+          }
         }
 
+        // Ghi sổ cái giao dịch hoàn tiền theo đúng phương thức ban đầu (WALLET hoặc CASH)
+        const methodDesc = originalMethod === PaymentMethodEnum.WALLET ? 'Hoàn tiền ví' : 'Hoàn tiền mặt tại quầy';
         await this.orderRepo.createFinancialTransaction({
           type: TransactionType.EXPENSE,
           category: TransactionCategory.REFUND,
           amount: refundAmount,
-          payment_method: PaymentMethodEnum.WALLET,
+          payment_method: originalMethod,
           status: TransactionStatusEnum.COMPLETED,
           order_id: order.order_id,
           used_by: order.used_by,
           processed_by: staffId,
-          description: `[Bếp/Nhân viên hủy #${order.order_id}] Lý do: ${reason.trim()} (Xử lý bởi NV #${staffId})`
+          description: `[Bếp/Nhân viên hủy #${order.order_id}] (${methodDesc}) Lý do: ${reason.trim()} (Xử lý bởi NV #${staffId})`
         }, { transaction: t });
       }
 
