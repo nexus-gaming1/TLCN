@@ -71,6 +71,24 @@ class AuthService {
   }
 
   /**
+   * Đăng nhập dành riêng cho ứng dụng quản lý Nexus Control
+   * Chỉ cho phép nhân viên và quản trị viên (ADMIN, EMPLOYEE), từ chối tài khoản MEMBER
+   */
+  async controlLogin({ username, password }) {
+    const result = await this.login({ username, password });
+
+    if (result.user.role === 'MEMBER') {
+      throw new Error('Tài khoản hội viên không được phép đăng nhập vào ứng dụng quản lý Nexus Control.');
+    }
+
+    if (result.user.status && result.user.status !== 'ACTIVE') {
+      throw new Error('Tài khoản đang bị khóa hoặc không ở trạng thái hoạt động.');
+    }
+
+    return result;
+  }
+
+  /**
    * Lấy thông tin tài khoản hiện tại từ userId trong Token
    */
   async getUserProfile(userId) {
