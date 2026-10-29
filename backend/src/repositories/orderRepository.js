@@ -123,10 +123,22 @@ class OrderRepository {
     if (paymentStatus && paymentStatus !== 'ALL') where.payment_status = paymentStatus;
     if (memberId) where.used_by = memberId;
 
-    if (startDate && endDate) {
-      where.created_at = {
-        [Op.between]: [new Date(startDate), new Date(endDate)]
-      };
+    if (startDate || endDate) {
+      const dateFilter = {};
+      if (startDate) {
+        dateFilter[Op.gte] = new Date(startDate);
+      }
+      if (endDate) {
+        const nextDay = new Date(endDate);
+        // Nếu truyền dạng YYYY-MM-DD (10 ký tự), dùng ngày kế tiếp làm mốc exclusive (<)
+        if (typeof endDate === 'string' && endDate.length <= 10) {
+          nextDay.setDate(nextDay.getDate() + 1);
+          dateFilter[Op.lt] = nextDay;
+        } else {
+          dateFilter[Op.lte] = nextDay;
+        }
+      }
+      where.created_at = dateFilter;
     }
 
     // Include để phục vụ search theo tên khách hoặc mã đơn

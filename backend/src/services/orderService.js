@@ -148,6 +148,7 @@ class OrderService {
         used_by: parsedMemberId,
         status: initialStatus,
         payment_status: initialPaymentStatus,
+        total_amount: totalAmount,
         processed_by: null // Ban đầu chưa có nhân viên xử lý
       }, { transaction: t });
 
@@ -276,6 +277,10 @@ class OrderService {
         throw new BusinessLogicError('Không thể thu tiền cho đơn hàng đã bị hủy');
       }
 
+      if (order.status !== OrderStatus.PENDING) {
+        throw new BusinessLogicError('Chỉ có thể xác nhận thu tiền mặt cho đơn hàng đang ở trạng thái chờ (PENDING)');
+      }
+
       // Tính tổng tiền đơn từ các món đã đặt
       const orderItems = order.orderItems || order.ServiceOrderItems || [];
       const totalAmount = this.calculateTotal(orderItems);
@@ -343,7 +348,7 @@ class OrderService {
         member_id: memberObj.member_id,
         username: memberObj.userInfo?.username || '',
         full_name: memberObj.userInfo?.full_name || '',
-        phone: memberObj.userInfo?.phone || ''
+        phone:  memberObj.phone || ''
       } : null,
       processedBy: staffObj ? {
         user_id: staffObj.user_id,
