@@ -16,7 +16,6 @@ import CustomerProfilePage from './pages/customer/CustomerProfilePage';
 import CustomerComboPage from './pages/customer/CustomerComboPage';
 import ServiceCatalogPage from './pages/admin/ServiceCatalogPage';
 import RevenueReportPage from './pages/admin/RevenueReportPage';
-import OrderHistoryPage from './pages/admin/OrderHistoryPage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -146,10 +145,6 @@ const RevenueReportWrapper = () => {
   return <RevenueReportPage user={currentUser} onLogout={logout} />;
 };
 
-const OrderHistoryWrapper = () => {
-  const { currentUser, logout } = useAuth();
-  return <OrderHistoryPage user={currentUser} onLogout={logout} />;
-};
 
 function App() {
   return (
@@ -227,15 +222,6 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
                 <RevenueReportWrapper />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/admin/orders"
-            element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
-                <OrderHistoryWrapper />
               </ProtectedRoute>
             }
           />
