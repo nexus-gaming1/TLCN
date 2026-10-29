@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 const http = require('http');
 // Kéo toàn bộ cấu hình Database và Models vào đây
@@ -22,6 +23,8 @@ const serviceCatalogRoutes = require('./src/routes/serviceCatalogRoutes');
 const webhookRoutes = require('./src/routes/webhookRoutes');
 const reportRoutes = require('./src/routes/reportRoutes');
 const comboRoutes = require('./src/routes/comboRoutes');
+const gameRoutes = require('./src/routes/gameRoutes');
+const categoryRoutes = require('./src/routes/categoryRoutes');
 const comboTimeService = require('./src/services/comboTimeService');
 const orderRoutes = require('./src/routes/orderRoutes');
 
@@ -31,9 +34,31 @@ const computerSocketService = require('./src/services/computerSocketService');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Cấu hình CORS an toàn hỗ trợ HttpOnly Cookie Credentials
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Cookie Parser Middleware
+app.use(cookieParser());
+
+// Middleware Body Parser
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Health Check Endpoint (dùng cho Load Balancer & Monitoring System)
 app.use('/health', healthRoutes);
@@ -56,6 +81,8 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/catalog/combos', comboRoutes);
 app.use('/api/combos', comboRoutes);
 app.use('/api/catalog', serviceCatalogRoutes);
+app.use('/api/games', gameRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/orders', orderRoutes);

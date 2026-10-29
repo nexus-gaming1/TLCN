@@ -15,6 +15,8 @@ import Pagination from '../../../shared/ui/Pagination';
  */
 export default function HardwareSpecsTable({
   specs = [],
+  totalSpecsCount = specs.length,
+  onResetFilters,
   onOpenTelemetry,
   onEdit,
   onDelete
@@ -104,8 +106,25 @@ export default function HardwareSpecsTable({
                 <td colSpan={7} className="py-12 text-center text-slate-500">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <HardDrive className="w-8 h-8 text-slate-300" />
-                    <p className="font-semibold text-sm text-slate-700">Không tìm thấy cấu hình phần cứng phù hợp</p>
-                    <p className="text-xs text-slate-400">Vui lòng thử thay đổi từ khóa tìm kiếm hoặc bộ lọc phân khu.</p>
+                    <p className="font-semibold text-sm text-slate-700">
+                      {totalSpecsCount === 0
+                        ? 'Chưa có cấu hình phần cứng nào được ghi nhận'
+                        : 'Không tìm thấy cấu hình phần cứng phù hợp với bộ lọc'}
+                    </p>
+                    <p className="text-xs text-slate-400 max-w-md">
+                      {totalSpecsCount === 0
+                        ? 'Hệ thống chưa tải được cấu hình từ máy chủ hoặc kho cấu hình đang trống. Vui lòng kiểm tra lại dịch vụ backend hoặc nhấn "+ Tạo Mẫu Cấu Hình" bên trên.'
+                        : 'Vui lòng thử thay đổi từ khóa tìm kiếm hoặc điều chỉnh lại bộ lọc phân khu / trạng thái.'}
+                    </p>
+                    {onResetFilters && totalSpecsCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={onResetFilters}
+                        className="mt-2 px-3.5 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg text-xs font-bold border border-sky-200 transition-all cursor-pointer shadow-2xs"
+                      >
+                        Đặt lại bộ lọc
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

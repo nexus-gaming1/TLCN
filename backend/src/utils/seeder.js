@@ -393,16 +393,54 @@ const seedData = async (db) => {
       { computer_id: 34, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 85 * 60 * 1000), notes: 'Elden Ring Shadow of Erdtree' }
     ]);
 
+    // 6.5. Seed Game Categories
+    if (db.GameCategory) {
+      await safeSeed(db.GameCategory, [
+        { category_id: 1, name: 'Esports - Bắn Súng (FPS)' },
+        { category_id: 2, name: 'Esports - MOBA' },
+        { category_id: 3, name: 'AAA Trải Nghiệm & Nhập Vai' }
+      ], ['name']);
+    }
+
     // 7. Seed Games
     await safeSeed(db.Game, [
-      { game_id: 1, name: 'Valorant', category_id: 1, cover_image_url: '', executable_path: 'C:\\Riot Games\\VALORANT.exe', is_remote_supported: true, is_available: true },
-      { game_id: 2, name: 'Counter-Strike 2', category_id: 1, cover_image_url: '', executable_path: 'C:\\Steam\\cs2.exe', is_remote_supported: true, is_available: true },
-      { game_id: 3, name: 'League of Legends', category_id: 2, cover_image_url: '', executable_path: 'C:\\Riot Games\\LeagueClient.exe', is_remote_supported: true, is_available: true },
-      { game_id: 4, name: 'FC Online 4', category_id: 2, cover_image_url: '', executable_path: 'C:\\Garena\\FCO.exe', is_remote_supported: false, is_available: true },
-      { game_id: 5, name: 'Cyberpunk 2077 RT', category_id: 3, cover_image_url: '', executable_path: 'C:\\Games\\Cyberpunk2077.exe', is_remote_supported: true, is_available: true },
-      { game_id: 6, name: 'Grand Theft Auto V', category_id: 3, cover_image_url: '', executable_path: 'C:\\Games\\GTAV.exe', is_remote_supported: true, is_available: true },
-      { game_id: 7, name: 'Apex Legends', category_id: 1, cover_image_url: '', executable_path: 'C:\\Steam\\Apex.exe', is_remote_supported: true, is_available: true }
-    ]);
+      { game_id: 1, name: 'Valorant', category_id: 1, cover_image_url: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Riot Games\\VALORANT\\live\\VALORANT.exe', is_remote_supported: true, is_available: true },
+      { game_id: 2, name: 'Counter-Strike 2', category_id: 1, cover_image_url: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Steam\\steamapps\\common\\Counter-Strike Global Offensive\\game\\bin\\win64\\cs2.exe', is_remote_supported: true, is_available: true },
+      { game_id: 3, name: 'League of Legends', category_id: 2, cover_image_url: 'https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Riot Games\\League of Legends\\LeagueClient.exe', is_remote_supported: true, is_available: true },
+      { game_id: 4, name: 'FC Online 4', category_id: 2, cover_image_url: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Garena\\FCO\\FCO.exe', is_remote_supported: false, is_available: true },
+      { game_id: 5, name: 'Cyberpunk 2077 RT', category_id: 3, cover_image_url: 'https://images.unsplash.com/photo-1579373903781-fd5c0c30c4cd?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Steam\\steamapps\\common\\Cyberpunk 2077\\bin\\x64\\Cyberpunk2077.exe', is_remote_supported: true, is_available: true },
+      { game_id: 6, name: 'Grand Theft Auto V', category_id: 3, cover_image_url: 'https://images.unsplash.com/photo-1552824722-ddab1374e622?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Rockstar Games\\Grand Theft Auto V\\GTA5.exe', is_remote_supported: true, is_available: true },
+      { game_id: 7, name: 'Apex Legends', category_id: 1, cover_image_url: 'https://images.unsplash.com/photo-1563089145-599997674d42?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Steam\\steamapps\\common\\Apex Legends\\r5apex.exe', is_remote_supported: true, is_available: true },
+      { game_id: 8, name: 'Black Myth: Wukong', category_id: 3, cover_image_url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Steam\\steamapps\\common\\BlackMythWukong\\b1\\Binaries\\Win64\\b1-Win64-Shipping.exe', is_remote_supported: true, is_available: true },
+      { game_id: 9, name: 'Dota 2', category_id: 2, cover_image_url: 'https://images.unsplash.com/photo-1542751110-97427bbecf20?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Steam\\steamapps\\common\\dota 2 beta\\game\\bin\\win64\\dota2.exe', is_remote_supported: true, is_available: true },
+      { game_id: 10, name: 'PUBG: BATTLEGROUNDS', category_id: 1, cover_image_url: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Steam\\steamapps\\common\\PUBG\\TslGame\\Binaries\\Win64\\TslGame.exe', is_remote_supported: false, is_available: true },
+      { game_id: 11, name: 'Elden Ring', category_id: 3, cover_image_url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Steam\\steamapps\\common\\ELDEN RING\\Game\\eldenring.exe', is_remote_supported: true, is_available: true },
+      { game_id: 12, name: 'Naraka: Bladepoint', category_id: 3, cover_image_url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Steam\\steamapps\\common\\NARAKA BLADEPOINT\\NarakaBladepoint.exe', is_remote_supported: true, is_available: false }
+    ], ['name', 'category_id', 'cover_image_url', 'executable_path', 'is_remote_supported', 'is_available']);
+
+    // 7.1 Seed ComputerGame (Gán game vào toàn bộ trạm máy hiện có trong hệ thống)
+    if (db.ComputerGame && db.Computer && db.Game) {
+      const [allComputers, allGames] = await Promise.all([
+        db.Computer.findAll({ attributes: ['computer_id'] }).catch(() => []),
+        db.Game.findAll({ attributes: ['game_id'] }).catch(() => [])
+      ]);
+
+      const computerIds = allComputers.length > 0
+        ? allComputers.map((c) => c.computer_id)
+        : Array.from({ length: 36 }, (_, i) => i + 1);
+
+      const gameIds = allGames.length > 0
+        ? allGames.map((g) => g.game_id)
+        : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+      const computerGameMappings = [];
+      for (const compId of computerIds) {
+        for (const gId of gameIds) {
+          computerGameMappings.push({ computer_id: compId, game_id: gId });
+        }
+      }
+      await safeSeed(db.ComputerGame, computerGameMappings);
+    }
 
     // 8. Seed Service Items
     await safeSeed(db.ServiceItem, [

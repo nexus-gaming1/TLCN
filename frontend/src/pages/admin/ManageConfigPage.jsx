@@ -6,7 +6,7 @@ import Footer from '../../widgets/footer/Footer';
 // Hardware Config Service, Components & Models
 import hardwareService from '../../shared/api/hardwareService';
 import toast from 'react-hot-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import HardwareKpiBento from '../../features/hardware-config/ui/HardwareKpiBento';
 import HardwareFilterBar from '../../features/hardware-config/ui/HardwareFilterBar';
 import HardwareSpecsTable from '../../features/hardware-config/ui/HardwareSpecsTable';
@@ -26,6 +26,7 @@ export default function ManageConfigPage({ user, onLogout }) {
   const [computers, setComputers] = useState([]);
   const [hardwarePresets, setHardwarePresets] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [zoneFilter, setZoneFilter] = useState('all');
@@ -41,6 +42,7 @@ export default function ManageConfigPage({ user, onLogout }) {
   const fetchHardwareData = useCallback(async () => {
     try {
       setIsLoading(true);
+      setError(null);
       const result = await hardwareService.getHardwareSpecs();
       if (result) {
         setSpecs(result.specs || []);
@@ -52,6 +54,7 @@ export default function ManageConfigPage({ user, onLogout }) {
       }
     } catch (err) {
       console.error('Lỗi khi tải thông số cấu hình từ CSDL API:', err);
+      setError(err.message || 'Không thể kết nối CSDL máy chủ backend (Port 3001).');
       toast.error('Không thể tải dữ liệu cấu hình máy từ máy chủ.');
     } finally {
       setIsLoading(false);
@@ -94,7 +97,14 @@ export default function ManageConfigPage({ user, onLogout }) {
         (item.storage?.type && item.storage.type.toLowerCase().includes(query));
 
       const matchZone = zoneFilter === 'all' || String(item.zoneId) === String(zoneFilter);
-      const matchStatus = statusFilter === 'all' || item.status === statusFilter;
+
+      const itemStatusNorm = String(item.status || '').toLowerCase();
+      const matchStatus =
+        statusFilter === 'all' ||
+        itemStatusNorm === statusFilter.toLowerCase() ||
+        (statusFilter === 'ready' && (itemStatusNorm === 'available' || itemStatusNorm === 'ready')) ||
+        (statusFilter === 'online' && (itemStatusNorm === 'occupied' || itemStatusNorm === 'online')) ||
+        (statusFilter === 'maintenance' && itemStatusNorm === 'maintenance');
 
       return matchSearch && matchZone && matchStatus;
     });
@@ -208,7 +218,25 @@ export default function ManageConfigPage({ user, onLogout }) {
             {isLoading && (
               <div className="flex items-center gap-2 text-xs font-semibold text-sky-600 bg-sky-50 px-3 py-1.5 rounded-md w-fit border border-sky-200 shadow-sm">
                 <Loader2 className="w-3.5 h-3.5 animate-spin text-sky-500" />
-                <span>Đang đồng bộ dữ liệu cấu hình máy & BootROM SAN...</span>
+                <span>Đang đồng bộ dữ liệu cấu hình máy &amp; BootROM SAN...</span>
+              </div>
+            )}
+
+            {error && (
+              <div className="flex items-center justify-between p-3.5 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold shadow-xs">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>
+                    {error} — Vui lòng kiểm tra máy chủ backend (Port 3001) hoặc đăng nhập tài khoản Quản trị.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchHardwareData}
+                  className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer whitespace-nowrap ml-2"
+                >
+                  Thử Lại
+                </button>
               </div>
             )}
 
@@ -231,6 +259,12 @@ export default function ManageConfigPage({ user, onLogout }) {
             {/* High-Density Hardware Inventory Table */}
             <HardwareSpecsTable
               specs={filteredSpecs}
+              totalSpecsCount={specs.length}
+              onResetFilters={() => {
+                setSearchQuery('');
+                setZoneFilter('all');
+                setStatusFilter('all');
+              }}
               onOpenTelemetry={handleOpenTelemetry}
               onEdit={handleEdit}
               onDelete={handleDelete}

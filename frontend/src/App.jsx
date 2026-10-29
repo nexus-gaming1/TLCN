@@ -16,6 +16,7 @@ import CustomerProfilePage from './pages/customer/CustomerProfilePage';
 import CustomerComboPage from './pages/customer/CustomerComboPage';
 import ServiceCatalogPage from './pages/admin/ServiceCatalogPage';
 import RevenueReportPage from './pages/admin/RevenueReportPage';
+import GameManagementPage from './pages/admin/GameManagementPage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -145,6 +146,11 @@ const RevenueReportWrapper = () => {
   return <RevenueReportPage user={currentUser} onLogout={logout} />;
 };
 
+const GameManagementWrapper = () => {
+  const { currentUser, logout } = useAuth();
+  return <GameManagementPage user={currentUser} onLogout={logout} />;
+};
+
 function App() {
   return (
     <BrowserRouter>
@@ -221,6 +227,15 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['ADMIN']}>
                 <RevenueReportWrapper />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/admin/games"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <GameManagementWrapper />
               </ProtectedRoute>
             }
           />
