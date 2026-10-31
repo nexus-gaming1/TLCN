@@ -5,6 +5,8 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using AntdUI;
+using NexusControl.Constants;
 using NexusControl.Services;
 namespace NexusControl.Forms
 {
@@ -16,18 +18,9 @@ namespace NexusControl.Forms
         {
             InitializeComponent();
             Ip_Username.Focus();
+            Ip_Username.IconRatio = 1.2f;
+            ip_Password.IconRatio = 1.2f;
 
-            Ip_Username.PrefixText = null;
-            Ip_Username.PrefixSvg = IconService.GetSvg("user");
-            Ip_Username.IconRatio = 1f;
-
-
-            ip_Password.IconRatio = 1f;
-            ip_Password.PrefixText = null;
-            ip_Password.PrefixSvg = IconService.GetSvg("lock");
-
-            ip_Password.SuffixText = null;
-            ip_Password.SuffixSvg = IconService.GetSvg("eye");
         }
 
         private void LoginScreen_Shown(object sender, EventArgs e)
@@ -40,12 +33,12 @@ namespace NexusControl.Forms
             if (ip_Password.UseSystemPasswordChar)
             {
                 ip_Password.UseSystemPasswordChar = false;
-                ip_Password.SuffixSvg = IconService.GetSvg("eye-off");
+                ip_Password.Suffix = Properties.Resources.eye_off;
             }
             else
             {
                 ip_Password.UseSystemPasswordChar = true;
-                ip_Password.SuffixSvg = IconService.GetSvg("eye");
+                ip_Password.Suffix = Properties.Resources.eye;
             }
         }
 
