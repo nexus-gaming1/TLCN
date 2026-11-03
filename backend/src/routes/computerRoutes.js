@@ -18,6 +18,7 @@ router.get('/specs', computerController.getHardwareSpecs);
 router.post('/specs', computerController.createHardwareSpec);
 router.put('/specs/:id', computerController.updateHardwareSpec);
 router.delete('/specs/:id', computerController.deleteHardwareSpec);
+router.get('/overview', computerController.getComputerOverview);
 router.get('/', computerController.getComputers);
 router.get('/:id', computerController.getComputerById);
 router.post('/', computerController.createComputer);
@@ -49,4 +50,3 @@ router.post(
 
 
 module.exports = router;
-

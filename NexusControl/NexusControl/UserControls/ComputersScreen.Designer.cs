@@ -2,12 +2,12 @@
 {
     partial class ComputersScreen
     {
-        /// <summary> 
+        /// <summary>
         /// Required designer variable.
         /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary> 
+        /// <summary>
         /// Clean up any resources being used.
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
@@ -22,38 +22,92 @@
 
         #region Component Designer generated code
 
-        /// <summary> 
-        /// Required method for Designer support - do not modify 
+        /// <summary>
+        /// Required method for Designer support - do not modify
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent()
         {
-            label1 = new Label();
+            dgv_Computer = new DataGridView();
+            computername = new DataGridViewTextBoxColumn();
+            btnRefresh = new Button();
+            lblResult = new Label();
+            ((System.ComponentModel.ISupportInitialize)dgv_Computer).BeginInit();
             SuspendLayout();
             // 
-            // label1
+            // dgv_Computer
             // 
-            label1.AutoSize = true;
-            label1.Location = new Point(3, 11);
-            label1.Name = "label1";
-            label1.Size = new Size(66, 20);
-            label1.TabIndex = 0;
-            label1.Text = "Máy tính";
-            label1.Click += label1_Click;
+            dgv_Computer.AllowUserToAddRows = false;
+            dgv_Computer.AllowUserToDeleteRows = false;
+            dgv_Computer.AllowUserToResizeRows = false;
+            dgv_Computer.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgv_Computer.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgv_Computer.Columns.AddRange(new DataGridViewColumn[] { computername });
+            dgv_Computer.Dock = DockStyle.Fill;
+            dgv_Computer.Location = new Point(0, 0);
+            dgv_Computer.MultiSelect = false;
+            dgv_Computer.Name = "dgv_Computer";
+            dgv_Computer.ReadOnly = true;
+            dgv_Computer.RowHeadersWidth = 51;
+            dgv_Computer.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgv_Computer.Size = new Size(663, 438);
+            dgv_Computer.TabIndex = 0;
+            // 
+            // computername
+            // 
+            computername.DataPropertyName = "ComputerName";
+            computername.HeaderText = "Tên máy";
+            computername.MinimumWidth = 6;
+            computername.Name = "computername";
+            computername.ReadOnly = true;
+            // 
+            // btnRefresh
+            // 
+            btnRefresh.Dock = DockStyle.Right;
+            btnRefresh.Location = new Point(663, 0);
+            btnRefresh.Name = "btnRefresh";
+            btnRefresh.Size = new Size(114, 438);
+            btnRefresh.TabIndex = 2;
+            btnRefresh.Text = "Tải lại";
+            btnRefresh.UseVisualStyleBackColor = true;
+            btnRefresh.Click += btnRefresh_Click;
+            // 
+            // lblResult
+            // 
+            lblResult.Dock = DockStyle.Fill;
+            lblResult.Location = new Point(0, 0);
+            lblResult.Name = "lblResult";
+            lblResult.Padding = new Padding(8, 0, 0, 0);
+            lblResult.Size = new Size(663, 438);
+            lblResult.TabIndex = 1;
+            lblResult.Text = "Đang tải...";
+            lblResult.TextAlign = ContentAlignment.MiddleLeft;
             // 
             // ComputersScreen
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            Controls.Add(label1);
+            Controls.Add(dgv_Computer);
+            Controls.Add(lblResult);
+            Controls.Add(btnRefresh);
             Name = "ComputersScreen";
             Size = new Size(777, 438);
+            Load += ComputersScreen_Load;
+            ((System.ComponentModel.ISupportInitialize)dgv_Computer).EndInit();
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
 
-        private Label label1;
+        private DataGridView dgv_Computer;
+        private DataGridViewTextBoxColumn computername;
+        private DataGridViewTextBoxColumn status;
+        private DataGridViewTextBoxColumn currentUsername;
+        private DataGridViewTextBoxColumn sessionStartedAt;
+        private DataGridViewTextBoxColumn zoneName;
+        private DataGridViewTextBoxColumn hourlyRate;
+        private DataGridViewTextBoxColumn hasActiveCombo;
+        private Button btnRefresh;
+        private Label lblResult;
     }
 }

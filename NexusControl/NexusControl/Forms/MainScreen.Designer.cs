@@ -28,12 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            AntdUI.MenuItem menuItem1 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem2 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem3 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem4 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem5 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem6 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem19 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem20 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem21 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem22 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem23 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem24 = new AntdUI.MenuItem();
             panel1 = new AntdUI.Panel();
             menu1 = new AntdUI.Menu();
             tableLayoutPanel1 = new TableLayoutPanel();
@@ -43,11 +43,15 @@
             lbl_offline = new AntdUI.Label();
             labelTime1 = new AntdUI.LabelTime();
             lbl_online = new AntdUI.Label();
-            báoCáoToolStripMenuItem = new ToolStripMenuItem();
+            ReportMenuItem = new ToolStripMenuItem();
             báoCáoDịchVụToolStripMenuItem = new ToolStripMenuItem();
             báoCáoGiaoDịchToolStripMenuItem = new ToolStripMenuItem();
             xuấtBáoCáoToolStripMenuItem = new ToolStripMenuItem();
             menuStrip1 = new MenuStrip();
+            AccountMenuItem = new ToolStripMenuItem();
+            ChangeAccount = new ToolStripMenuItem();
+            ManageAccount = new ToolStripMenuItem();
+            helpProvider1 = new HelpProvider();
             tableLayoutPanel1.SuspendLayout();
             menuStrip1.SuspendLayout();
             SuspendLayout();
@@ -67,31 +71,31 @@
             menu1.AutoCollapse = true;
             menu1.BackActive = Color.AliceBlue;
             menu1.BackColor = SystemColors.ActiveCaption;
-            menuItem1.ID = "maytram";
-            menuItem1.Name = "maytram";
-            menuItem1.Text = "MÁY TRẠM";
-            menuItem2.ID = "taikhoan";
-            menuItem2.LocalizationText = "";
-            menuItem2.Name = "taikhoan";
-            menuItem2.Text = "TÀI KHOẢN";
-            menuItem3.ID = "systemlog";
-            menuItem3.Name = "systemlog";
-            menuItem3.Text = "NHẬT KÍ HỆ THỐNG";
-            menuItem4.ID = "translog";
-            menuItem4.Name = "translog";
-            menuItem4.Text = "NHẬT KÍ GIAO DỊCH";
-            menuItem5.ID = "nhommay";
-            menuItem5.Name = "nhommay";
-            menuItem5.Text = "NHÓM MÁY";
-            menuItem6.ID = "nhomnguoisudung";
-            menuItem6.Name = "nhomnguoisudung";
-            menuItem6.Text = "NHÓM NGƯỜI SỬ DỤNG";
-            menu1.Items.Add(menuItem1);
-            menu1.Items.Add(menuItem2);
-            menu1.Items.Add(menuItem3);
-            menu1.Items.Add(menuItem4);
-            menu1.Items.Add(menuItem5);
-            menu1.Items.Add(menuItem6);
+            menuItem19.ID = "maytram";
+            menuItem19.Name = "maytram";
+            menuItem19.Text = "MÁY TRẠM";
+            menuItem20.ID = "taikhoan";
+            menuItem20.LocalizationText = "";
+            menuItem20.Name = "taikhoan";
+            menuItem20.Text = "TÀI KHOẢN";
+            menuItem21.ID = "systemlog";
+            menuItem21.Name = "systemlog";
+            menuItem21.Text = "NHẬT KÍ HỆ THỐNG";
+            menuItem22.ID = "translog";
+            menuItem22.Name = "translog";
+            menuItem22.Text = "NHẬT KÍ GIAO DỊCH";
+            menuItem23.ID = "nhommay";
+            menuItem23.Name = "nhommay";
+            menuItem23.Text = "NHÓM MÁY";
+            menuItem24.ID = "nhomnguoisudung";
+            menuItem24.Name = "nhomnguoisudung";
+            menuItem24.Text = "NHÓM NGƯỜI SỬ DỤNG";
+            menu1.Items.Add(menuItem19);
+            menu1.Items.Add(menuItem20);
+            menu1.Items.Add(menuItem21);
+            menu1.Items.Add(menuItem22);
+            menu1.Items.Add(menuItem23);
+            menu1.Items.Add(menuItem24);
             menu1.Location = new Point(0, 28);
             menu1.Mode = AntdUI.TMenuMode.Horizontal_Arrow;
             menu1.Name = "menu1";
@@ -174,12 +178,12 @@
             lbl_online.Text = "Trực tuyến:";
             lbl_online.Click += label2_Click;
             // 
-            // báoCáoToolStripMenuItem
+            // ReportMenuItem
             // 
-            báoCáoToolStripMenuItem.DropDownItems.AddRange(new ToolStripItem[] { báoCáoDịchVụToolStripMenuItem, báoCáoGiaoDịchToolStripMenuItem, xuấtBáoCáoToolStripMenuItem });
-            báoCáoToolStripMenuItem.Name = "báoCáoToolStripMenuItem";
-            báoCáoToolStripMenuItem.Size = new Size(77, 24);
-            báoCáoToolStripMenuItem.Text = "Báo cáo";
+            ReportMenuItem.DropDownItems.AddRange(new ToolStripItem[] { báoCáoDịchVụToolStripMenuItem, báoCáoGiaoDịchToolStripMenuItem, xuấtBáoCáoToolStripMenuItem });
+            ReportMenuItem.Name = "ReportMenuItem";
+            ReportMenuItem.Size = new Size(77, 24);
+            ReportMenuItem.Text = "Báo cáo";
             // 
             // báoCáoDịchVụToolStripMenuItem
             // 
@@ -202,12 +206,32 @@
             // menuStrip1
             // 
             menuStrip1.ImageScalingSize = new Size(20, 20);
-            menuStrip1.Items.AddRange(new ToolStripItem[] { báoCáoToolStripMenuItem });
+            menuStrip1.Items.AddRange(new ToolStripItem[] { ReportMenuItem, AccountMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
             menuStrip1.Size = new Size(800, 28);
             menuStrip1.TabIndex = 4;
             menuStrip1.Text = "menuStrip1";
+            // 
+            // AccountMenuItem
+            // 
+            AccountMenuItem.DropDownItems.AddRange(new ToolStripItem[] { ChangeAccount, ManageAccount });
+            AccountMenuItem.Name = "AccountMenuItem";
+            AccountMenuItem.Size = new Size(85, 24);
+            AccountMenuItem.Text = "Taì khoản";
+            // 
+            // ChangeAccount
+            // 
+            ChangeAccount.Name = "ChangeAccount";
+            ChangeAccount.Size = new Size(224, 26);
+            ChangeAccount.Text = "Thay đổi tài khoản";
+            ChangeAccount.Click += ChangeAccount_Click;
+            // 
+            // ManageAccount
+            // 
+            ManageAccount.Name = "ManageAccount";
+            ManageAccount.Size = new Size(224, 26);
+            ManageAccount.Text = "Quản lý tài khoản";
             // 
             // MainScreen
             // 
@@ -234,7 +258,7 @@
         private AntdUI.Panel panel1;
         private AntdUI.Menu menu1;
         private TableLayoutPanel tableLayoutPanel1;
-        private ToolStripMenuItem báoCáoToolStripMenuItem;
+        private ToolStripMenuItem ReportMenuItem;
         private MenuStrip menuStrip1;
         private AntdUI.LabelTime labelTime1;
         private AntdUI.Label lbl_online;
@@ -245,5 +269,9 @@
         private ToolStripMenuItem báoCáoDịchVụToolStripMenuItem;
         private ToolStripMenuItem báoCáoGiaoDịchToolStripMenuItem;
         private ToolStripMenuItem xuấtBáoCáoToolStripMenuItem;
+        private ToolStripMenuItem AccountMenuItem;
+        private ToolStripMenuItem ChangeAccount;
+        private ToolStripMenuItem ManageAccount;
+        private HelpProvider helpProvider1;
     }
 }

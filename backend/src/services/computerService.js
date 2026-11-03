@@ -2,6 +2,7 @@ const db = require('../models');
 const { formatStationDTO } = require('../utils/stationFormatter');
 const { ComputerStatus } = require('../constants/enums');
 const { SessionType } = require('../constants/enums');
+const { Op } = require('sequelize');
 
 
 /**
@@ -40,6 +41,92 @@ class ComputerService {
       return computers;
     } catch (error) {
       console.error('Lỗi khi lấy danh sách máy trạm:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Fetch the current usage information used by the control panel.
+   * The active session is joined through Member.userInfo so an employee
+   * who processed an order is never reported as the logged-in member.
+   */
+  async getComputerOverview() {
+    try {
+      const now = new Date();
+      const computers = await db.Computer.findAll({
+        attributes: ['computer_id', 'computer_name', 'status'],
+        include: [
+          {
+            model: db.ComputerZone,
+            attributes: ['zone_id', 'zone_name'],
+            include: [{
+              model: db.PricingPlan,
+              attributes: ['pricing_plan_id', 'price_per_hour', 'priority'],
+              where: { is_active: true },
+              required: false,
+              through: { attributes: [] }
+            }]
+          },
+          {
+            model: db.RentalSession,
+            as: 'rentalSessions',
+            attributes: ['rental_session_id', 'started_at', 'member_id'],
+            where: { status: 'ACTIVE' },
+            required: false,
+            include: [
+              {
+                model: db.Member,
+                as: 'member',
+                attributes: ['member_id'],
+                required: false,
+                include: [{
+                  model: db.User,
+                  as: 'userInfo',
+                  attributes: ['username'],
+                  required: false
+                }]
+              },
+              {
+                model: db.ComboTime,
+                as: 'comboTime',
+                attributes: ['combo_time_id', 'status', 'end_time'],
+                where: {
+                  status: 'ACTIVE',
+                  end_time: { [Op.gt]: now }
+                },
+                required: false
+              }
+            ]
+          }
+        ],
+        order: [['computer_id', 'ASC']],
+        distinct: true
+      });
+
+      return computers.map((computer) => {
+        const session = computer.rentalSessions?.[0] || null;
+        const zone = computer.ComputerZone;
+        const pricingPlans = zone?.PricingPlans || [];
+        const pricingPlan = pricingPlans
+          .slice()
+          .sort((left, right) => (right.priority || 0) - (left.priority || 0))[0];
+        const user = session?.member?.userInfo;
+
+        return {
+          computerId: computer.computer_id,
+          computerName: computer.computer_name,
+          status: computer.status,
+          currentUsername: user?.username || null,
+          sessionStartedAt: session?.started_at || null,
+          zoneName: zone?.zone_name || null,
+          hourlyRate: pricingPlan?.price_per_hour != null
+            ? Number(pricingPlan.price_per_hour)
+            : null,
+          hasActiveCombo: Boolean(session?.comboTime)
+        };
+      });
+    } catch (error) {
+      console.error('Lỗi khi lấy tổng quan máy trạm:', error);
       throw error;
     }
   }

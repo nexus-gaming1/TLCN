@@ -83,7 +83,19 @@ namespace NexusControl.Forms
                 default:
                     // Handle unknown selection
                     break;
-                }
             }
         }
+
+        private void thayĐổiTàiKhoảnToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+
+        }
+
+        private void ChangeAccount_Click(object sender, EventArgs e)
+        {
+            Form Login = new LoginScreen();
+            Login.ShowDialog();
+        }
+    }
 }

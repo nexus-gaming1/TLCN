@@ -1,1 +1,173 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-lock preview-icon"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+Yêu cầu triển khai cơ chế tính phí thuê máy theo phút (PAY AS YOU GO)
+1. Mục tiêu
+Triển khai cơ chế tính phí thuê máy theo phút (PAY AS YOU GO), tích hợp với hệ thống Combo Time hiện tại.
+Yêu cầu:
+•	Người dùng có thể sử dụng máy bằng Combo Time hoặc trừ tiền trực tiếp từ Wallet.
+•	Khi không có Combo Time hợp lệ, hệ thống tự động tính phí theo phút dựa trên PricingPlan.
+•	Khi Combo Time hết hạn, hệ thống tự động chuyển sang PAY AS YOU GO mà không cần đăng xuất và đăng nhập lại.
+•	Nếu số dư không đủ để thanh toán một phút tiếp theo, hệ thống tự động kết thúc phiên và khóa máy.
+•	Tái sử dụng RentalSession và FinancialTransaction hiện có. Không tạo thêm BillingSession hoặc UsageCharge.
+2. Nguyên tắc thiết kế
+Trước khi triển khai, hãy kiểm tra cấu trúc database, model, service, API, Socket.IO và IPC hiện tại để tận dụng những thành phần đã có.
+Không tự ý thiết kế lại toàn bộ hệ thống.
+Phân chia trách nhiệm:
+•	RentalSession: Quản lý phiên sử dụng máy tính.
+•	ComboTime: Quản lý thời gian Combo.
+•	PricingPlan: Xác định giá thuê máy.
+•	Wallet: Quản lý số dư Bonus và Real.
+•	FinancialTransaction: Ghi nhận các nghiệp vụ tài chính cần đối soát.
+•	BillingService: Xử lý logic tính phí và trừ tiền thuê máy.
+•	BillingWorker: Tự động kiểm tra và tính phí các phiên đang hoạt động.
+Lưu ý về FinancialTransaction:
+Chỉ sử dụng FinancialTransaction cho các nghiệp vụ tài chính cần ghi nhận và đối soát:
+•	Nạp tiền.
+•	Rút tiền.
+•	Mua Combo.
+•	Thanh toán dịch vụ.
+•	Hoàn tiền.
+Không tạo FinancialTransaction cho từng lần trừ tiền thuê máy theo phút. Nghiệp vụ hiện tại không yêu cầu lưu lịch sử từng lần trừ tiền PAYG.
+Không tạo thêm bảng UsageCharge, BillingSession hoặc bảng ghi nhận chi tiết từng phút sử dụng.
+3. Cơ chế tính phí PAY AS YOU GO
+Khi thành viên sử dụng máy mà không có Combo Time hợp lệ:
+1.	Xác định PricingPlan phù hợp tại thời điểm tính phí.
+2.	Tính giá thuê theo phút từ giá thuê theo giờ.
+Ví dụ:
+•	Giá thuê: 12.000 VNĐ/giờ.
+•	Giá mỗi phút: 200 VNĐ.
+•	Một lần tính phí: 200 VNĐ.
+Nếu PricingPlan thay đổi theo khung giờ, ngày trong tuần, Zone hoặc các điều kiện hiện có, phải áp dụng đúng bảng giá tương ứng cho từng khoảng thời gian.
+Không được lấy một mức giá cố định cho toàn bộ phiên thuê nếu PricingPlan có thể thay đổi trong quá trình sử dụng.
+4. Quy tắc trừ tiền Wallet
+Khi tính phí PAYG:
+•	Ưu tiên trừ bonus_balance trước.
+•	Nếu Bonus không đủ, tiếp tục trừ phần còn thiếu từ real_balance.
+•	Tổng số dư phải đủ thanh toán trọn vẹn một phút mới được thực hiện trừ tiền.
+Ví dụ:
+Giá thuê một phút là 200 VNĐ.
+Bonus	Real	Kết quả
+200	500	Trừ Bonus 200
+100	500	Trừ Bonus 100 + Real 100
+0	500	Trừ Real 200
+0	100	Không trừ tiền, kết thúc phiên
+Không được trừ số tiền còn lại nếu tổng số dư không đủ thanh toán trọn một phút.
+Ví dụ người dùng chỉ còn 100 VNĐ nhưng giá thuê một phút là 200 VNĐ thì phải giữ nguyên 100 VNĐ, không được trừ một phần.
+5. Kiểm tra số dư khi đăng nhập máy
+Trước khi tạo phiên sử dụng máy, backend phải xác định người dùng có Combo Time hợp lệ hay không.
+Trường hợp có Combo Time hợp lệ
+•	Cho phép đăng nhập kể cả khi Wallet không còn tiền.
+•	Không trừ tiền PAYG trong thời gian Combo còn hiệu lực.
+Trường hợp không có Combo Time hợp lệ
+•	Xác định giá thuê một phút theo PricingPlan hiện tại.
+•	Kiểm tra tổng số dư Bonus + Real.
+•	Nếu đủ tiền cho ít nhất một phút: cho phép đăng nhập.
+•	Nếu không đủ: từ chối đăng nhập với mã lỗi INSUFFICIENT_BALANCE.
+Khi đăng nhập thất bại vì không đủ tiền:
+•	Không tạo RentalSession.
+•	Không tạo ComputerSession nếu hệ thống đang sử dụng model này để quản lý phiên đăng nhập.
+•	Không trừ bất kỳ số dư nào.
+•	Không thay đổi trạng thái máy thành đang sử dụng.
+Phải kiểm tra lại số dư trong DB transaction khi thực sự tạo phiên để tránh trường hợp hai máy cùng đăng nhập hoặc số dư thay đổi giữa lúc kiểm tra và lúc tạo phiên.
+6. Xử lý đăng nhập thất bại qua IPC
+Khi backend từ chối đăng nhập vì không đủ số dư, phải gửi thông tin thất bại về NetClientApp thông qua cơ chế IPC/Named Pipe hiện tại.
+Sử dụng cấu trúc payload tương thích với hệ thống IPC đang có.
+NetClientUI cần hiển thị thông báo phù hợp:
+"Số dư không đủ để sử dụng máy. Vui lòng nạp thêm tiền hoặc mua Combo."
+Phải phân biệt rõ lỗi không đủ tiền với:
+•	Sai tài khoản hoặc mật khẩu.
+•	Tài khoản bị khóa hoặc không hoạt động.
+•	Máy không khả dụng.
+•	Lỗi kết nối backend.
+Không làm ảnh hưởng đến cơ chế đăng nhập hiện tại.
+7. Tích hợp Combo Time và PAYG
+Đây là yêu cầu quan trọng.
+Khi Combo Time còn hiệu lực
+•	Không trừ Wallet.
+•	Không tính phí PAYG.
+•	Thời gian Combo tiếp tục chạy kể cả khi người dùng không tương tác với máy.
+•	Không thay đổi các quy tắc Combo hiện có.
+Khi Combo Time hết hạn
+•	Không yêu cầu người dùng đăng xuất.
+•	Không kết thúc RentalSession chỉ vì Combo hết hạn.
+•	Tự động chuyển phiên hiện tại sang PAY AS YOU GO.
+•	Bắt đầu tính phí theo PricingPlan hiện tại.
+•	Kiểm tra số dư trước mỗi lần trừ tiền.
+Khi Combo Time được gia hạn
+•	Tiếp tục sử dụng Combo.
+•	Không chuyển sang PAYG nếu Combo đã được gia hạn thành công trước khi hết hạn.
+Khi Combo Time bị hủy
+•	Chuyển sang PAYG nếu người dùng vẫn đang sử dụng máy.
+•	Bắt đầu tính phí theo quy tắc PAYG.
+Không được tạo thêm RentalSession khi chuyển đổi giữa Combo và PAYG.
+8. Billing Worker
+Xây dựng hoặc tận dụng Worker hiện có để tự động xử lý các phiên đang hoạt động.
+Worker cần:
+•	Lấy danh sách RentalSession đang hoạt động.
+•	Kiểm tra Combo Time có còn hiệu lực không.
+•	Nếu Combo còn hiệu lực: bỏ qua việc trừ tiền.
+•	Nếu không có Combo: tính phí theo PricingPlan hiện tại.
+•	Kiểm tra số dư Wallet.
+•	Thực hiện trừ tiền Bonus trước, Real sau.
+•	Cập nhật trạng thái phiên khi không đủ tiền.
+•	Kết thúc phiên và yêu cầu khóa máy thông qua IPC/Socket hiện có.
+Worker phải chạy ở backend, không phụ thuộc vào việc frontend hoặc NetClientApp có đang mở hay không.
+Phải xử lý:
+•	Backend khởi động lại.
+•	Worker chạy chậm hoặc bỏ lỡ một chu kỳ.
+•	Người dùng đăng xuất giữa lúc Worker đang tính phí.
+•	Hai Worker hoặc hai tiến trình cùng xử lý một phiên.
+•	Combo hết hạn đúng lúc Worker đang chạy.
+•	Không được tính phí trùng cho cùng một khoảng thời gian.
+Việc trừ tiền và cập nhật trạng thái phiên phải có cơ chế đồng bộ, khóa dữ liệu hoặc điều kiện cập nhật phù hợp. Không được để Wallet âm.
+Không cần tạo giao dịch FinancialTransaction cho mỗi chu kỳ tính phí. Tuy nhiên, vẫn phải đảm bảo số dư Wallet được cập nhật chính xác và có thể kiểm tra sau khi trừ tiền.
+9. RentalSession
+Tận dụng model RentalSession hiện tại để quản lý toàn bộ phiên sử dụng máy.
+Chỉ bổ sung các trường thực sự cần thiết cho việc quản lý thời gian và trạng thái tính phí, ví dụ:
+•	billing_mode: COMBO hoặc PAY_AS_YOU_GO.
+•	combo_time_id: Combo đang áp dụng, nếu có.
+•	last_billed_at: Mốc thời gian đã xử lý tính phí gần nhất.
+•	total_amount: Tổng tiền thuê máy đã thu, chỉ bổ sung nếu nghiệp vụ cần thống kê tổng tiền thuê máy.
+Không cần lưu riêng từng lần trừ tiền, từng khoảng thời gian tính phí hoặc từng PricingPlan đã áp dụng nếu nghiệp vụ không yêu cầu đối soát chi tiết PAYG.
+Tuy nhiên, phải đảm bảo Worker có đủ thông tin để xác định chính xác khoảng thời gian chưa được xử lý và không tính phí trùng.
+10. Bảo toàn nghiệp vụ hiện tại
+Không được làm hỏng các chức năng hiện có:
+•	Đăng nhập và đăng xuất máy.
+•	Quản lý trạng thái máy qua Socket.IO.
+•	Giao tiếp giữa Windows Service và NetClientApp qua Named Pipe.
+•	Khóa và mở khóa máy.
+•	Mua Combo bằng Wallet, Cash và VietQR.
+•	Quản lý ServiceOrder.
+•	Quản lý ComboItem và các dịch vụ đi kèm Combo.
+•	Báo cáo tài chính hiện tại.
+Dịch vụ nằm trong Combo vẫn phải có giá 0 khi ghi nhận ServiceOrder, tránh tính tiền dịch vụ hai lần.
+Không thay đổi các quy tắc mua, gia hạn, chuyển máy và kết thúc Combo hiện tại nếu không thực sự cần thiết.
+11. Kiểm thử
+Bổ sung test cho các trường hợp:
+1.	Đăng nhập PAYG khi Wallet đủ tiền.
+2.	Đăng nhập PAYG khi Wallet không đủ tiền.
+3.	Đăng nhập bằng Combo khi Wallet bằng 0.
+4.	Trừ Bonus trước Real.
+5.	Bonus không đủ, phần còn thiếu được trừ từ Real.
+6.	Không trừ tiền khi không đủ một phút.
+7.	PricingPlan thay đổi giữa phiên sử dụng.
+8.	Combo hết hạn và tự động chuyển PAYG.
+9.	Combo được gia hạn trước khi hết hạn.
+10.	Combo bị hủy và chuyển sang PAYG.
+11.	Không tạo RentalSession khi đăng nhập thất bại.
+12.	Không tạo FinancialTransaction cho từng lần trừ tiền PAYG.
+13.	Không trừ tiền trùng khi Worker chạy lại.
+14.	Không trừ tiền sau khi RentalSession đã kết thúc.
+15.	Worker khôi phục đúng trạng thái sau khi backend khởi động lại.
+16.	Hai yêu cầu đăng nhập đồng thời không thể sử dụng cùng một số dư vượt quá thực tế.
+17.	IPC gửi đúng thông báo khi đăng nhập thất bại vì không đủ tiền.
+18.	Máy được khóa đúng cách khi Wallet không đủ tiền trong quá trình sử dụng.
+12. Yêu cầu khi hoàn thành
+Sau khi triển khai:
+•	Liệt kê những file đã tạo và chỉnh sửa.
+•	Giải thích ngắn gọn luồng tính phí PAYG và Combo.
+•	Nêu rõ các trường đã bổ sung vào database.
+•	Nêu rõ các API hoặc IPC event đã thay đổi.
+•	Báo cáo kết quả test.
+•	Chỉ ra những điểm còn cần migration hoặc cấu hình.
+Ưu tiên tái sử dụng code và model hiện có. Không tạo thêm bảng hoặc tầng kiến trúc không cần thiết. Không tự ý thay đổi giao diện và nghiệp vụ ngoài phạm vi yêu cầu.
+Mục tiêu cuối cùng: Hệ thống quản lý được phiên sử dụng máy, tự động tính phí PAYG, tích hợp liền mạch với Combo Time, trừ Wallet chính xác và khóa máy khi không đủ tiền; trong khi FinancialTransaction chỉ phục vụ những nghiệp vụ tài chính cần đối soát, không lưu từng lần trừ tiền thuê máy theo phút.
+

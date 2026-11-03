@@ -13,6 +13,7 @@ namespace NexusControl.Forms
     public partial class LoginScreen : Form
     {
         private readonly AuthService _authService = new AuthService();
+        private bool _isLoginSuccessful = false;
 
         public LoginScreen()
         {
@@ -47,11 +48,25 @@ namespace NexusControl.Forms
             var result = await _authService.LoginAsync(Ip_Username.Text, ip_Password.Text);
             if (result.IsSuccess)
             {
+                _isLoginSuccessful = true;
                 this.Close();
             }
             else
             {
                 MessageBox.Show(result.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoginScreen_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void LoginScreen_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if(!_isLoginSuccessful)
+            {
+                Application.Exit();
             }
         }
     }
