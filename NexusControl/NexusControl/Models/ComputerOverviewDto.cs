@@ -11,6 +11,12 @@ namespace NexusControl.Models
         [JsonPropertyName("computerName")]
         public string? ComputerName { get; set; }
 
+        [JsonPropertyName("ipAddress")]
+        public string? IpAddress { get; set; }
+
+        [JsonPropertyName("macAddress")]
+        public string? MacAddress { get; set; }
+
         [JsonPropertyName("status")]
         public string? Status { get; set; }
 

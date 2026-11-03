@@ -17,6 +17,12 @@ function registerMachineSocket(io) {
         );
     }
 
+    function broadcastMachineUpdate(machine) {
+        if (machine) {
+            io.emit('machine:updated', machine);
+        }
+    }
+
     // ========================================
     // Heartbeat Timeout Checker (Interval)
     // Quá 15s không nhận heartbeat hợp lệ -> OFFLINE
@@ -35,7 +41,7 @@ function registerMachineSocket(io) {
                         `[Socket.IO] Machine ${m.machineId} timed out (no heartbeat for > ${HEARTBEAT_TIMEOUT_MS / 1000}s). Status set to OFFLINE.`
                     );
                 }
-                broadcastUpdate();
+                timedOutMachines.forEach(broadcastMachineUpdate);
             }
         } catch (err) {
             console.error('[Socket.IO] Error checking heartbeat timeout:', err);
@@ -95,6 +101,7 @@ function registerMachineSocket(io) {
         console.log(
             `[Socket.IO] New connection established: ${socket.id}`
         );
+        socket.emit('machines:list', machineStore.getAll());
 
         // ========================================
         // 1. Agent Registration
@@ -170,7 +177,7 @@ function registerMachineSocket(io) {
                 `machine:${data.machineId}`
             );
 
-            broadcastUpdate();
+            broadcastMachineUpdate(machine);
         });
 
 
@@ -202,6 +209,7 @@ function registerMachineSocket(io) {
                         performance: machine.performance
                     }
                 );
+                    broadcastMachineUpdate(machine);
             }
         });
 
@@ -235,7 +243,7 @@ function registerMachineSocket(io) {
             }
 
             if (updated) {
-                broadcastUpdate();
+                broadcastMachineUpdate(updated);
             }
         });
 
@@ -324,7 +332,7 @@ function registerMachineSocket(io) {
                             memberId
                         );
                     }
-                    broadcastUpdate();
+                    broadcastMachineUpdate(machine);
                 }
             }
         });
@@ -390,7 +398,7 @@ function registerMachineSocket(io) {
                     machine.currentUser = null;
                     machine.lastStatusChange = new Date().toISOString();
 
-                    broadcastUpdate();
+                    broadcastMachineUpdate(machine);
                 }
             }
         };
@@ -442,7 +450,7 @@ function registerMachineSocket(io) {
                     await closeActiveSessions(computer.computer_id);
                     await syncComputerStatus(computer, ComputerStatus.OFFLINE);
                 }
-                broadcastUpdate();
+                broadcastMachineUpdate(disconnected.machine);
             }
         });
 

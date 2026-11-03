@@ -115,6 +115,8 @@ class ComputerService {
         return {
           computerId: computer.computer_id,
           computerName: computer.computer_name,
+          ipAddress: computer.ip_address,
+          macAddress: computer.mac_address,
           status: computer.status,
           currentUsername: user?.username || null,
           sessionStartedAt: session?.started_at || null,

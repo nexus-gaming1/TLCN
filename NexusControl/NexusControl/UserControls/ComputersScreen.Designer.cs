@@ -48,7 +48,7 @@
             dgv_Computer.MultiSelect = false;
             dgv_Computer.Name = "dgv_Computer";
             dgv_Computer.ReadOnly = true;
-            dgv_Computer.RowHeadersWidth = 51;
+            dgv_Computer.RowHeadersVisible = false;
             dgv_Computer.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgv_Computer.Size = new Size(663, 438);
             dgv_Computer.TabIndex = 0;
@@ -101,12 +101,6 @@
 
         private DataGridView dgv_Computer;
         private DataGridViewTextBoxColumn computername;
-        private DataGridViewTextBoxColumn status;
-        private DataGridViewTextBoxColumn currentUsername;
-        private DataGridViewTextBoxColumn sessionStartedAt;
-        private DataGridViewTextBoxColumn zoneName;
-        private DataGridViewTextBoxColumn hourlyRate;
-        private DataGridViewTextBoxColumn hasActiveCombo;
         private Button btnRefresh;
         private Label lblResult;
     }
