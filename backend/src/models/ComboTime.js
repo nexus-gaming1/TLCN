@@ -97,6 +97,7 @@ module.exports = (sequelize) => {
     ComboTime.belongsTo(models.ServiceOrder, { foreignKey: 'order_id', as: 'serviceOrder' });
     ComboTime.belongsTo(models.ComboPackage, { foreignKey: 'combo_id', as: 'comboPackage' });
     ComboTime.belongsTo(models.Computer, { foreignKey: 'computer_id', as: 'computer' });
+    ComboTime.hasMany(models.RentalSession, { foreignKey: 'combo_time_id', as: 'rentalSessions' });
   };
 
   return ComboTime;

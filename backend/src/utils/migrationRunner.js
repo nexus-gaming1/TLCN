@@ -1,4 +1,5 @@
 const db = require('../models');
+const rentalSessionMigration = require('../migrations/20241024000006-create-rental-session');
 
 /**
  * Migration Runner for NEXUS Cyber Command
@@ -120,6 +121,10 @@ const runMigrations = async () => {
     } catch (e) {
       console.warn('⚠️ ENUM payment_method update skipped or already updated.');
     }
+
+    // Keep the billing table available on application startup as well as through
+    // sequelize-cli. The migration is idempotent and repairs partial schemas.
+    await rentalSessionMigration.up(queryInterface, db.Sequelize);
 
     // Perform Sequelize sync with alter fallback
     await db.sequelize.sync({ alter: true }).catch((err) => {

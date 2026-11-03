@@ -23,6 +23,7 @@ const webhookRoutes = require('./src/routes/webhookRoutes');
 const reportRoutes = require('./src/routes/reportRoutes');
 const comboRoutes = require('./src/routes/comboRoutes');
 const comboTimeService = require('./src/services/comboTimeService');
+const billingWorker = require('./src/services/billingWorker');
 
 const errorHandler = require('./src/middleware/errorHandler');
 const computerSocketService = require('./src/services/computerSocketService');
@@ -103,6 +104,7 @@ async function startServer() {
       }
     }, 5000);
     if (expirationScheduler.unref) expirationScheduler.unref();
+    billingWorker.start();
 
     // 6. Bật server
     server.listen(PORT, () => {
