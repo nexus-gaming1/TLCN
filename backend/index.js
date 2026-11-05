@@ -116,7 +116,7 @@ async function startServer() {
     console.log('✅ Kết nối & Đồng bộ CSDL MySQL thành công!');
 
     // 3. Chạy seeder nạp dữ liệu mẫu
-    await seedData(db);
+    //await seedData(db);
 
     // 4. Quét & xử lý các combo đã hết hạn trong lúc backend tắt/restart (Rule 2.6)
     const expiredCount = await comboTimeService.checkAndExpireCombos();
