@@ -109,6 +109,14 @@ public class LoginAck
     public string? Error { get; set; }
 }
 
+public sealed class SessionRejectPayload
+{
+    [JsonPropertyName("code")]
+    public string? Code { get; set; }
+    [JsonPropertyName("message")]
+    public string? Message { get; set; }
+}
+
 public class LogoutPayload
 {
     [JsonPropertyName("command")]
@@ -138,4 +146,3 @@ public class NotificationPayload
     [JsonPropertyName("durationSeconds")]
     public int DurationSeconds { get; set; } = 5;
 }
-

@@ -1,6 +1,9 @@
+using AntdUI.Svg;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.IO;
+using System.Text.RegularExpressions;
 
 namespace NexusControl.Services
 {
@@ -18,7 +21,7 @@ namespace NexusControl.Services
                 StringComparer.OrdinalIgnoreCase
             );
 
-        public static string GetSvg(string name)
+        public static string GetSvg(string name, string? stroke = null, string? fill = null)
         {
             if (string.IsNullOrWhiteSpace(name))
                 throw new ArgumentException(
@@ -41,6 +44,7 @@ namespace NexusControl.Services
                 StringComparison.OrdinalIgnoreCase
             ) ? name : name + ".svg";
 
+
             if (Cache.TryGetValue(fileName, out string cachedSvg))
                 return cachedSvg;
 
@@ -61,6 +65,35 @@ namespace NexusControl.Services
             }
 
             string svg = File.ReadAllText(path);
+            if(string.IsNullOrWhiteSpace(svg))
+            {
+                MessageBox.Show(
+                    $"Icon '{path}' rỗng.",
+                    "Lỗi",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error
+                );
+                throw new InvalidDataException(
+                    $"Icon '{fileName}' rỗng."
+                );
+            }
+            if (!string.IsNullOrWhiteSpace(stroke))
+            {
+                svg = Regex.Replace(
+                    svg,
+                    @"\bstroke\s*=\s*""[^""]*""",
+                    $"stroke=\"{stroke}\"");
+            }
+           
+
+            if (!string.IsNullOrWhiteSpace(fill))
+            {
+                svg = Regex.Replace(
+                    svg,
+                    @"\bfill\s*=\s*""[^""]*""",
+                    $"fill=\"{fill}\"");
+            }
+         
 
             Cache[fileName] = svg;
 

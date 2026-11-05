@@ -5,29 +5,23 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using AntdUI;
+using NexusControl.Constants;
 using NexusControl.Services;
 namespace NexusControl.Forms
 {
     public partial class LoginScreen : Form
     {
         private readonly AuthService _authService = new AuthService();
+        private bool _isLoginSuccessful = false;
 
         public LoginScreen()
         {
             InitializeComponent();
             Ip_Username.Focus();
+            Ip_Username.IconRatio = 1.2f;
+            ip_Password.IconRatio = 1.2f;
 
-            Ip_Username.PrefixText = null;
-            Ip_Username.PrefixSvg = IconService.GetSvg("user");
-            Ip_Username.IconRatio = 1f;
-
-
-            ip_Password.IconRatio = 1f;
-            ip_Password.PrefixText = null;
-            ip_Password.PrefixSvg = IconService.GetSvg("lock");
-
-            ip_Password.SuffixText = null;
-            ip_Password.SuffixSvg = IconService.GetSvg("eye");
         }
 
         private void LoginScreen_Shown(object sender, EventArgs e)
@@ -40,12 +34,12 @@ namespace NexusControl.Forms
             if (ip_Password.UseSystemPasswordChar)
             {
                 ip_Password.UseSystemPasswordChar = false;
-                ip_Password.SuffixSvg = IconService.GetSvg("eye-off");
+                ip_Password.Suffix = Properties.Resources.eye_off;
             }
             else
             {
                 ip_Password.UseSystemPasswordChar = true;
-                ip_Password.SuffixSvg = IconService.GetSvg("eye");
+                ip_Password.Suffix = Properties.Resources.eye;
             }
         }
 
@@ -54,11 +48,25 @@ namespace NexusControl.Forms
             var result = await _authService.LoginAsync(Ip_Username.Text, ip_Password.Text);
             if (result.IsSuccess)
             {
+                _isLoginSuccessful = true;
                 this.Close();
             }
             else
             {
                 MessageBox.Show(result.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void LoginScreen_Load(object sender, EventArgs e)
+        {
+
+        }
+
+        private void LoginScreen_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if(!_isLoginSuccessful)
+            {
+                Application.Exit();
             }
         }
     }

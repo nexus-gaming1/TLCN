@@ -28,27 +28,14 @@
         /// </summary>
         private void InitializeComponent()
         {
-            Ip_Username = new AntdUI.Input();
             ip_Password = new AntdUI.Input();
             flowPanel1 = new AntdUI.FlowPanel();
             btn_Login = new AntdUI.ButtonShadow();
+            Ip_Username = new AntdUI.Input();
             labelLed1 = new AntdUI.LabelLed();
             labelTime1 = new AntdUI.LabelTime();
             flowPanel1.SuspendLayout();
             SuspendLayout();
-            // 
-            // Ip_Username
-            // 
-            Ip_Username.Location = new Point(53, 3);
-            Ip_Username.Name = "Ip_Username";
-            Ip_Username.PlaceholderColor = SystemColors.ActiveBorder;
-            Ip_Username.PlaceholderText = "Tên đăng nhập";
-            Ip_Username.Prefix = Properties.Resources.user;
-            Ip_Username.PrefixFormat = AntdUI.FormatFlags.Left;
-            Ip_Username.PrefixSvg = "";
-            Ip_Username.PrefixText = "";
-            Ip_Username.Size = new Size(252, 67);
-            Ip_Username.TabIndex = 0;
             // 
             // ip_Password
             // 
@@ -56,7 +43,9 @@
             ip_Password.Name = "ip_Password";
             ip_Password.PlaceholderColor = SystemColors.ActiveCaption;
             ip_Password.PlaceholderText = "Mật khẩu";
+            ip_Password.Prefix = Properties.Resources._lock;
             ip_Password.Size = new Size(252, 67);
+            ip_Password.Suffix = Properties.Resources.eye_off;
             ip_Password.TabIndex = 0;
             ip_Password.UseSystemPasswordChar = true;
             ip_Password.SuffixClick += ip_Password_SuffixClick;
@@ -82,6 +71,17 @@
             btn_Login.TabIndex = 3;
             btn_Login.Text = "Đăng nhập";
             btn_Login.Click += btn_Login_Click;
+            // 
+            // Ip_Username
+            // 
+            Ip_Username.Location = new Point(53, 3);
+            Ip_Username.Name = "Ip_Username";
+            Ip_Username.PlaceholderColor = SystemColors.ActiveBorder;
+            Ip_Username.PlaceholderText = "Tên đăng nhập";
+            Ip_Username.Prefix = Properties.Resources.user;
+            Ip_Username.PrefixFormat = AntdUI.FormatFlags.Left;
+            Ip_Username.Size = new Size(252, 67);
+            Ip_Username.TabIndex = 0;
             // 
             // labelLed1
             // 
@@ -111,18 +111,19 @@
             Name = "LoginScreen";
             StartPosition = FormStartPosition.CenterParent;
             Text = "Đăng nhập nhân viên";
+            FormClosing += LoginScreen_FormClosing;
+            Load += LoginScreen_Load;
             Shown += LoginScreen_Shown;
             flowPanel1.ResumeLayout(false);
             ResumeLayout(false);
         }
 
         #endregion
-
-        private AntdUI.Input Ip_Username;
         private AntdUI.Input ip_Password;
         private AntdUI.FlowPanel flowPanel1;
         private AntdUI.ButtonShadow btn_Login;
         private AntdUI.LabelLed labelLed1;
         private AntdUI.LabelTime labelTime1;
+        private AntdUI.Input Ip_Username;
     }
 }
