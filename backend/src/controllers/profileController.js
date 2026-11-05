@@ -51,7 +51,7 @@ class ProfileController {
   /**
    * GET /api/profile/:id? or /api/profile/me
    */
-  async getProfile(req, res, next) {
+  async getProfile(req, res, _next) {
     try {
       const memberId = this.resolveMemberIdAndAuthorize(req);
       const profile = await this.profileService.getProfile(memberId);
@@ -78,7 +78,7 @@ class ProfileController {
   /**
    * PUT /api/profile/:id?
    */
-  async updateProfile(req, res, next) {
+  async updateProfile(req, res, _next) {
     try {
       const memberId = this.resolveMemberIdAndAuthorize(req);
       const updatedProfile = await this.profileService.updateProfileInfo(memberId, req.body);
@@ -99,7 +99,7 @@ class ProfileController {
   /**
    * POST /api/profile/:id/avatar
    */
-  async updateAvatar(req, res, next) {
+  async updateAvatar(req, res, _next) {
     try {
       const memberId = this.resolveMemberIdAndAuthorize(req);
       const { avatar_url } = req.body;

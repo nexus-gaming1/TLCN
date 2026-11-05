@@ -1,6 +1,6 @@
 const db = require('../models');
 const { Op } = require('sequelize');
-const { TransactionType, TransactionCategory, TransactionStatusEnum, PaymentStatus } = require('../constants/enums');
+const { TransactionType, TransactionCategory, TransactionStatusEnum, PaymentStatus, OrderStatus } = require('../constants/enums');
 
 //ReportRepository : Đảm nhiệm truy vấn và tổng hợp dữ liệu doanh thu từ CSDL
 class ReportRepository {
@@ -43,7 +43,7 @@ class ReportRepository {
         [
           this.sequelize.fn(
             'SUM',
-            this.sequelize.literal('`ServiceOrderItems`.`quantity` * `ServiceOrderItems`.`price`')
+            this.sequelize.literal('`orderItems`.`quantity` * `orderItems`.`price`')
           ),
           'serviceRevenue'
         ]
@@ -51,12 +51,14 @@ class ReportRepository {
       include: [
         {
           model: this.models.ServiceOrderItem,
+          as: 'orderItems',
           attributes: [],
           required: true // INNER JOIN để chỉ tính những đơn có món
         }
       ],
       where: {
         payment_status: PaymentStatus.PAID,
+        status: { [Op.ne]: OrderStatus.CANCELLED },
         created_at: {
           [Op.gte]: startDate,
           [Op.lte]: endDate
@@ -108,9 +110,11 @@ class ReportRepository {
       include: [
         {
           model: this.models.ServiceOrder,
+          as: 'order', //đồng bộ với ServiceOrderItem 
           attributes: [],
           where: {
             payment_status: PaymentStatus.PAID,
+            status: { [Op.ne]: OrderStatus.CANCELLED },
             created_at: {
               [Op.gte]: startDate,
               [Op.lte]: endDate

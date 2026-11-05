@@ -37,7 +37,7 @@ class Computer extends Model {
     return this.save();
   }
 
-  sendNotification(message) {
+  sendNotification(_message) {
     /* Logic gửi thông báo tới máy trạm */
     return true;
   }

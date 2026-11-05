@@ -47,7 +47,7 @@ module.exports = {
     });
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(_queryInterface, _Sequelize) {
     // Revert columns if needed
   }
 };

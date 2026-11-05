@@ -1,4 +1,3 @@
-import React from 'react';
 import { Search, Download, PlusCircle, SlidersHorizontal } from 'lucide-react';
 
 /**

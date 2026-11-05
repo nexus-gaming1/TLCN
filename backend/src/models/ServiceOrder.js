@@ -29,6 +29,7 @@ class ServiceOrder extends Model {
     }
     this.comboTime = comboTime;
     return comboTime;
+
   }
 
   calculateTotal() {

@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+}
+
 @layer components {
   /* Custom Styles for Glassmorphism and Micro-effects from template */
   .glass-panel {

@@ -1,7 +1,7 @@
 /**
  * Centralized Error Handling Middleware for Express
  */
-const errorHandler = (err, req, res, next) => {
+const errorHandler = (err, req, res, _next) => {
   const statusCode = err.statusCode || err.status || 500;
   const message = err.message || 'Lỗi hệ thống nội bộ.';
 

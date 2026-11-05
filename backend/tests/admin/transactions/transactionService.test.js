@@ -94,7 +94,7 @@ test('[TC-02] [Ca dương & Lọc đa điều kiện] getAllTransactions - Phân
     };
 
     // Mock kết quả SQL Aggregation cho thẻ KPI
-    db.FinancialTransaction.findOne = async (query) => {
+    db.FinancialTransaction.findOne = async (_query) => {
       return {
         totalTxnCount: 2,
         totalRevenue: 80000,

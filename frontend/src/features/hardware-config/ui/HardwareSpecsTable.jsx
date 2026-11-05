@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Cpu,
   MemoryStick,
@@ -6,12 +6,7 @@ import {
   HardDrive,
   Activity,
   Edit,
-  Trash2,
-  RefreshCw,
-  Columns,
-  Wrench,
-  CheckCircle,
-  PowerOff
+  Trash2
 } from 'lucide-react';
 import Pagination from '../../../shared/ui/Pagination';
 
@@ -20,6 +15,8 @@ import Pagination from '../../../shared/ui/Pagination';
  */
 export default function HardwareSpecsTable({
   specs = [],
+  totalSpecsCount = specs.length,
+  onResetFilters,
   onOpenTelemetry,
   onEdit,
   onDelete
@@ -104,115 +101,150 @@ export default function HardwareSpecsTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs font-medium text-slate-800">
-            {paginatedSpecs.map((item) => {
-              const isSelected = selectedIds.includes(item.id);
+            {paginatedSpecs.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="py-12 text-center text-slate-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <HardDrive className="w-8 h-8 text-slate-300" />
+                    <p className="font-semibold text-sm text-slate-700">
+                      {totalSpecsCount === 0
+                        ? 'Chưa có cấu hình phần cứng nào được ghi nhận'
+                        : 'Không tìm thấy cấu hình phần cứng phù hợp với bộ lọc'}
+                    </p>
+                    <p className="text-xs text-slate-400 max-w-md">
+                      {totalSpecsCount === 0
+                        ? 'Hệ thống chưa tải được cấu hình từ máy chủ hoặc kho cấu hình đang trống. Vui lòng kiểm tra lại dịch vụ backend hoặc nhấn "+ Tạo Mẫu Cấu Hình" bên trên.'
+                        : 'Vui lòng thử thay đổi từ khóa tìm kiếm hoặc điều chỉnh lại bộ lọc phân khu / trạng thái.'}
+                    </p>
+                    {onResetFilters && totalSpecsCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={onResetFilters}
+                        className="mt-2 px-3.5 py-1.5 bg-sky-50 text-sky-700 hover:bg-sky-100 rounded-lg text-xs font-bold border border-sky-200 transition-all cursor-pointer shadow-2xs"
+                      >
+                        Đặt lại bộ lọc
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              paginatedSpecs.map((item) => {
+                const isSelected = selectedIds.includes(item.id);
 
-              return (
-                <tr
-                  key={item.id}
-                  className={`hover:bg-slate-100 transition-colors group ${
-                    isSelected ? 'bg-sky-50/70' : ''
-                  }`}
-                >
-                  {/* Checkbox */}
-                  <td className="py-3.5 px-4 text-center">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => handleToggleSelect(item.id)}
-                      className="rounded accent-sky-600 cursor-pointer w-4 h-4"
-                    />
-                  </td>
+                return (
+                  <tr
+                    key={item.id}
+                    className={`hover:bg-slate-100 transition-colors group ${
+                      isSelected ? 'bg-sky-50/70' : ''
+                    }`}
+                  >
+                    {/* Checkbox */}
+                    <td className="py-3.5 px-4 text-center">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleToggleSelect(item.id)}
+                        className="rounded accent-sky-600 cursor-pointer w-4 h-4"
+                      />
+                    </td>
 
-                  {/* ID & Zone */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-sm text-slate-900">
-                        {item.id}
-                      </span>
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          item.status === 'online'
-                            ? 'bg-emerald-500'
-                            : item.status === 'ready'
-                            ? 'bg-slate-400'
-                            : 'bg-rose-500'
-                        }`}
-                        title={item.statusLabel}
-                      ></span>
-                    </div>
-                    <span className="inline-block mt-1 font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200/80">
-                      {item.zoneName}
-                    </span>
-                  </td>
+                    {/* ID & Zone */}
+                    <td className="py-3.5 px-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-sm text-slate-900">
+                          {item.profileName || item.id}
+                        </span>
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            item.status === 'online'
+                              ? 'bg-emerald-500'
+                              : item.status === 'ready'
+                              ? 'bg-slate-400'
+                              : 'bg-rose-500'
+                          }`}
+                          title={item.statusLabel || item.status}
+                        ></span>
+                      </div>
+                      <div className="flex flex-col items-start gap-1 mt-1">
+                        <span className="inline-block font-mono text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200/80">
+                          {item.zoneName || 'Phân khu'}
+                        </span>
+                        {item.assignedComputers && item.assignedComputers.length > 0 && (
+                          <span className="font-mono text-[10px] text-slate-500 font-medium">
+                            {item.assignedComputers.length} máy ({item.assignedComputers.slice(0, 2).join(', ')}{item.assignedComputers.length > 2 ? '...' : ''})
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
-                  {/* CPU */}
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-start gap-2.5">
-                      <div className="text-slate-500 shrink-0 mt-0.5">
-                        <Cpu className="w-4 h-4" />
+                    {/* CPU */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-start gap-2.5">
+                        <div className="text-slate-500 shrink-0 mt-0.5">
+                          <Cpu className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-extrabold text-slate-900 leading-tight">
+                            {item.cpu?.model || 'Chưa thiết lập'}
+                          </span>
+                          <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5">
+                            {item.cpu?.specs || ''}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="font-extrabold text-slate-900 leading-tight">
-                          {item.cpu.model}
-                        </span>
-                        <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5">
-                          {item.cpu.specs}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* RAM */}
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-start gap-2.5">
-                      <div className="text-slate-500 shrink-0 mt-0.5">
-                        <MemoryStick className="w-4 h-4" />
+                    {/* RAM */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-start gap-2.5">
+                        <div className="text-slate-500 shrink-0 mt-0.5">
+                          <MemoryStick className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-extrabold text-slate-900 leading-tight">
+                            {item.ram?.capacity || 'Chưa thiết lập'}
+                          </span>
+                          <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5">
+                            {item.ram?.specs || ''}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="font-extrabold text-slate-900 leading-tight">
-                          {item.ram.capacity}
-                        </span>
-                        <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5">
-                          {item.ram.specs}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* GPU */}
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-start gap-2.5">
-                      <div className="text-slate-500 shrink-0 mt-0.5">
-                        <Gamepad2 className="w-4 h-4" />
+                    {/* GPU */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-start gap-2.5">
+                        <div className="text-slate-500 shrink-0 mt-0.5">
+                          <Gamepad2 className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-extrabold text-slate-900 leading-tight">
+                            {item.gpu?.model || 'Chưa thiết lập'}
+                          </span>
+                          <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5">
+                            {item.gpu?.edition || ''}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="font-extrabold text-slate-900 leading-tight">
-                          {item.gpu.model}
-                        </span>
-                        <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5">
-                          {item.gpu.edition}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* Storage / BootROM */}
-                  <td className="py-3.5 px-4">
-                    <div className="flex items-start gap-2.5">
-                      <div className="text-slate-500 shrink-0 mt-0.5">
-                        <HardDrive className="w-4 h-4" />
+                    {/* Storage / BootROM */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-start gap-2.5">
+                        <div className="text-slate-500 shrink-0 mt-0.5">
+                          <HardDrive className="w-4 h-4" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-extrabold text-slate-900 leading-tight">
+                            {item.storage?.type || 'Chưa thiết lập'}
+                          </span>
+                          <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5 truncate max-w-[200px]" title={item.storage?.specs || ''}>
+                            {item.storage?.specs || ''}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex flex-col">
-                        <span className="font-extrabold text-slate-900 leading-tight">
-                          {item.storage.type}
-                        </span>
-                        <span className="font-mono text-[11px] text-slate-600 font-medium mt-0.5 truncate max-w-[200px]" title={item.storage.specs}>
-                          {item.storage.specs}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
+                    </td>
 
                   {/* Actions */}
                   <td className="py-3.5 px-4 text-right pr-6 whitespace-nowrap">
@@ -247,7 +279,7 @@ export default function HardwareSpecsTable({
                   </td>
                 </tr>
               );
-            })}
+            }))}
           </tbody>
         </table>
       </div>

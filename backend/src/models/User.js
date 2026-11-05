@@ -2,7 +2,7 @@ const { Model, DataTypes } = require('sequelize');
 const { UserRole, UserStatus } = require('../constants/enums');
 
 class User extends Model {
-  login(password) {
+  login(_password) {
     return true;
   }
 
@@ -10,7 +10,7 @@ class User extends Model {
     return true;
   }
 
-  changePassword(oldPass, newPass) {
+  changePassword(_oldPass, _newPass) {
     return true;
   }
 
@@ -39,6 +39,9 @@ module.exports = (sequelize) => {
     User.hasOne(models.Member, { foreignKey: 'member_id', onDelete: 'CASCADE', as: 'memberProfile' });
     User.hasMany(models.ServiceOrder, { foreignKey: 'processed_by' });
     User.hasMany(models.FinancialTransaction, { foreignKey: 'processed_by' });
+    if (models.RefreshToken) {
+      User.hasMany(models.RefreshToken, { foreignKey: 'user_id', onDelete: 'CASCADE' });
+    }
   };
 
   return User;

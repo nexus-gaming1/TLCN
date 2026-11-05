@@ -13,7 +13,7 @@ export default function Sidebar({ activeNav = 'grid', setActiveNav, bootromStatu
         { id: 'promotions', label: 'Bảng giá & Giờ vàng', icon: Tag, path: '/admin/pricing-plans' },
         { id: 'transactions', label: 'Giao dịch', icon: Receipt, path: '/admin/transactions' },
         { id: 'catalog', label: 'Dịch vụ (F&B)', icon: Coffee, path: '/admin/catalog' },
-        { id: 'games', label: 'Kho game & BootROM', icon: Gamepad2 },
+        { id: 'games', label: 'Kho game & BootROM', icon: Gamepad2, path: '/admin/games' },
         { id: 'reports', label: 'Báo cáo doanh thu', icon: BarChart3,  path: '/admin/reports' },
     ];
 
