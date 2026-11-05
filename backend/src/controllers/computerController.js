@@ -2,6 +2,37 @@ const computerService = require('../services/computerService');
 const stationControlService = require('../services/stationControlService');
 const computerSocketService = require('../services/computerSocketService');
 const machineStore = require('../stores/machineStore');
+
+function findMachineByAddress(ipAddress, macAddress) {
+  const normalizeIp = (value) => {
+    const normalized = String(value || '').trim().toLowerCase();
+    return normalized.startsWith('::ffff:')
+      ? normalized.slice('::ffff:'.length)
+      : normalized;
+  };
+  const normalizeMac = (value) => String(value || '')
+    .replace(/[:-]/g, '')
+    .replace(/\./g, '')
+    .trim()
+    .toUpperCase();
+  const normalizedIp = normalizeIp(ipAddress);
+  const normalizedMac = normalizeMac(macAddress);
+
+  return Object.values(machineStore.getAll()).find((machine) =>
+    machine && (
+      (normalizedIp && normalizeIp(machine.localIp) === normalizedIp) ||
+      (normalizedMac && normalizeMac(machine.macAddress) === normalizedMac)
+    )
+  );
+}
+
+function machineNotFoundResponse(res, ipAddress, macAddress) {
+  return res.status(404).json({
+    status: 'error',
+    message: `Không tìm thấy máy đang kết nối với IP '${ipAddress || '--'}' hoặc MAC '${macAddress || '--'}'.`
+  });
+}
+
 /**
  * ComputerController
  * Handles HTTP requests and delegates logic to specialized Services (SRP & Clean Code)
@@ -292,7 +323,7 @@ class ComputerController {
       );
 
       return res.json({
-        success: true,
+        status: 'success',
         message: `Login request sent to ${machineId}`
       });
     } catch (error) {
@@ -321,7 +352,7 @@ class ComputerController {
       computerSocketService.logout(machineId);
 
       return res.json({
-        success: true,
+        status: 'success',
         message: `Logout request sent to ${machineId}`
       });
     } catch (error) {
@@ -341,6 +372,7 @@ class ComputerController {
           error: 'Command is required'
         });
       }
+
       console.log("MachineID " + machineId);
       const machine = machineStore.get(machineId);
 
@@ -362,7 +394,7 @@ class ComputerController {
       );
 
       return res.json({
-        success: true,
+        status: 'success',
         message:
           `Command '${command}' sent to ${machineId}`
       });
@@ -371,6 +403,25 @@ class ComputerController {
     }
   }
 
+
+  async sendCommandByAddress(req, res, next) {
+    try {
+      const { ipAddress, macAddress, command, message } = req.body;
+      const machine = findMachineByAddress(ipAddress, macAddress);
+
+      if (!machine || !machine.socketId) {
+        return machineNotFoundResponse(res, ipAddress, macAddress);
+      }
+      if (!command) {
+        return res.status(400).json({ error: 'Command is required' });
+      }
+
+      computerSocketService.sendCommand(machine.machineId, command, message);
+      return res.json({ status: 'success', message: `Command '${command}' sent` });
+    } catch (error) {
+      next(error);
+    }
+  }
 
   // POST /api/machines/:machineId/notification
   async sendNotification(req, res, next) {
@@ -405,7 +456,7 @@ class ComputerController {
       );
 
       return res.json({
-        success: true,
+        status: 'success',
         message:
           `Notification sent to ${machineId}`
       });
@@ -414,6 +465,22 @@ class ComputerController {
     }
   }
 
+
+  async logoutByAddress(req, res, next) {
+    try {
+      const { ipAddress, macAddress } = req.body;
+      const machine = findMachineByAddress(ipAddress, macAddress);
+
+      if (!machine || !machine.socketId) {
+        return machineNotFoundResponse(res, ipAddress, macAddress);
+      }
+
+      computerSocketService.logout(machine.machineId);
+      return res.json({ status: 'success', message: 'Logout request sent' });
+    } catch (error) {
+      next(error);
+    }
+  }
 
   // POST /api/commands/broadcast
   async broadcastCommand(req, res, next) {
@@ -439,7 +506,7 @@ class ComputerController {
         );
 
         return res.json({
-          success: true,
+          status: 'success',
           message:
             'Broadcast notification sent to all machines'
         });
@@ -457,7 +524,7 @@ class ComputerController {
         );
 
         return res.json({
-          success: true,
+          status: 'success',
           message:
             `Broadcast command '${command}' ` +
             `sent to all machines`

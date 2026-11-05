@@ -20,6 +20,9 @@ namespace NexusControl.Models
         [JsonPropertyName("status")]
         public string? Status { get; set; }
 
+        [JsonPropertyName("memberId")]
+        public int? MemberId { get; set; }
+
         [JsonPropertyName("currentUsername")]
         public string? CurrentUsername { get; set; }
 

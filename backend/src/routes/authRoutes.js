@@ -6,6 +6,9 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 // Tuyến đường Đăng Nhập
 router.post('/login', authController.login);
 
+// Đăng nhập riêng cho ứng dụng Nexus Control (ADMIN/EMPLOYEE)
+router.post('/control-login', authController.controlLogin);
+
 // Tuyến đường Cấp mới Token qua Refresh Token (HttpOnly Cookie)
 router.post('/refresh', authController.refresh);
 

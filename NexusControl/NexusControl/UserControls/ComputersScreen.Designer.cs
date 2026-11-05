@@ -28,49 +28,9 @@
         /// </summary>
         private void InitializeComponent()
         {
-            dgv_Computer = new DataGridView();
-            computername = new DataGridViewTextBoxColumn();
-            btnRefresh = new Button();
             lblResult = new Label();
-            ((System.ComponentModel.ISupportInitialize)dgv_Computer).BeginInit();
+            tb_Computer = new AntdUI.Table();
             SuspendLayout();
-            // 
-            // dgv_Computer
-            // 
-            dgv_Computer.AllowUserToAddRows = false;
-            dgv_Computer.AllowUserToDeleteRows = false;
-            dgv_Computer.AllowUserToResizeRows = false;
-            dgv_Computer.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-            dgv_Computer.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            dgv_Computer.Columns.AddRange(new DataGridViewColumn[] { computername });
-            dgv_Computer.Dock = DockStyle.Fill;
-            dgv_Computer.Location = new Point(0, 0);
-            dgv_Computer.MultiSelect = false;
-            dgv_Computer.Name = "dgv_Computer";
-            dgv_Computer.ReadOnly = true;
-            dgv_Computer.RowHeadersVisible = false;
-            dgv_Computer.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgv_Computer.Size = new Size(663, 438);
-            dgv_Computer.TabIndex = 0;
-            // 
-            // computername
-            // 
-            computername.DataPropertyName = "ComputerName";
-            computername.HeaderText = "Tên máy";
-            computername.MinimumWidth = 6;
-            computername.Name = "computername";
-            computername.ReadOnly = true;
-            // 
-            // btnRefresh
-            // 
-            btnRefresh.Dock = DockStyle.Right;
-            btnRefresh.Location = new Point(663, 0);
-            btnRefresh.Name = "btnRefresh";
-            btnRefresh.Size = new Size(114, 438);
-            btnRefresh.TabIndex = 2;
-            btnRefresh.Text = "Tải lại";
-            btnRefresh.UseVisualStyleBackColor = true;
-            btnRefresh.Click += btnRefresh_Click;
             // 
             // lblResult
             // 
@@ -78,30 +38,36 @@
             lblResult.Location = new Point(0, 0);
             lblResult.Name = "lblResult";
             lblResult.Padding = new Padding(8, 0, 0, 0);
-            lblResult.Size = new Size(663, 438);
+            lblResult.Size = new Size(777, 438);
             lblResult.TabIndex = 1;
             lblResult.Text = "Đang tải...";
             lblResult.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // tb_Computer
+            // 
+            tb_Computer.Dock = DockStyle.Fill;
+            tb_Computer.Gap = 12;
+            tb_Computer.Location = new Point(0, 0);
+            tb_Computer.Name = "tb_Computer";
+            tb_Computer.Size = new Size(777, 438);
+            tb_Computer.TabIndex = 2;
+            tb_Computer.Text = "tb_Computer";
+            tb_Computer.CellClick += tb_Computer_CellClick;
             // 
             // ComputersScreen
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            Controls.Add(dgv_Computer);
+            Controls.Add(tb_Computer);
             Controls.Add(lblResult);
-            Controls.Add(btnRefresh);
             Name = "ComputersScreen";
             Size = new Size(777, 438);
             Load += ComputersScreen_Load;
-            ((System.ComponentModel.ISupportInitialize)dgv_Computer).EndInit();
             ResumeLayout(false);
         }
 
         #endregion
-
-        private DataGridView dgv_Computer;
-        private DataGridViewTextBoxColumn computername;
-        private Button btnRefresh;
         private Label lblResult;
+        private AntdUI.Table tb_Computer;
     }
 }

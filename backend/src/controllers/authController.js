@@ -148,16 +148,23 @@ class AuthController {
      * POST /api/auth/control-login
      * Đăng nhập dành riêng cho ứng dụng quản lý Nexus Control (chặn tài khoản MEMBER).
      */
-    async controlLogin(req, res) {
+    controlLogin = async (req, res) => {
         try {
             const { identity, username, password } = req.body;
             const targetUsername = username || identity;
 
             const result = await authService.controlLogin({ username: targetUsername, password });
 
+            this.setRefreshTokenCookie(res, result.refreshToken);
+
             return res.status(200).json({
                 status: 'success',
-                data: result,
+                data: {
+                    accessToken: result.accessToken,
+                    token: result.accessToken,
+                    tokenType: 'Bearer',
+                    user: result.user
+                },
                 message: 'Đăng nhập ứng dụng quản lý thành công!'
             });
         } catch (error) {
@@ -167,7 +174,7 @@ class AuthController {
                 message: error.message || 'Đăng nhập thất bại.'
             });
         }
-    }
+    };
 
     /**
      * GET /api/auth/me
