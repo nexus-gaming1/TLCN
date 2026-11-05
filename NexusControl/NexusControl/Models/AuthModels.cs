@@ -13,8 +13,14 @@ namespace NexusControl.Models
 
     public class LoginResponseData
     {
+        [JsonPropertyName("accessToken")]
+        public string AccessToken { get; set; } = string.Empty;
+
         [JsonPropertyName("token")]
         public string Token { get; set; } = string.Empty;
+
+        [JsonPropertyName("refreshToken")]
+        public string? RefreshToken { get; set; }
 
         [JsonPropertyName("tokenType")]
         public string TokenType { get; set; } = "Bearer";

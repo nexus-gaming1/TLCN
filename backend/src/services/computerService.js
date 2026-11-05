@@ -81,7 +81,7 @@ class ComputerService {
       const now = new Date();
       const db = this.models;
       const computers = await db.Computer.findAll({
-        attributes: ['computer_id', 'computer_name', 'status'],
+        attributes: ['computer_id', 'computer_name', 'ip_address', 'mac_address', 'status'],
         include: [
           {
             model: db.ComputerZone,
@@ -145,6 +145,7 @@ class ComputerService {
           ipAddress: computer.ip_address,
           macAddress: computer.mac_address,
           status: computer.status,
+          memberId: session?.member_id || null,
           currentUsername: user?.username || null,
           sessionStartedAt: session?.started_at || null,
           zoneName: zone?.zone_name || null,

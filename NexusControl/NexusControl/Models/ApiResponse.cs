@@ -11,6 +11,9 @@ namespace NexusControl.Models
         [JsonPropertyName("message")]
         public string? Message { get; set; }
 
+        [JsonPropertyName("error")]
+        public string? ErrorMessage { get; set; }
+
         [JsonPropertyName("data")]
         public T? Data { get; set; }
 

@@ -42,6 +42,23 @@ class TransactionController {
     }
   }
 
+  async createWithdraw(req, res, next) {
+      try {
+        const payload = {
+          ...req.body,
+          processed_by: req.user ? req.user.user_id : req.body.processed_by
+        };
+        const newTxn = await transactionService.createWithdrawTransaction(payload);
+        return res.status(201).json({
+          status: 'success',
+          data: newTxn,
+          message: 'Rút tiền tại quầy thành công'
+        });
+      } catch (error) {
+        next(error);
+    }
+  }
+
   async refundTransaction(req, res, next) {
     try {
       const { id } = req.params;

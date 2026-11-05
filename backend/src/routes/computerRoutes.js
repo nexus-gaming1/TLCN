@@ -13,25 +13,33 @@ router.get('/grid', computerController.getRoomLayoutGrid);
 router.get('/zones', computerController.getZones);
 router.get('/bootrom-logs', computerController.getBootromLogs);
 router.post('/wake-on-lan', computerController.wakeOnLan);
-router.get('/machinestore',
-    computerController.getMachines);
-router.patch('/:id/status', computerController.changeStatus);
-router.post('/:id/switch', computerController.switchStation);
-
 router.get('/overview', computerController.getComputerOverview);
+router.get('/machinestore', computerController.getMachines);
+
+router.post(
+    '/by-address/logout',
+    computerController.logoutByAddress
+);
+
+router.post(
+    '/by-address/command',
+    computerController.sendCommandByAddress
+);
 
 // Hardware Profile & Specs Management (Protected)
 router.get('/specs', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getHardwareSpecs);
 router.post('/specs', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.createHardwareSpec);
 router.put('/specs/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.updateHardwareSpec);
 router.delete('/specs/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.deleteHardwareSpec);
+
 router.get('/', computerController.getComputers);
-router.get('/:id', computerController.getComputerById);
 router.post('/', computerController.createComputer);
+
+router.patch('/:id/status', computerController.changeStatus);
+router.post('/:id/switch', computerController.switchStation);
+router.get('/:id', computerController.getComputerById);
 router.put('/:id', computerController.updateComputer);
 router.delete('/:id', computerController.deleteComputer);
-
-
 
 router.post(
     "/:machineId/login",
@@ -52,7 +60,5 @@ router.post(
     "/:machineId/notification",
     computerController.sendNotification
 );
-
-
 
 module.exports = router;
