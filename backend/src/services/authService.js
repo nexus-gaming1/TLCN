@@ -51,6 +51,7 @@ class AuthService {
     const tokenPayload = {
       user_id: user.user_id,
       username: user.username,
+      member_id: user.memberProfile?.member_id || null,
       role: user.role,
     };
 

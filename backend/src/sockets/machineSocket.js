@@ -6,6 +6,7 @@ const HEARTBEAT_TIMEOUT_MS = 15000;
 const HEARTBEAT_CHECK_INTERVAL_MS = 5000;
 const ComputerStatus = require('../constants/enums').ComputerStatus;
 const { recordStatusChange } = require('../services/computerStatusLogService');
+const billingService = require('../services/billingService');
 
 function registerMachineSocket(io) {
 
@@ -14,6 +15,12 @@ function registerMachineSocket(io) {
             'machines:list',
             machineStore.getAll()
         );
+    }
+
+    function broadcastMachineUpdate(machine) {
+        if (machine) {
+            io.emit('machine:updated', machine);
+        }
     }
 
     // ========================================
@@ -27,21 +34,14 @@ function registerMachineSocket(io) {
                 for (const m of timedOutMachines) {
                     const computer = await findComputer(m);
                     if (computer) {
-                        const previousStatus = computer.status;
-                        computer.status = ComputerStatus.OFFLINE;
-                        await computer.save();
-                        await recordStatusChange(
-                            computer,
-                            previousStatus,
-                            ComputerStatus.OFFLINE,
-                            null
-                        );
+                        await closeActiveSessions(computer.computer_id);
+                        await syncComputerStatus(computer, ComputerStatus.OFFLINE);
                     }
                     console.log(
                         `[Socket.IO] Machine ${m.machineId} timed out (no heartbeat for > ${HEARTBEAT_TIMEOUT_MS / 1000}s). Status set to OFFLINE.`
                     );
                 }
-                broadcastUpdate();
+                timedOutMachines.forEach(broadcastMachineUpdate);
             }
         } catch (err) {
             console.error('[Socket.IO] Error checking heartbeat timeout:', err);
@@ -71,11 +71,37 @@ function registerMachineSocket(io) {
         });
     }
 
+    async function syncComputerStatus(computer, status, memberId = null) {
+        if (!computer || !Object.values(ComputerStatus).includes(status)) return;
+        const previousStatus = computer.status;
+        if (previousStatus === status) return;
+
+        computer.status = status;
+        await computer.save();
+        await recordStatusChange(computer, previousStatus, status, memberId);
+    }
+
+    async function closeActiveSessions(computerId) {
+        await db.RentalSession.update(
+            {
+                status: db.RentalSession.Status.LOGGED_OUT,
+                ended_at: new Date()
+            },
+            {
+                where: {
+                    computer_id: computerId,
+                    status: db.RentalSession.Status.ACTIVE
+                }
+            }
+        );
+    }
+
     io.on('connection', (socket) => {
 
         console.log(
             `[Socket.IO] New connection established: ${socket.id}`
         );
+        socket.emit('machines:list', machineStore.getAll());
 
         // ========================================
         // 1. Agent Registration
@@ -103,18 +129,26 @@ function registerMachineSocket(io) {
             }
             const computer = await findComputer(machine);
             if (computer) {
-                const activeCombo = await db.ComboTime.findOne({
+                const activeSession = await db.RentalSession.findOne({
                     where: {
                         computer_id: computer.computer_id,
-                        status: 'ACTIVE',
-                        end_time: { [Op.gt]: new Date() }
-                    }
+                        status: db.RentalSession.Status.ACTIVE
+                    },
+                    include: [{
+                        model: db.Member,
+                        as: 'member',
+                        include: [{ model: db.User, as: 'userInfo', attributes: ['username'] }]
+                    }]
                 });
 
+                const hasActiveLocalSession = data.status === ComputerStatus.IN_USE;
                 const previousStatus = computer.status;
-                if (activeCombo) {
+                if (activeSession && hasActiveLocalSession) {
                     computer.status = ComputerStatus.IN_USE;
                 } else if (computer.status !== ComputerStatus.MAINTENANCE) {
+                    if (activeSession) {
+                        await closeActiveSessions(computer.computer_id);
+                    }
                     computer.status = data.status || ComputerStatus.ONLINE;
                 }
 
@@ -125,9 +159,12 @@ function registerMachineSocket(io) {
                     computer.status,
                     null
                 );
+                machine.currentUser = hasActiveLocalSession
+                    ? activeSession?.member?.userInfo?.username || null
+                    : null;
 
                 // Fail-closed security: if no active session, ensure overlay lock is maintained on agent
-                if (!activeCombo) {
+                if (!hasActiveLocalSession) {
                     try {
                         const computerSocketService = require('../services/computerSocketService');
                         computerSocketService.logout(data.machineId);
@@ -140,7 +177,7 @@ function registerMachineSocket(io) {
                 `machine:${data.machineId}`
             );
 
-            broadcastUpdate();
+            broadcastMachineUpdate(machine);
         });
 
 
@@ -148,7 +185,7 @@ function registerMachineSocket(io) {
         // 2. Heartbeat
         // ========================================
 
-        socket.on('heartbeat', (data) => {
+        socket.on('heartbeat', async (data) => {
             if (!data) return;
 
             const machine =
@@ -158,13 +195,21 @@ function registerMachineSocket(io) {
                 );
 
             if (machine) {
-                io.emit(
+                    const computer = await findComputer(machine);
+                    if (computer && Object.values(ComputerStatus).includes(data.status)) {
+                        if (data.status === ComputerStatus.OFFLINE) {
+                            await closeActiveSessions(computer.computer_id);
+                        }
+                        await syncComputerStatus(computer, data.status);
+                    }
+                    io.emit(
                     'machine:heartbeat',
                     {
                         machineId: machine.machineId,
                         performance: machine.performance
                     }
                 );
+                    broadcastMachineUpdate(machine);
             }
         });
 
@@ -188,19 +233,17 @@ function registerMachineSocket(io) {
             );
             const computer = await findComputer(updated);
             if (computer) {
-                const previousStatus = computer.status;
-                computer.status = data.status || ComputerStatus.ONLINE;
-                await computer.save();
-                await recordStatusChange(
+                if (data.status === ComputerStatus.OFFLINE) {
+                    await closeActiveSessions(computer.computer_id);
+                }
+                await syncComputerStatus(
                     computer,
-                    previousStatus,
-                    computer.status,
-                    null
+                    data.status || ComputerStatus.ONLINE
                 );
             }
 
             if (updated) {
-                broadcastUpdate();
+                broadcastMachineUpdate(updated);
             }
         });
 
@@ -231,26 +274,57 @@ function registerMachineSocket(io) {
 
                 // Chỉ cho phép cập nhật nếu ACK gửi từ đúng socket hiện tại của machine
                 if (machine && machine.socketId === socket.id) {
+                    const computer = await findComputer(machine);
+                    if (!computer) {
+                        socket.emit('session:reject', {
+                            code: 'MACHINE_NOT_FOUND',
+                            message: 'Không tìm thấy máy trạm đã đăng ký.'
+                        });
+                        return;
+                    }
+                    const user = await db.User.findOne({
+                        where: { username: data.username },
+                        include: [{
+                            model: db.Member,
+                            as: 'memberProfile',
+                            attributes: ['member_id'],
+                            required: false
+                        }]
+                    });
+                    const memberId = user?.memberProfile?.member_id || null;
+                    if (!memberId) {
+                        socket.emit('session:reject', {
+                            code: 'MEMBER_REQUIRED',
+                            message: 'Tài khoản chưa có hồ sơ hội viên.'
+                        });
+                        return;
+                    }
+
+                    const authorization = await billingService.authorizeLogin({
+                        username: data.username,
+                        computerId: computer.computer_id
+                    });
+                    if (!authorization.allowed) {
+                        socket.emit('session:reject', {
+                            code: authorization.code,
+                            message: authorization.message
+                        });
+                        return;
+                    }
+
+                    await billingService.startSession({
+                        memberId,
+                        computerId: computer.computer_id,
+                        combo: authorization.combo
+                    });
                     machine.status = 'IN_USE';
                     machine.currentUser =
                         data.username;
                     machine.lastStatusChange = new Date().toISOString();
-                    const computer = await findComputer(machine);
                     if (computer) {
                         const previousStatus = computer.status;
                         computer.status = ComputerStatus.IN_USE;
                         await computer.save();
-                        const user = await db.User.findOne({
-                            where: { username: data.username },
-                            attributes: ['user_id'],
-                            include: [{
-                                model: db.Member,
-                                as: 'memberProfile',
-                                attributes: ['member_id'],
-                                required: false
-                            }]
-                        });
-                        const memberId = user?.memberProfile?.member_id || null;
                         await recordStatusChange(
                             computer,
                             previousStatus,
@@ -258,7 +332,7 @@ function registerMachineSocket(io) {
                             memberId
                         );
                     }
-                    broadcastUpdate();
+                    broadcastMachineUpdate(machine);
                 }
             }
         });
@@ -286,10 +360,6 @@ function registerMachineSocket(io) {
                 if (machine && machine.socketId === socket.id) {
                     const computer = await findComputer(machine);
                     if (computer) {
-                        const previousStatus = computer.status;
-                        computer.status = ComputerStatus.ONLINE;
-                        await computer.save();
-
                         // Lấy thông tin user / member trước khi xóa khỏi machine
                         let memberId = null;
                         const usernameToLog = data?.username || machine.currentUser;
@@ -306,19 +376,29 @@ function registerMachineSocket(io) {
                             });
                             memberId = user?.memberProfile?.member_id || null;
                         }
+                        if (memberId) {
+                            await db.RentalSession.update(
+                                {
+                                    status: db.RentalSession.Status.LOGGED_OUT,
+                                    ended_at: new Date()
+                                },
+                                {
+                                    where: {
+                                        computer_id: computer.computer_id,
+                                        member_id: memberId,
+                                        status: db.RentalSession.Status.ACTIVE
+                                    }
+                                }
+                            );
+                        }
 
-                        await recordStatusChange(
-                            computer,
-                            previousStatus,
-                            ComputerStatus.ONLINE,
-                            memberId
-                        );
+                        await syncComputerStatus(computer, ComputerStatus.ONLINE, memberId);
                     }
                     machine.status = ComputerStatus.ONLINE;
                     machine.currentUser = null;
                     machine.lastStatusChange = new Date().toISOString();
 
-                    broadcastUpdate();
+                    broadcastMachineUpdate(machine);
                 }
             }
         };
@@ -367,17 +447,10 @@ function registerMachineSocket(io) {
                 );
                 const computer = await findComputer(disconnected.machine);
                 if (computer) {
-                    const previousStatus = computer.status;
-                    computer.status = ComputerStatus.OFFLINE;
-                    await computer.save();
-                    await recordStatusChange(
-                        computer,
-                        previousStatus,
-                        ComputerStatus.OFFLINE,
-                        null
-                    );
+                    await closeActiveSessions(computer.computer_id);
+                    await syncComputerStatus(computer, ComputerStatus.OFFLINE);
                 }
-                broadcastUpdate();
+                broadcastMachineUpdate(disconnected.machine);
             }
         });
 

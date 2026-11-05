@@ -18,6 +18,8 @@ router.get('/machinestore',
 router.patch('/:id/status', computerController.changeStatus);
 router.post('/:id/switch', computerController.switchStation);
 
+router.get('/overview', computerController.getComputerOverview);
+
 // Hardware Profile & Specs Management (Protected)
 router.get('/specs', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getHardwareSpecs);
 router.post('/specs', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.createHardwareSpec);
@@ -54,4 +56,3 @@ router.post(
 
 
 module.exports = router;
-

@@ -105,6 +105,20 @@ class ComputerController {
     }
   }
 
+  async getComputerOverview(req, res, next) {
+    try {
+      const computers = await computerService.getComputerOverview();
+
+      return res.json({
+        status: 'success',
+        data: computers,
+        message: 'Lấy tổng quan máy trạm thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
 
   // GET /api/computers/:id
   async getComputerById(req, res, next) {

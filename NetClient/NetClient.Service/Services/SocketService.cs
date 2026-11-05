@@ -231,6 +231,25 @@ public class SocketService : BackgroundService
             }
         });
 
+        _client.On("session:reject", async ctx =>
+        {
+            try
+            {
+                var rejection = ctx.GetValue<SessionRejectPayload>(0);
+                _sessionService.Logout();
+                await _ipcServerService.SetUsernameAsync(string.Empty);
+                await _ipcServerService.SetStatusAsync(MachineStatus.ONLINE.ToString());
+                await _ipcServerService.ShowOverlayAsync();
+                await _ipcServerService.SendLoginResultAsync(
+                    false,
+                    rejection?.Message ?? "Không thể bắt đầu phiên sử dụng máy.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling session rejection");
+            }
+        });
+
         // 3. Listen for session:logout event
         _client.On("session:logout", async ctx =>
         {

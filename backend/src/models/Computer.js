@@ -80,6 +80,7 @@ module.exports = (sequelize) => {
     Computer.belongsTo(models.HardwareProfile, { foreignKey: 'hardware_profile_id' });
     Computer.belongsToMany(models.Game, { through: models.ComputerGame, foreignKey: 'computer_id' });
     Computer.hasMany(models.ComputerStatusLog, { foreignKey: 'computer_id' });
+    Computer.hasMany(models.RentalSession, { foreignKey: 'computer_id', as: 'rentalSessions' });
   };
 
   return Computer;
