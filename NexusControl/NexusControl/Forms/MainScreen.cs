@@ -97,5 +97,10 @@ namespace NexusControl.Forms
             Form Login = new LoginScreen();
             Login.ShowDialog();
         }
+
+        private void table1_CellClick(object sender, AntdUI.TableClickEventArgs e)
+        {
+
+        }
     }
 }

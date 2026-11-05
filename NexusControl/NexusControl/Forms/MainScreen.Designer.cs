@@ -28,12 +28,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            AntdUI.MenuItem menuItem19 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem20 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem21 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem22 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem23 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem24 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem7 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem8 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem9 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem10 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem11 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem12 = new AntdUI.MenuItem();
             panel1 = new AntdUI.Panel();
             menu1 = new AntdUI.Menu();
             tableLayoutPanel1 = new TableLayoutPanel();
@@ -52,6 +52,8 @@
             ChangeAccount = new ToolStripMenuItem();
             ManageAccount = new ToolStripMenuItem();
             helpProvider1 = new HelpProvider();
+            table1 = new AntdUI.Table();
+            panel1.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             menuStrip1.SuspendLayout();
             SuspendLayout();
@@ -59,6 +61,7 @@
             // panel1
             // 
             panel1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            panel1.Controls.Add(table1);
             panel1.Location = new Point(0, 84);
             panel1.Name = "panel1";
             panel1.Size = new Size(800, 342);
@@ -71,31 +74,31 @@
             menu1.AutoCollapse = true;
             menu1.BackActive = Color.AliceBlue;
             menu1.BackColor = SystemColors.ActiveCaption;
-            menuItem19.ID = "maytram";
-            menuItem19.Name = "maytram";
-            menuItem19.Text = "MÁY TRẠM";
-            menuItem20.ID = "taikhoan";
-            menuItem20.LocalizationText = "";
-            menuItem20.Name = "taikhoan";
-            menuItem20.Text = "TÀI KHOẢN";
-            menuItem21.ID = "systemlog";
-            menuItem21.Name = "systemlog";
-            menuItem21.Text = "NHẬT KÍ HỆ THỐNG";
-            menuItem22.ID = "translog";
-            menuItem22.Name = "translog";
-            menuItem22.Text = "NHẬT KÍ GIAO DỊCH";
-            menuItem23.ID = "nhommay";
-            menuItem23.Name = "nhommay";
-            menuItem23.Text = "NHÓM MÁY";
-            menuItem24.ID = "nhomnguoisudung";
-            menuItem24.Name = "nhomnguoisudung";
-            menuItem24.Text = "NHÓM NGƯỜI SỬ DỤNG";
-            menu1.Items.Add(menuItem19);
-            menu1.Items.Add(menuItem20);
-            menu1.Items.Add(menuItem21);
-            menu1.Items.Add(menuItem22);
-            menu1.Items.Add(menuItem23);
-            menu1.Items.Add(menuItem24);
+            menuItem7.ID = "maytram";
+            menuItem7.Name = "maytram";
+            menuItem7.Text = "MÁY TRẠM";
+            menuItem8.ID = "taikhoan";
+            menuItem8.LocalizationText = "";
+            menuItem8.Name = "taikhoan";
+            menuItem8.Text = "TÀI KHOẢN";
+            menuItem9.ID = "systemlog";
+            menuItem9.Name = "systemlog";
+            menuItem9.Text = "NHẬT KÍ HỆ THỐNG";
+            menuItem10.ID = "translog";
+            menuItem10.Name = "translog";
+            menuItem10.Text = "NHẬT KÍ GIAO DỊCH";
+            menuItem11.ID = "nhommay";
+            menuItem11.Name = "nhommay";
+            menuItem11.Text = "NHÓM MÁY";
+            menuItem12.ID = "nhomnguoisudung";
+            menuItem12.Name = "nhomnguoisudung";
+            menuItem12.Text = "NHÓM NGƯỜI SỬ DỤNG";
+            menu1.Items.Add(menuItem7);
+            menu1.Items.Add(menuItem8);
+            menu1.Items.Add(menuItem9);
+            menu1.Items.Add(menuItem10);
+            menu1.Items.Add(menuItem11);
+            menu1.Items.Add(menuItem12);
             menu1.Location = new Point(0, 28);
             menu1.Mode = AntdUI.TMenuMode.Horizontal_Arrow;
             menu1.Name = "menu1";
@@ -223,15 +226,25 @@
             // ChangeAccount
             // 
             ChangeAccount.Name = "ChangeAccount";
-            ChangeAccount.Size = new Size(224, 26);
+            ChangeAccount.Size = new Size(214, 26);
             ChangeAccount.Text = "Thay đổi tài khoản";
             ChangeAccount.Click += ChangeAccount_Click;
             // 
             // ManageAccount
             // 
             ManageAccount.Name = "ManageAccount";
-            ManageAccount.Size = new Size(224, 26);
+            ManageAccount.Size = new Size(214, 26);
             ManageAccount.Text = "Quản lý tài khoản";
+            // 
+            // table1
+            // 
+            table1.Gap = 12;
+            table1.Location = new Point(503, 82);
+            table1.Name = "table1";
+            table1.Size = new Size(94, 29);
+            table1.TabIndex = 0;
+            table1.Text = "table1";
+            table1.CellClick += table1_CellClick;
             // 
             // MainScreen
             // 
@@ -247,6 +260,7 @@
             Text = "Form1";
             Load += MainScreen_Load;
             Shown += MainScreen_Shown;
+            panel1.ResumeLayout(false);
             tableLayoutPanel1.ResumeLayout(false);
             menuStrip1.ResumeLayout(false);
             menuStrip1.PerformLayout();
@@ -273,5 +287,6 @@
         private ToolStripMenuItem ChangeAccount;
         private ToolStripMenuItem ManageAccount;
         private HelpProvider helpProvider1;
+        private AntdUI.Table table1;
     }
 }

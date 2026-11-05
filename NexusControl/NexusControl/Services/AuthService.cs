@@ -42,9 +42,24 @@ namespace NexusControl.Services
 
             var response = await _apiClient.PostAsync<LoginResponseData>("/auth/control-login", request, cancellationToken);
 
-            if (response.IsSuccess && response.Data?.User != null && !string.IsNullOrWhiteSpace(response.Data.Token))
+            var accessToken = response.Data?.AccessToken ?? response.Data?.Token;
+            if (response.IsSuccess && response.Data?.User != null && !string.IsNullOrWhiteSpace(accessToken))
             {
-                _sessionService.SetSession(response.Data.Token, response.Data.User);
+                _sessionService.SetSession(accessToken, response.Data.User, response.Data.RefreshToken);
+            }
+
+            return response;
+        }
+
+        public async Task<ApiResponse<LoginResponseData>> RefreshAsync(
+            CancellationToken cancellationToken = default)
+        {
+            var response = await _apiClient.PostAsync<LoginResponseData>("/auth/refresh", null, cancellationToken);
+            var accessToken = response.Data?.AccessToken ?? response.Data?.Token;
+
+            if (response.IsSuccess && response.Data?.User != null && !string.IsNullOrWhiteSpace(accessToken))
+            {
+                _sessionService.SetSession(accessToken, response.Data.User, response.Data.RefreshToken);
             }
 
             return response;
@@ -68,9 +83,16 @@ namespace NexusControl.Services
             return ApiResponse<UserDto>.Error(response.Message ?? "Không thể lấy thông tin người dùng từ máy chủ.");
         }
 
-        public void Logout()
+        public async Task LogoutAsync(CancellationToken cancellationToken = default)
         {
-            _sessionService.ClearSession();
+            try
+            {
+                await _apiClient.PostAsync<object>("/auth/logout", null, cancellationToken);
+            }
+            finally
+            {
+                _sessionService.ClearSession();
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -35,15 +36,26 @@ namespace NexusControl.Services
             string defaultUrl = Environment.GetEnvironmentVariable("NEXUS_API_URL") ?? "http://localhost:3001/api";
             _baseUrl = (baseUrl ?? defaultUrl).TrimEnd('/');
 
-            _httpClient = httpClient ?? new HttpClient
-            {
-                Timeout = TimeSpan.FromSeconds(15)
-            };
+            _httpClient = httpClient ?? CreateHttpClient();
 
             _jsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
                 PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+        }
+
+        private static HttpClient CreateHttpClient()
+        {
+            var handler = new HttpClientHandler
+            {
+                UseCookies = true,
+                CookieContainer = new CookieContainer()
+            };
+
+            return new HttpClient(handler)
+            {
+                Timeout = TimeSpan.FromSeconds(15)
             };
         }
 
@@ -79,7 +91,8 @@ namespace NexusControl.Services
             HttpMethod method,
             string endpoint,
             object? body,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            bool allowRefresh = true)
         {
             string fullUrl = BuildUrl(endpoint);
 
@@ -131,6 +144,33 @@ namespace NexusControl.Services
 
                 if (responseMessage.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                 {
+                    if (allowRefresh && UserSessionService.IsLoggedIn && !IsAuthEndpoint(endpoint))
+                    {
+                        var refreshResponse = await SendRequestAsync<LoginResponseData>(
+                            HttpMethod.Post,
+                            "/auth/refresh",
+                            null,
+                            cancellationToken,
+                            false);
+                        var refreshedAccessToken = refreshResponse.Data?.AccessToken ?? refreshResponse.Data?.Token;
+
+                        if (refreshResponse.IsSuccess &&
+                            refreshResponse.Data?.User != null &&
+                            !string.IsNullOrWhiteSpace(refreshedAccessToken))
+                        {
+                            UserSessionService.Current.SetSession(
+                                refreshedAccessToken,
+                                refreshResponse.Data.User,
+                                refreshResponse.Data.RefreshToken);
+                            return await SendRequestAsync<T>(
+                                method,
+                                endpoint,
+                                body,
+                                cancellationToken,
+                                false);
+                        }
+                    }
+
                     if (UserSessionService.IsLoggedIn)
                     {
                         UserSessionService.Current.ClearSession();
@@ -138,6 +178,7 @@ namespace NexusControl.Services
                 }
 
                 string errorMessage = parsedResponse?.Message
+                    ?? parsedResponse?.ErrorMessage
                     ?? $"Yêu cầu thất bại với mã trạng thái HTTP {(int)responseMessage.StatusCode} ({responseMessage.StatusCode}).";
 
                 return ApiResponse<T>.Error(errorMessage, parsedResponse != null ? parsedResponse.Data : default);
@@ -166,6 +207,14 @@ namespace NexusControl.Services
 
             string cleanEndpoint = endpoint.TrimStart('/');
             return $"{_baseUrl}/{cleanEndpoint}";
+        }
+
+        private static bool IsAuthEndpoint(string endpoint)
+        {
+            return endpoint.Contains("/auth/login", StringComparison.OrdinalIgnoreCase) ||
+                   endpoint.Contains("/auth/control-login", StringComparison.OrdinalIgnoreCase) ||
+                   endpoint.Contains("/auth/refresh", StringComparison.OrdinalIgnoreCase) ||
+                   endpoint.Contains("/auth/logout", StringComparison.OrdinalIgnoreCase);
         }
         #endregion
     }

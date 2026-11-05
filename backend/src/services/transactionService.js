@@ -197,6 +197,51 @@ class TransactionService {
   }
 
   /**
+   * Rút tiền tại quầy cho hội viên đang sử dụng máy.
+   */
+  async createWithdrawTransaction(data) {
+    const { member_id, amount, description, processed_by } = data;
+    const withdrawAmount = parseFloat(amount || 0);
+
+    if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
+      throw new ValidationError('Số tiền rút không hợp lệ (phải lớn hơn 0)');
+    }
+    if (!member_id) {
+      throw new ValidationError('Thiếu thông tin mã hội viên cần rút tiền');
+    }
+    if (!processed_by) {
+      throw new ValidationError('Thiếu thông tin nhân viên thu ngân thực hiện rút tiền (processed_by)');
+    }
+
+    return this.transactionRepo.runInTransaction(async (t) => {
+      const member = await this.memberRepo.findMemberWithLock(member_id, t);
+      if (!member) {
+        throw new NotFoundError('Không tìm thấy tài khoản hội viên');
+      }
+
+      const currentBalance = parseFloat(member.real_balance || 0);
+      if (currentBalance < withdrawAmount) {
+        throw new BusinessLogicError('Số dư tài khoản không đủ để rút tiền');
+      }
+
+      member.real_balance = currentBalance - withdrawAmount;
+      await this.memberRepo.saveMember(member, t);
+
+      return this.transactionRepo.create({
+        type: TransactionType.EXPENSE,
+        category: TransactionCategory.MEMBER_WITHDRAW,
+        amount: withdrawAmount,
+        payment_method: 'CASH',
+        status: TransactionStatusEnum.COMPLETED,
+        description: description || `Rút tiền tại quầy cho ${member.userInfo ? member.userInfo.full_name : 'hội viên'}`,
+        used_by: member.member_id,
+        processed_by,
+        created_at: new Date()
+      }, { transaction: t });
+    });
+  }
+
+  /**
    * Bước 1: Xử lý Nạp Tiền Tự Động dùng chung cho mọi nguồn thanh toán (Internal Standard DTO)
    * Giữ TransactionService thuần khiết 100%, không phụ thuộc cấu trúc của bất kỳ bên thứ 3 nào.
    * @param {Object} payload
