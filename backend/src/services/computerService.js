@@ -79,6 +79,7 @@ class ComputerService {
   async getComputerOverview() {
     try {
       const now = new Date();
+      const db = this.models;
       const computers = await db.Computer.findAll({
         attributes: ['computer_id', 'computer_name', 'status'],
         include: [
