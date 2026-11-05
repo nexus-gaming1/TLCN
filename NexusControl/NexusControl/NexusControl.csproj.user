@@ -7,5 +7,11 @@
     <Compile Update="Forms\MainScreen.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Views\OrderCardView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Update="Views\OrderManagementView.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
   </ItemGroup>
 </Project>
