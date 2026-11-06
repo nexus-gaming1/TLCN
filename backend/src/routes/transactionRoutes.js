@@ -11,6 +11,8 @@ const { verifySePayWebhook } = require('../middleware/webhookAuthMiddleware');
 router.get('/', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), transactionController.getTransactions);
 router.post('/topup', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), transactionController.createTopUp);
 router.post('/withdraw', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), transactionController.createWithdraw);
+router.post('/bonus-topup', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), transactionController.createBonusTopUp);
+router.post('/bonus-withdraw', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), transactionController.createBonusWithdraw);
 router.post('/:id/refund', authenticateToken, authorizeRoles(UserRole.ADMIN), transactionController.refundTransaction);
 
 // Alias tương thích ngược cho Webhook SePay (Khuyến nghị dùng route chính /api/webhooks/sepay)

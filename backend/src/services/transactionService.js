@@ -206,6 +206,7 @@ class TransactionService {
     if (isNaN(withdrawAmount) || withdrawAmount <= 0) {
       throw new ValidationError('Số tiền rút không hợp lệ (phải lớn hơn 0)');
     }
+
     if (!member_id) {
       throw new ValidationError('Thiếu thông tin mã hội viên cần rút tiền');
     }
@@ -234,6 +235,58 @@ class TransactionService {
         payment_method: 'CASH',
         status: TransactionStatusEnum.COMPLETED,
         description: description || `Rút tiền tại quầy cho ${member.userInfo ? member.userInfo.full_name : 'hội viên'}`,
+        used_by: member.member_id,
+        processed_by,
+        created_at: new Date()
+      }, { transaction: t });
+    });
+  }
+
+  async createBonusTopUpTransaction(data) {
+    return this.createBonusBalanceTransaction(data, true);
+  }
+
+  async createBonusWithdrawTransaction(data) {
+    return this.createBonusBalanceTransaction(data, false);
+  }
+
+  async createBonusBalanceTransaction(data, isTopUp) {
+    const { member_id, amount, description, processed_by } = data;
+    const bonusAmount = parseFloat(amount || 0);
+
+    if (!Number.isFinite(bonusAmount) || bonusAmount <= 0) {
+      throw new ValidationError('Số tiền miễn phí không hợp lệ (phải lớn hơn 0)');
+    }
+    if (!member_id) {
+      throw new ValidationError('Thiếu thông tin mã hội viên cần cập nhật tiền miễn phí');
+    }
+    if (!processed_by) {
+      throw new ValidationError('Thiếu thông tin nhân viên thực hiện giao dịch tiền miễn phí (processed_by)');
+    }
+
+    return this.transactionRepo.runInTransaction(async (t) => {
+      const member = await this.memberRepo.findMemberWithLock(member_id, t);
+      if (!member) {
+        throw new NotFoundError('Không tìm thấy tài khoản hội viên');
+      }
+
+      const currentBonusBalance = parseFloat(member.bonus_balance || 0);
+      if (!isTopUp && currentBonusBalance < bonusAmount) {
+        throw new BusinessLogicError('Số dư miễn phí không đủ để trừ');
+      }
+
+      member.bonus_balance = isTopUp
+        ? currentBonusBalance + bonusAmount
+        : currentBonusBalance - bonusAmount;
+      await this.memberRepo.saveMember(member, t);
+
+      return this.transactionRepo.create({
+        type: isTopUp ? TransactionType.INCOME : TransactionType.EXPENSE,
+        category: TransactionCategory.OTHER,
+        amount: bonusAmount,
+        payment_method: 'CASH',
+        status: TransactionStatusEnum.COMPLETED,
+        description: description || `${isTopUp ? 'Tặng' : 'Trừ'} tiền miễn phí cho ${member.userInfo ? member.userInfo.full_name : 'hội viên'}`,
         used_by: member.member_id,
         processed_by,
         created_at: new Date()

@@ -335,6 +335,7 @@ public class SocketService : BackgroundService
                 MachineId = _sessionService.MachineId,
                 Status = _sessionService.CurrentStatus.ToString(),
                 Username = _sessionService.CurrentUser,
+                MemberId = _sessionService.CurrentMemberId,
                 Timestamp = DateTime.UtcNow.ToString("o"),
                 Performance = perf
             };
@@ -385,7 +386,7 @@ public class SocketService : BackgroundService
                 return;
             }
 
-            if (!_sessionService.Login(result.Username))
+            if (!_sessionService.Login(result.Username, result.MemberId))
             {
                 await _ipcServerService.SendLoginResultAsync(false, "Không thể khởi tạo phiên làm việc.");
                 return;

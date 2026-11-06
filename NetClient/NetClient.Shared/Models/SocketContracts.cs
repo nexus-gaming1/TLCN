@@ -34,6 +34,9 @@ public class HeartbeatPayload
     [JsonPropertyName("username")]
     public string? Username { get; set; }
 
+    [JsonPropertyName("memberId")]
+    public int? MemberId { get; set; }
+
     [JsonPropertyName("timestamp")]
     public string Timestamp { get; set; } = string.Empty;
 

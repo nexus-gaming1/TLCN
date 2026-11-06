@@ -18,5 +18,11 @@ namespace NexusControl.Models
 
         [JsonPropertyName("currentUser")]
         public string? CurrentUser { get; set; }
+
+        [JsonPropertyName("memberId")]
+        public int? MemberId { get; set; }
+
+        [JsonPropertyName("sessionStartedAt")]
+        public System.DateTime? SessionStartedAt { get; set; }
     }
 }

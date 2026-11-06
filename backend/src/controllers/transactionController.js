@@ -56,8 +56,42 @@ class TransactionController {
         });
       } catch (error) {
         next(error);
-    }
+      }
   }
+
+  async createBonusTopUp(req, res, next) {
+      try {
+        const payload = {
+          ...req.body,
+          processed_by: req.user ? req.user.user_id : req.body.processed_by
+        };
+        const newTxn = await transactionService.createBonusTopUpTransaction(payload);
+        return res.status(201).json({
+          status: 'success',
+          data: newTxn,
+          message: 'Tặng tiền miễn phí thành công'
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
+
+  async createBonusWithdraw(req, res, next) {
+      try {
+        const payload = {
+          ...req.body,
+          processed_by: req.user ? req.user.user_id : req.body.processed_by
+        };
+        const newTxn = await transactionService.createBonusWithdrawTransaction(payload);
+        return res.status(201).json({
+          status: 'success',
+          data: newTxn,
+          message: 'Trừ tiền miễn phí thành công'
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
 
   async refundTransaction(req, res, next) {
     try {

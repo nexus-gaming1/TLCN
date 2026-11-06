@@ -38,7 +38,8 @@ public sealed class AuthApiService
             return new AuthLoginResult(
                 true,
                 null,
-                payload.Data.User.Username);
+                payload.Data.User.Username,
+                payload.Data.User.MemberId);
         }
 
         var message = payload?.Message;
@@ -49,7 +50,7 @@ public sealed class AuthApiService
                 : $"Backend từ chối đăng nhập (HTTP {(int)response.StatusCode}).";
         }
 
-        return new AuthLoginResult(false, message, null);
+        return new AuthLoginResult(false, message, null, null);
     }
 
     private sealed class AuthLoginResponse
@@ -74,7 +75,18 @@ public sealed class AuthApiService
     {
         [JsonPropertyName("username")]
         public string? Username { get; set; }
+
+        [JsonPropertyName("memberProfile")]
+        public AuthMemberProfile? MemberProfile { get; set; }
+
+        public int? MemberId => MemberProfile?.MemberId;
+    }
+
+    private sealed class AuthMemberProfile
+    {
+        [JsonPropertyName("member_id")]
+        public int MemberId { get; set; }
     }
 }
 
-public sealed record AuthLoginResult(bool Success, string? Error, string? Username);
+public sealed record AuthLoginResult(bool Success, string? Error, string? Username, int? MemberId);

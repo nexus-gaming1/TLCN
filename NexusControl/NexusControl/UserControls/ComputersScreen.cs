@@ -178,6 +178,9 @@ namespace NexusControl.UserControls
 
             row.Status = ComputerGridRow.ToFriendlyStatus(machine.Status);
             row.CurrentUsername = ComputerGridRow.ValueOrPlaceholder(machine.CurrentUser);
+            row.MemberId = machine.MemberId;
+            row.SessionStartedAt = machine.SessionStartedAt?.ToLocalTime()
+                .ToString("dd/MM/yyyy HH:mm:ss") ?? "--";
             return true;
         }
 
@@ -252,13 +255,13 @@ namespace NexusControl.UserControls
 
         private sealed class ComputerGridRow
         {
-            public int? MemberId { get; init; }
+            public int? MemberId { get; set; }
             public string ComputerName { get; init; } = "--";
             public string? IpAddress { get; init; }
             public string? MacAddress { get; init; }
             public string Status { get; set; } = "--";
             public string CurrentUsername { get; set; } = "--";
-            public string SessionStartedAt { get; init; } = "--";
+            public string SessionStartedAt { get; set; } = "--";
             public string ZoneName { get; init; } = "--";
             public string HourlyRate { get; init; } = "--";
             public string HasActiveCombo { get; init; } = "Không";
@@ -336,6 +339,14 @@ namespace NexusControl.UserControls
                     {
                         ID = "withdraw"
                     },
+                    new AntdUI.ContextMenuStripItem("Tặng tiền miễn phí")
+                    {
+                        ID = "free_topup"
+                    },
+                    new AntdUI.ContextMenuStripItem("Trừ tiền miễn phí")
+                    {
+                        ID = "free_withdraw"
+                    },
                     new AntdUI.ContextMenuStripItem("combo")
                     {
                         ID = "combo"
@@ -366,6 +377,12 @@ namespace NexusControl.UserControls
                         break;
                     case "withdraw":
                         _ = WithdrawFromComputerAsync();
+                        break;
+                    case "free_topup":
+                        _ = ExecuteFreeBalanceActionAsync(true);
+                        break;
+                    case "free_withdraw":
+                        _ = ExecuteFreeBalanceActionAsync(false);
                         break;
                     case "combo":
                         ShowCombo();
@@ -415,6 +432,48 @@ namespace NexusControl.UserControls
                 ? await _computerApiService.TopUpAsync(memberId, amount)
                 : await _computerApiService.WithdrawAsync(memberId, amount);
             ShowActionResult(response, topUp ? "Nạp tiền" : "Rút tiền");
+        }
+
+        private async Task ExecuteFreeBalanceActionAsync(bool topUp)
+        {
+            if (_selectedComputer?.MemberId is not int memberId)
+            {
+                MessageBox.Show("Máy hiện chưa có hội viên đang đăng nhập.", "Không thể thực hiện", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            var balanceResponse = await _computerApiService.GetMemberBalanceAsync(memberId);
+            if (!balanceResponse.IsSuccess || balanceResponse.Data == null)
+            {
+                MessageBox.Show(balanceResponse.Message ?? "Không thể tải số dư hội viên.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            if (!AmountInputForm.TryShowFreeBalance(
+                this,
+                topUp ? "Tặng tiền miễn phí" : "Trừ tiền miễn phí",
+                balanceResponse.Data.RealBalance,
+                balanceResponse.Data.BonusBalance,
+                topUp,
+                out var amount))
+            {
+                return;
+            }
+
+            var response = topUp
+                ? await _computerApiService.AddFreeBalanceAsync(
+                    memberId,
+                    amount,
+                    $"Máy {_selectedComputer?.ComputerName ?? "--"} - nhân viên {_userSessionService.FullName ?? _userSessionService.Username ?? "--"}")
+                : await _computerApiService.DeductFreeBalanceAsync(
+                    memberId,
+                    amount,
+                    $"Máy {_selectedComputer?.ComputerName ?? "--"} - nhân viên {_userSessionService.FullName ?? _userSessionService.Username ?? "--"}");
+            ShowActionResult(response, topUp ? "Tặng tiền miễn phí" : "Trừ tiền miễn phí");
+            if (response.IsSuccess)
+            {
+                await ReloadAsync();
+            }
         }
         private void ShowCombo()
         {

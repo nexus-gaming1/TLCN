@@ -162,6 +162,12 @@ function registerMachineSocket(io) {
                 machine.currentUser = hasActiveLocalSession
                     ? activeSession?.member?.userInfo?.username || null
                     : null;
+                machine.memberId = hasActiveLocalSession
+                    ? activeSession?.member_id || null
+                    : null;
+                machine.sessionStartedAt = hasActiveLocalSession
+                    ? activeSession?.started_at || null
+                    : null;
 
                 // Fail-closed security: if no active session, ensure overlay lock is maintained on agent
                 if (!hasActiveLocalSession) {
@@ -195,6 +201,19 @@ function registerMachineSocket(io) {
                 );
 
             if (machine) {
+                    if (machine.currentUser && !machine.memberId) {
+                        const user = await db.User.findOne({
+                            where: { username: machine.currentUser },
+                            attributes: ['user_id'],
+                            include: [{
+                                model: db.Member,
+                                as: 'memberProfile',
+                                attributes: ['member_id'],
+                                required: false
+                            }]
+                        });
+                        machine.memberId = user?.memberProfile?.member_id || null;
+                    }
                     const computer = await findComputer(machine);
                     if (computer && Object.values(ComputerStatus).includes(data.status)) {
                         if (data.status === ComputerStatus.OFFLINE) {
@@ -312,7 +331,7 @@ function registerMachineSocket(io) {
                         return;
                     }
 
-                    await billingService.startSession({
+                    const rentalSession = await billingService.startSession({
                         memberId,
                         computerId: computer.computer_id,
                         combo: authorization.combo
@@ -320,6 +339,8 @@ function registerMachineSocket(io) {
                     machine.status = 'IN_USE';
                     machine.currentUser =
                         data.username;
+                    machine.memberId = memberId;
+                    machine.sessionStartedAt = rentalSession.started_at;
                     machine.lastStatusChange = new Date().toISOString();
                     if (computer) {
                         const previousStatus = computer.status;
@@ -396,6 +417,8 @@ function registerMachineSocket(io) {
                     }
                     machine.status = ComputerStatus.ONLINE;
                     machine.currentUser = null;
+                    machine.memberId = null;
+                    machine.sessionStartedAt = null;
                     machine.lastStatusChange = new Date().toISOString();
 
                     broadcastMachineUpdate(machine);
