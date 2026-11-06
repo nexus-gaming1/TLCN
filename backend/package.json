@@ -22,7 +22,9 @@
     "coverage:transactions": "c8 --include=src/controllers/transactionController.js --include=src/services/transactionService.js --include=src/routes/transactionRoutes.js --include=src/models/FinancialTransaction.js node --test tests/admin/transactions/**/*.test.js",
     "coverage:members": "c8 --include=src/controllers/memberController.js --include=src/routes/memberRoutes.js --include=src/services/memberService.js --include=src/models/Member.js node --test tests/admin/members/**/*.test.js",
     "test:hardware": "node --test tests/admin/hardware-config/**/*.test.js",
-    "coverage:hardware": "c8 --include=src/services/hardwareProfileService.js --include=src/services/telemetryService.js --include=src/validators/hardwareSpecValidator.js --include=src/dtos/hardwareProfileDto.js node --test tests/admin/hardware-config/**/*.test.js"
+    "coverage:hardware": "c8 --include=src/services/hardwareProfileService.js --include=src/services/telemetryService.js --include=src/validators/hardwareSpecValidator.js --include=src/dtos/hardwareProfileDto.js node --test tests/admin/hardware-config/**/*.test.js",
+    "test:games": "node --test tests/admin/games/**/*.test.js",
+    "coverage:games": "c8 --include=src/controllers/gameController.js --include=src/controllers/categoryController.js --include=src/services/gameService.js --include=src/services/categoryService.js --include=src/repositories/gameRepository.js --include=src/repositories/categoryRepository.js --include=src/routes/gameRoutes.js --include=src/routes/categoryRoutes.js --include=src/models/Game.js --include=src/models/GameCategory.js --include=src/models/ComputerGame.js node --test tests/admin/games/**/*.test.js"
   },
   "keywords": [],
   "author": "",

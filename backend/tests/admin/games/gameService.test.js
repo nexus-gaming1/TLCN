@@ -14,8 +14,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const ServiceClass = require('../src/services/gameService').constructor;
-const gameController = require('../src/controllers/gameController');
+const ServiceClass = require('../../../src/services/gameService').constructor;
+const gameController = require('../../../src/controllers/gameController');
 
 /**
  * Factory tạo Mock Repository độc lập cho mỗi test case (Zero State Pollution)
@@ -548,7 +548,7 @@ test('[TC-08] [Chất lượng Mock & Xử lý sự cố] Error Propagation khi 
 });
 
 test('[TC-09] [Controller & HTTP Contract] GameController & CategoryController - Context & Type Safety', async () => {
-  const categoryControllerModule = require('../src/controllers/categoryController');
+  const categoryControllerModule = require('../../../src/controllers/categoryController');
   const mockRepo = createMockRepo();
   const service = new ServiceClass(mockRepo);
   const testGameController = new gameController.GameController(service);
@@ -638,8 +638,8 @@ test('[TC-09] [Controller & HTTP Contract] GameController & CategoryController -
 });
 
 test('[TC-10] [Kiến trúc & SOLID] Export Pattern & Transaction Rollback Simulation', async () => {
-  const gameServiceInstance = require('../src/services/gameService');
-  const gameRepoInstance = require('../src/repositories/gameRepository');
+  const gameServiceInstance = require('../../../src/services/gameService');
+  const gameRepoInstance = require('../../../src/repositories/gameRepository');
 
   // 1. Kiểm tra Export Pattern: Export cả instance lẫn class
   assert.equal(typeof gameServiceInstance.GameService, 'function', 'GameService phải export class GameService để hỗ trợ DI & Mocking');
@@ -677,7 +677,7 @@ test('[TC-10] [Kiến trúc & SOLID] Export Pattern & Transaction Rollback Simul
 });
 
 test('[TC-11] [Bảo mật & SQL Wildcard] escapeLikePattern - Chống SQL Injection gián tiếp & ReDoS', () => {
-  const gameRepo = require('../src/repositories/gameRepository');
+  const gameRepo = require('../../../src/repositories/gameRepository');
   const { escapeLikePattern } = gameRepo;
 
   assert.equal(typeof escapeLikePattern, 'function', 'Phải export hàm escapeLikePattern');
@@ -699,7 +699,7 @@ test('[TC-11] [Bảo mật & SQL Wildcard] escapeLikePattern - Chống SQL Injec
 });
 
 test('[TC-12] [Repository & Kiến trúc] GameRepository Soft Delete không hủy ComputerGame & Ủy quyền Category', async () => {
-  const { GameRepository } = require('../src/repositories/gameRepository');
+  const { GameRepository } = require('../../../src/repositories/gameRepository');
 
   let computerGameDestroyCalled = false;
   let gameUpdatedPayload = null;
@@ -763,7 +763,7 @@ test('[TC-12] [Repository & Kiến trúc] GameRepository Soft Delete không hủ
 });
 
 test('[TC-13] [Kiến trúc & SRP] CategoryService chuyên trách quản lý nghiệp vụ Thể loại game', async () => {
-  const { CategoryService } = require('../src/services/categoryService');
+  const { CategoryService } = require('../../../src/services/categoryService');
 
   const categories = [
     { category_id: 1, name: 'FPS' },
@@ -815,4 +815,5 @@ test('[TC-13] [Kiến trúc & SRP] CategoryService chuyên trách quản lý ngh
   const existingCat = await catService.createCategory('rts');
   assert.equal(existingCat.category_id, 3);
 });
+
 

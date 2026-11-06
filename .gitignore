@@ -150,3 +150,9 @@ vite.config.ts.timestamp-*
 # .NET build output
 **/[Bb]in/
 **/[Oo]bj/
+
+# Graphify repository & outputs
+graphify/
+/graphify/
+graphify-out/
+.graphify/
