@@ -16,6 +16,7 @@ public class IpcServerService : BackgroundService
     private readonly ILogger<IpcServerService> _logger;
     private readonly SessionService _sessionService;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
+    private readonly SemaphoreSlim _stateSyncLock = new(1, 1);
     private readonly ConcurrentDictionary<NamedPipeServerStream, StreamWriter> _connectedClients = new();
 
     public event Action? ClientConnected;
@@ -70,15 +71,23 @@ public class IpcServerService : BackgroundService
                     AutoFlush = true
                 };
 
-                await _sendLock.WaitAsync(stoppingToken);
+                await _stateSyncLock.WaitAsync(stoppingToken);
                 try
                 {
-                    _connectedClients.TryAdd(pipeStream, writer);
-                    await SyncCurrentStateToClientAsync(writer, stoppingToken);
+                    await _sendLock.WaitAsync(stoppingToken);
+                    try
+                    {
+                        _connectedClients.TryAdd(pipeStream, writer);
+                        await SyncCurrentStateToClientAsync(writer, stoppingToken);
+                    }
+                    finally
+                    {
+                        _sendLock.Release();
+                    }
                 }
                 finally
                 {
-                    _sendLock.Release();
+                    _stateSyncLock.Release();
                 }
 
                 ClientConnected?.Invoke();
@@ -181,32 +190,40 @@ public class IpcServerService : BackgroundService
 
     private async Task SyncCurrentStateAsync(CancellationToken ct)
     {
-        if (_sessionService.CurrentStatus == MachineStatus.IN_USE)
+        await _stateSyncLock.WaitAsync(ct);
+        try
         {
-            await SendMessageAsync(new IpcMessage
+            if (_sessionService.CurrentStatus == MachineStatus.IN_USE)
             {
-                Action = IpcAction.SetUsername,
-                Username = _sessionService.CurrentUser
-            }, ct);
+                await SendMessageAsync(new IpcMessage
+                {
+                    Action = IpcAction.SetUsername,
+                    Username = _sessionService.CurrentUser
+                }, ct);
 
-            await SendMessageAsync(new IpcMessage
+                await SendMessageAsync(new IpcMessage
+                {
+                    Action = IpcAction.HideOverlay
+                }, ct);
+            }
+            else
             {
-                Action = IpcAction.HideOverlay
-            }, ct);
+                await SendMessageAsync(new IpcMessage
+                {
+                    Action = IpcAction.SetStatus,
+                    Status = _sessionService.CurrentStatus.ToString(),
+                    MachineId = _sessionService.MachineId
+                }, ct);
+
+                await SendMessageAsync(new IpcMessage
+                {
+                    Action = IpcAction.ShowOverlay
+                }, ct);
+            }
         }
-        else
+        finally
         {
-            await SendMessageAsync(new IpcMessage
-            {
-                Action = IpcAction.SetStatus,
-                Status = _sessionService.CurrentStatus.ToString(),
-                MachineId = _sessionService.MachineId
-            }, ct);
-
-            await SendMessageAsync(new IpcMessage
-            {
-                Action = IpcAction.ShowOverlay
-            }, ct);
+            _stateSyncLock.Release();
         }
     }
 
@@ -220,7 +237,7 @@ public class IpcServerService : BackgroundService
             if (msg.Action == IpcAction.UiReady)
             {
                 _logger.LogInformation("IPC received UI_READY notification from client.");
-                _ = SyncCurrentStateAsync(CancellationToken.None);
+                await SyncCurrentStateAsync(CancellationToken.None);
             }
             else if (msg.Action == IpcAction.Ping)
             {
@@ -303,10 +320,23 @@ public class IpcServerService : BackgroundService
     }
 
     public Task ShowOverlayAsync(CancellationToken ct = default)
-        => SendMessageAsync(new IpcMessage { Action = IpcAction.ShowOverlay }, ct);
+        => SendStateMessageAsync(new IpcMessage { Action = IpcAction.ShowOverlay }, ct);
 
     public Task HideOverlayAsync(CancellationToken ct = default)
-        => SendMessageAsync(new IpcMessage { Action = IpcAction.HideOverlay }, ct);
+        => SendStateMessageAsync(new IpcMessage { Action = IpcAction.HideOverlay }, ct);
+
+    private async Task SendStateMessageAsync(IpcMessage message, CancellationToken ct)
+    {
+        await _stateSyncLock.WaitAsync(ct);
+        try
+        {
+            await SendMessageAsync(message, ct);
+        }
+        finally
+        {
+            _stateSyncLock.Release();
+        }
+    }
 
     public Task SetUsernameAsync(string username, CancellationToken ct = default)
         => SendMessageAsync(new IpcMessage { Action = IpcAction.SetUsername, Username = username }, ct);
