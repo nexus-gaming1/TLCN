@@ -158,9 +158,13 @@ namespace NexusControl.UserControls
             }
 
             if (tb_Computer.DataSource is List<ComputerGridRow> rows &&
-                UpdateRow(rows, machine))
+                TryUpdateRow(rows, machine, out var sessionChanged))
             {
                 tb_Computer.Refresh();
+                if (sessionChanged)
+                {
+                    _ = ReloadAsync();
+                }
             }
         }
 
@@ -168,6 +172,15 @@ namespace NexusControl.UserControls
             List<ComputerGridRow> rows,
             MachineSocketDto machine)
         {
+            return TryUpdateRow(rows, machine, out _);
+        }
+
+        private static bool TryUpdateRow(
+            List<ComputerGridRow> rows,
+            MachineSocketDto machine,
+            out bool sessionChanged)
+        {
+            sessionChanged = false;
             var row = rows.Find(item =>
                 IsSameNetworkAddress(item.IpAddress, machine.LocalIp) ||
                 IsSameMacAddress(item.MacAddress, machine.MacAddress));
@@ -177,6 +190,10 @@ namespace NexusControl.UserControls
                 return false;
             }
 
+            sessionChanged =
+                row.Status != ComputerGridRow.ToFriendlyStatus(machine.Status) ||
+                row.CurrentUsername != ComputerGridRow.ValueOrPlaceholder(machine.CurrentUser) ||
+                row.MemberId != machine.MemberId;
             row.Status = ComputerGridRow.ToFriendlyStatus(machine.Status);
             row.CurrentUsername = ComputerGridRow.ValueOrPlaceholder(machine.CurrentUser);
             row.MemberId = machine.MemberId;

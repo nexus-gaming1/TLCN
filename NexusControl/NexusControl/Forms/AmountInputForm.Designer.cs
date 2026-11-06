@@ -66,7 +66,7 @@
             lbl_Computer.Font = new Font("Segoe UI", 10.8F);
             lbl_Computer.Location = new Point(12, 16);
             lbl_Computer.Name = "lbl_Computer";
-            lbl_Computer.Size = new Size(142, 29);
+            lbl_Computer.Size = new Size(379, 29);
             lbl_Computer.TabIndex = 2;
             lbl_Computer.Text = "Máy tính:";
             // 
@@ -75,7 +75,7 @@
             lbl_User.Font = new Font("Segoe UI", 10.8F);
             lbl_User.Location = new Point(12, 82);
             lbl_User.Name = "lbl_User";
-            lbl_User.Size = new Size(142, 29);
+            lbl_User.Size = new Size(379, 29);
             lbl_User.TabIndex = 2;
             lbl_User.Text = "Người dùng:";
             // 
@@ -186,6 +186,9 @@
             ip_Money.TabIndex = 11;
             ip_Money.Text = "0";
             ip_Money.ThousandsSeparator = true;
+            ip_Money.Enter += ip_Money_Enter;
+            ip_Money.KeyUp += ip_Money_KeyUp;
+            ip_Money.TextChanged += ip_Money_TextChanged;
             ip_Money.ValueChanged += ip_Money_ValueChanged;
             // 
             // lbl_ByText

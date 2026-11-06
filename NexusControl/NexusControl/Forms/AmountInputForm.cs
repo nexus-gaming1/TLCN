@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Windows.Forms;
 using NexusControl.Constants;
 using NexusControl.Enums;
@@ -12,7 +13,7 @@ namespace NexusControl.Forms
         private readonly decimal _realBalance;
         private readonly decimal _bonusBalance;
 
-        public decimal Amount => ip_Money.Value;
+        public decimal Amount => GetInputAmount();
 
         public AmountInputForm()
             : this(BalanceAction.BonusAdd, "Máy mẫu", "Người dùng mẫu", 500000, 50000)
@@ -73,7 +74,29 @@ namespace NexusControl.Forms
 
         private void ip_Money_ValueChanged(object sender, AntdUI.DecimalEventArgs e)
         {
-            UpdatePreview();
+            UpdatePreview(e.Value);
+        }
+
+        private void ip_Money_TextChanged(object sender, EventArgs e)
+        {
+            UpdatePreview(GetInputAmount());
+        }
+
+        private void ip_Money_KeyUp(object sender, KeyEventArgs e)
+        {
+            if(GetInputAmount() > 100000000)
+            {
+                ip_Money.Value = 100000000;
+            }
+            UpdatePreview(GetInputAmount());
+        }
+
+        private void ip_Money_Enter(object sender, EventArgs e)
+        {
+            if (GetInputAmount() == 0)
+            {
+                ip_Money.SelectAll();
+            }
         }
 
         private string ip_Money_ValueFormatter(object sender, AntdUI.InputNumberEventArgs e)
@@ -83,20 +106,54 @@ namespace NexusControl.Forms
 
         private void UpdatePreview()
         {
-            var amount = Amount;
-            var isTopUp = _action == BalanceAction.TopUp || _action == BalanceAction.BonusAdd;
-            var isBonus = _action == BalanceAction.BonusAdd || _action == BalanceAction.BonusDeduct;
-            var newRealBalance = isBonus || isTopUp
-                ? _realBalance
-                : _realBalance - amount;
-            var newBonusBalance = isBonus
-                ? (isTopUp ? _bonusBalance + amount : _bonusBalance - amount)
-                : _bonusBalance;
+            UpdatePreview(GetInputAmount());
+        }
 
+        private void UpdatePreview(decimal amount)
+        {
+            var isBonusAction =
+                _action == BalanceAction.BonusAdd ||
+                _action == BalanceAction.BonusDeduct;
+            var isAddAction =
+                _action == BalanceAction.TopUp ||
+                _action == BalanceAction.BonusAdd;
+            var newRealBalance = isBonusAction
+                ? _realBalance
+                : isAddAction
+                    ? _realBalance + amount
+                    : _realBalance - amount;
+            var newBonusBalance = isBonusAction
+                ? isAddAction
+                    ? _bonusBalance + amount
+                    : _bonusBalance - amount
+                : _bonusBalance;
             lbl_ByText.Text = $"Bằng chữ: {ToVietnameseWords(amount)}";
-            lbl_balancePpreview.Text = $"{newRealBalance:N0}đ";
-            lbl_bonus_Preview.Text = $"{newBonusBalance:N0}đ";
+            lbl_balancePpreview.Text = $"{_realBalance:N0}đ → {newRealBalance:N0}đ";
+            lbl_bonus_Preview.Text = $"{_bonusBalance:N0}đ → {newBonusBalance:N0}đ";
+            lbl_balancePpreview.Invalidate();
+            lbl_balancePpreview.Update();
+            lbl_bonus_Preview.Invalidate();
+            lbl_bonus_Preview.Update();
             buttonShadow1.Enabled = IsValidAmount(amount);
+        }
+
+        private decimal GetInputAmount()
+        {
+            if (string.IsNullOrWhiteSpace(ip_Money.Text))
+            {
+                return 0;
+            }
+
+            if (decimal.TryParse(
+                    ip_Money.Text,
+                    NumberStyles.Number,
+                    CultureInfo.CurrentCulture,
+                    out var amount))
+            {
+                return amount;
+            }
+
+            return ip_Money.Value;
         }
 
         private bool IsValidAmount(decimal amount)
