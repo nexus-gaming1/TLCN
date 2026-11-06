@@ -83,23 +83,8 @@ namespace NexusControl.Views
             lblOrderId.Text = $"ĐƠN #{order.OrderId}";
             lblCustomerName.Text = $"Khách: {order.CustomerName}";
             lblCreatedAt.Text = order.CreatedAt.ToString("HH:mm - dd/MM");
-
-            // Tính tổng tiền gốc (chưa giảm)
-            decimal itemsSubtotal = order.Items?.Sum(i => i.Subtotal > 0 ? i.Subtotal : i.Price * i.Quantity) ?? 0;
-
-            // Nếu có giảm giá VIP/Combo
-            if (itemsSubtotal > order.TotalAmount && order.TotalAmount > 0)
-            {
-                decimal discount = itemsSubtotal - order.TotalAmount;
-                lblTotalLabel.Text = $"Gốc: {itemsSubtotal:N0}đ\n(Giảm: -{discount:N0}đ)";
-                lblTotalAmount.Text = order.FormattedTotalAmount;
-            }
-            else
-            {
-                lblTotalLabel.Text = "Tổng tiền:";
-                lblTotalAmount.Text = order.FormattedTotalAmount;
-            }
-            
+            lblTotalLabel.Text = "Tổng tiền:";
+            lblTotalAmount.Text = order.FormattedTotalAmount;
             // 2. Trạng thái đơn hàng 
             badgeStatus.Text = order.StatusDisplayName;
             badgeStatus.State = order.Status switch

@@ -45,7 +45,33 @@ namespace NexusControl.Views
             /// Khi gõ từ khóa tìm kiếm
             txtSearch.TextChanged += (sender, e) =>
             {
-                ApplyFilterAndRender();
+                string keyword = txtSearch.Text?.Trim() ?? string.Empty;
+                int visibleCount = 0;
+
+                flowLayoutPanelOrders.SuspendLayout();
+
+                // Duyệt qua các Control đang có sẵn trên màn hình
+                foreach (Control ctrl in flowLayoutPanelOrders.Controls)
+                {
+                    if (ctrl is OrderCardView card && card.CurrentOrder != null)
+                    {
+                        var o = card.CurrentOrder;
+                        // Kiểm tra xem thẻ có khớp từ khóa không
+                        bool isMatch = string.IsNullOrEmpty(keyword) ||
+                                       o.OrderId.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                                       o.CustomerName.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                                       o.ItemsSummary.Contains(keyword, StringComparison.OrdinalIgnoreCase);
+
+                        card.Visible = isMatch;
+                        if (isMatch) visibleCount++;
+                    }
+                }
+
+                flowLayoutPanelOrders.ResumeLayout(true);
+                lblOrderCount.Text = $"Đang hiển thị: {visibleCount} đơn";
+
+                // Hiện thông báo trống nếu không có đơn nào khớp
+                lblEmpty.Visible = (visibleCount == 0);
             };
             /// Khi bấm nút "Làm mới" thủ công
             btnRefresh.Click += async (sender, e) =>
@@ -72,7 +98,9 @@ namespace NexusControl.Views
         {
             if (InvokeRequired)
             {
-                Invoke(new Func<Task>(LoadOrdersAsync));
+                //Invoke(new Func<Task>(LoadOrdersAsync));
+                // Ép kiểu về Task và thêm await để đợi luồng UI làm xong
+                await (Task)Invoke(new Func<Task>(LoadOrdersAsync));
                 return;
             }
             try
@@ -106,9 +134,12 @@ namespace NexusControl.Views
             }
             finally
             {
-                // Phục hồi nút bấm
-                btnRefresh.Loading = false;
-                btnRefresh.Enabled = true;
+                // Chỉ thao tác nếu màn hình chưa bị đóng/hủy
+                if (!this.IsDisposed && !btnRefresh.IsDisposed)
+                {
+                    btnRefresh.Loading = false;
+                    btnRefresh.Enabled = true;
+                }
             }
         }
         
@@ -127,8 +158,10 @@ namespace NexusControl.Views
             try
             {
                 // 1. Dọn dẹp các thẻ cũ: Gỡ bỏ Event Handler để chống rò rỉ bộ nhớ (Memory Leak)
-                foreach (Control ctrl in flowLayoutPanelOrders.Controls)
+                // Dọn dẹp an toàn bằng vòng lặp ngược
+                for (int i = flowLayoutPanelOrders.Controls.Count - 1; i >= 0; i--)
                 {
+                    Control ctrl = flowLayoutPanelOrders.Controls[i];
                     if (ctrl is OrderCardView oldCard)
                     {
                         oldCard.ConfirmCashClicked -= OnCardConfirmCashClicked;
@@ -137,6 +170,7 @@ namespace NexusControl.Views
                         oldCard.CompleteClicked -= OnCardCompleteClicked;
                         oldCard.CancelClicked -= OnCardCancelClicked;
                     }
+                    flowLayoutPanelOrders.Controls.RemoveAt(i);
                     ctrl.Dispose();
                 }
                 flowLayoutPanelOrders.Controls.Clear();
@@ -329,6 +363,12 @@ namespace NexusControl.Views
         private void OnCardCancelClicked(StaffPendingOrderDto order)
         {
             var parentForm = this.FindForm() ?? Form.ActiveForm;
+            // khối chặn null 
+            if (parentForm == null || parentForm.IsDisposed)
+            {
+                MessageBox.Show("Lỗi giao diện: Không tìm thấy cửa sổ gốc để hiển thị.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
             ///1. Tạo giao diện nội dung bên trong Modal
             var pnlModalContent = new Panel
             {
