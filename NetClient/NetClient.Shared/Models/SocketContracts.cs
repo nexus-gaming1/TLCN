@@ -21,6 +21,15 @@ public class RegisterPayload
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = MachineStatus.ONLINE.ToString();
+
+    [JsonPropertyName("username")]
+    public string? Username { get; set; }
+
+    [JsonPropertyName("memberId")]
+    public int? MemberId { get; set; }
+
+    [JsonPropertyName("sessionStartedAt")]
+    public DateTime? SessionStartedAt { get; set; }
 }
 
 public class HeartbeatPayload

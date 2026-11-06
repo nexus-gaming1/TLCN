@@ -20,6 +20,8 @@ public class SocketService : BackgroundService
     private SocketIO? _client;
     private System.Threading.Timer? _heartbeatTimer;
     private bool _isRegistered;
+    private DateTimeOffset? _disconnectedAt;
+    private bool _sessionClearedForDisconnect;
     private readonly string _serverUrl;
     private readonly int _heartbeatIntervalSeconds;
 
@@ -79,6 +81,12 @@ public class SocketService : BackgroundService
                 if (!_client.Connected)
                 {
                     _isRegistered = false;
+                    if (_disconnectedAt.HasValue &&
+                        !_sessionClearedForDisconnect &&
+                        DateTimeOffset.UtcNow - _disconnectedAt.Value >= TimeSpan.FromSeconds(15))
+                    {
+                        await ClearSessionAfterConnectionLossAsync();
+                    }
                     try
                     {
                         _logger.LogInformation("Connecting to Socket.IO backend at {Url}...", _serverUrl);
@@ -142,6 +150,8 @@ public class SocketService : BackgroundService
 
         _client.OnConnected += (sender, e) =>
         {
+            _disconnectedAt = null;
+            _sessionClearedForDisconnect = false;
             _logger.LogInformation("Connected to Socket.IO backend successfully.");
         };
 
@@ -149,6 +159,7 @@ public class SocketService : BackgroundService
         {
             _logger.LogWarning("Disconnected from Socket.IO backend. Reason: {Reason}", reason);
             _isRegistered = false;
+            _disconnectedAt ??= DateTimeOffset.UtcNow;
         };
 
         _client.OnError += (sender, error) =>
@@ -308,7 +319,10 @@ public class SocketService : BackgroundService
                 LocalIp = info.LocalIp,
                 MacAddress = info.MacAddress,
                 WindowsUser = info.WindowsUser,
-                Status = info.Status
+                Status = info.Status,
+                Username = _sessionService.CurrentUser,
+                MemberId = _sessionService.CurrentMemberId,
+                SessionStartedAt = _sessionService.CurrentSessionStartedAt
             };
 
             _logger.LogInformation("Registering machine with server: MachineId={Id}, IP={Ip}, Status={Status}",
@@ -321,6 +335,20 @@ public class SocketService : BackgroundService
         {
             _logger.LogError(ex, "Failed to send 'register' event to backend");
         }
+    }
+
+    private async Task ClearSessionAfterConnectionLossAsync()
+    {
+        _sessionClearedForDisconnect = true;
+        _logger.LogWarning(
+            "Backend unavailable for 15 seconds. Clearing local session and showing lock overlay.");
+        if (_sessionService.CurrentUser != null)
+        {
+            _sessionService.Logout();
+        }
+        await _ipcServerService.SetUsernameAsync(string.Empty);
+        await _ipcServerService.SetStatusAsync(MachineStatus.ONLINE.ToString());
+        await _ipcServerService.ShowOverlayAsync();
     }
 
     private async Task SendHeartbeatAsync()

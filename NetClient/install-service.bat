@@ -161,16 +161,25 @@ echo.
 :: ===================================================
 echo [6/7] Dang ky NetClient.UI tu dong khoi dong...
 
-reg add "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" ^
+set "UI_TASK_NAME=NetClient UI"
+
+:: Remove the old Registry Startup entry to prevent duplicate UI processes.
+reg delete "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" ^
     /v "NetClientUI" ^
-    /t REG_SZ ^
-    /d "\"%UI_EXE%\"" ^
-    /f
+    /f >nul 2>&1
+
+schtasks /Create ^
+    /TN "%UI_TASK_NAME%" ^
+    /TR "\"%UI_EXE%\"" ^
+    /SC ONLOGON ^
+    /RU "%USERNAME%" ^
+    /RL LIMITED ^
+    /F
 
 if errorlevel 1 (
-    echo [ERROR] Khong the dang ky HKCU Startup!
+    echo [ERROR] Khong the dang ky Task Scheduler Startup!
 ) else (
-    echo [OK] Da dang ky HKCU Startup.
+    echo [OK] Da dang ky Task Scheduler Startup.
 )
 
 echo.

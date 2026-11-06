@@ -24,6 +24,10 @@ internal static class Program
         var overlay = new LockOverlay();
         var ipcClient = new IpcClientService();
 
+        // Show the lock screen before starting IPC so a delayed service connection
+        // can never leave the desktop uncovered during startup.
+        overlay.ShowOverlay();
+
         // Wire IPC callbacks directly to LockOverlay API
         ipcClient.OnShowOverlay += () => overlay.ShowOverlay();
         ipcClient.OnHideOverlay += () => overlay.HideOverlay();
@@ -47,9 +51,6 @@ internal static class Program
 
         // Start background IPC client loop
         ipcClient.Start();
-
-        // Show lock screen initially
-        overlay.ShowOverlay();
 
         Application.Run(overlay);
 

@@ -23,7 +23,8 @@ timeout /t 1 /nobreak > nul
 echo 3. Đang xóa Windows Service...
 sc.exe delete %SERVICE_NAME% >nul 2>&1
 
-echo 4. Đang xóa đăng ký khởi động cùng Windows (Startup Registry)...
+echo 4. Đang xóa đăng ký khởi động cùng Windows...
+schtasks /Delete /TN "NetClient UI" /F >nul 2>&1
 reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "NetClientUI" /f >nul 2>&1
 reg delete "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" /v "NetClientUI" /f >nul 2>&1
 
@@ -32,5 +33,4 @@ echo ===================================================
 echo [OK] Đã gỡ bỏ toàn bộ NetClient Service & UI thành công!
 echo ===================================================
 pause
-
 
