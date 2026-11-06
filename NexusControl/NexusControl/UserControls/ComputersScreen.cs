@@ -236,6 +236,7 @@ namespace NexusControl.UserControls
                 new AntdUI.Column("MacAddress", "MAC"),
                 new AntdUI.Column("CurrentUsername", "Người sử dụng"),
                 new AntdUI.Column("SessionStartedAt", "Thời gian bắt đầu"),
+                new AntdUI.Column("RemainingTime", "Thời gian còn lại"),
                 new AntdUI.Column("ZoneName", "Khu vực"),
                 new AntdUI.Column("HourlyRate", "Đơn giá/giờ"),
                 new AntdUI.Column("HasActiveCombo", "Đang sử dụng Combo")
@@ -262,6 +263,7 @@ namespace NexusControl.UserControls
             public string Status { get; set; } = "--";
             public string CurrentUsername { get; set; } = "--";
             public string SessionStartedAt { get; set; } = "--";
+            public string RemainingTime { get; init; } = "--";
             public string ZoneName { get; init; } = "--";
             public string HourlyRate { get; init; } = "--";
             public string HasActiveCombo { get; init; } = "Không";
@@ -278,6 +280,7 @@ namespace NexusControl.UserControls
                     CurrentUsername = ValueOrPlaceholder(dto.CurrentUsername),
                     SessionStartedAt = dto.SessionStartedAt?.ToLocalTime()
                         .ToString("dd/MM/yyyy HH:mm:ss") ?? "--",
+                    RemainingTime = FormatRemainingTime(dto.RemainingMinutes),
                     ZoneName = ValueOrPlaceholder(dto.ZoneName),
                     HourlyRate = dto.HourlyRate.HasValue
                         ? $"{dto.HourlyRate.Value:N0} VNĐ"
@@ -289,6 +292,18 @@ namespace NexusControl.UserControls
             public static string ValueOrPlaceholder(string? value)
             {
                 return string.IsNullOrWhiteSpace(value) ? "--" : value;
+            }
+
+            private static string FormatRemainingTime(int? minutes)
+            {
+                if (!minutes.HasValue) return "--";
+                if (minutes.Value <= 0) return "Hết thời gian";
+
+                var hours = minutes.Value / 60;
+                var remainingMinutes = minutes.Value % 60;
+                return hours > 0
+                    ? $"{hours} giờ {remainingMinutes} phút"
+                    : $"{remainingMinutes} phút";
             }
 
             public static string ToFriendlyStatus(string? status)

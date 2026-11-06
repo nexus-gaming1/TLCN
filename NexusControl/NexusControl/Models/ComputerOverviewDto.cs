@@ -35,6 +35,9 @@ namespace NexusControl.Models
         [JsonPropertyName("hourlyRate")]
         public decimal? HourlyRate { get; set; }
 
+        [JsonPropertyName("remainingMinutes")]
+        public int? RemainingMinutes { get; set; }
+
         [JsonPropertyName("hasActiveCombo")]
         public bool HasActiveCombo { get; set; }
     }

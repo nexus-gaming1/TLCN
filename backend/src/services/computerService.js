@@ -104,7 +104,7 @@ class ComputerService {
               {
                 model: db.Member,
                 as: 'member',
-                attributes: ['member_id'],
+                attributes: ['member_id', 'real_balance', 'bonus_balance'],
                 required: false,
                 include: [{
                   model: db.User,
@@ -138,6 +138,19 @@ class ComputerService {
           .slice()
           .sort((left, right) => (right.priority || 0) - (left.priority || 0))[0];
         const user = session?.member?.userInfo;
+        const comboEndTime = session?.comboTime?.end_time
+          ? new Date(session.comboTime.end_time)
+          : null;
+        const balance = Number(session?.member?.real_balance || 0)
+          + Number(session?.member?.bonus_balance || 0);
+        const hourlyRate = pricingPlan?.price_per_hour != null
+          ? Number(pricingPlan.price_per_hour)
+          : null;
+        const remainingMinutes = comboEndTime
+          ? Math.max(0, Math.ceil((comboEndTime.getTime() - now.getTime()) / 60000))
+          : hourlyRate && hourlyRate > 0
+            ? Math.max(0, Math.floor(balance / hourlyRate * 60))
+            : null;
 
         return {
           computerId: computer.computer_id,
@@ -149,9 +162,8 @@ class ComputerService {
           currentUsername: user?.username || null,
           sessionStartedAt: session?.started_at || null,
           zoneName: zone?.zone_name || null,
-          hourlyRate: pricingPlan?.price_per_hour != null
-            ? Number(pricingPlan.price_per_hour)
-            : null,
+          hourlyRate,
+          remainingMinutes,
           hasActiveCombo: Boolean(session?.comboTime)
         };
       });
