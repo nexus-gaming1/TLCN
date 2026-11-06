@@ -269,17 +269,40 @@ function registerMachineSocket(io) {
                 `${data.previousStatus} -> ${data.status}`
             );
 
+            const currentMachine = machineStore.get(data.machineId);
+            const computer = await findComputer(currentMachine);
+            const activeSession = computer
+                ? await db.RentalSession.findOne({
+                    where: {
+                        computer_id: computer.computer_id,
+                        status: db.RentalSession.Status.ACTIVE
+                    }
+                })
+                : null;
+
+            if (
+                data.status === ComputerStatus.ONLINE &&
+                currentMachine?.status === ComputerStatus.IN_USE &&
+                activeSession
+            ) {
+                console.warn(
+                    `[Socket.IO] Ignoring stale ONLINE status for ${data.machineId}; ` +
+                    `an active rental session still exists.`
+                );
+                return;
+            }
+
             const updated = machineStore.updateStatus(
                 socket.id,
                 data
             );
-            const computer = await findComputer(updated);
-            if (computer) {
+            const updatedComputer = await findComputer(updated);
+            if (updatedComputer) {
                 if (data.status === ComputerStatus.OFFLINE) {
-                    await closeActiveSessions(computer.computer_id);
+                    await closeActiveSessions(updatedComputer.computer_id);
                 }
                 await syncComputerStatus(
-                    computer,
+                    updatedComputer,
                     data.status || ComputerStatus.ONLINE
                 );
             }

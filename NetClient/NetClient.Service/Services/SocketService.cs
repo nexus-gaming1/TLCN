@@ -19,6 +19,7 @@ public class SocketService : BackgroundService
 
     private SocketIO? _client;
     private System.Threading.Timer? _heartbeatTimer;
+    private readonly SemaphoreSlim _statusUpdateLock = new(1, 1);
     private bool _isRegistered;
     private DateTimeOffset? _disconnectedAt;
     private bool _sessionClearedForDisconnect;
@@ -383,8 +384,21 @@ public class SocketService : BackgroundService
 
         _ = Task.Run(async () =>
         {
+            await _statusUpdateLock.WaitAsync();
             try
             {
+                // A delayed event from before a newer login/logout must not
+                // overwrite the current session state on the backend.
+                if (_sessionService.CurrentStatus != newStatus)
+                {
+                    _logger.LogDebug(
+                        "Skipping stale status update {Old} -> {New}; current status is {Current}.",
+                        oldStatus,
+                        newStatus,
+                        _sessionService.CurrentStatus);
+                    return;
+                }
+
                 var payload = new StatusUpdatePayload
                 {
                     MachineId = _sessionService.MachineId,
@@ -399,6 +413,10 @@ public class SocketService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Failed to emit status:update");
+            }
+            finally
+            {
+                _statusUpdateLock.Release();
             }
         });
     }

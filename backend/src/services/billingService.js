@@ -58,10 +58,10 @@ class BillingService {
         await transaction.rollback();
         return { allowed: false, code: 'MACHINE_NOT_FOUND', message: 'Không tìm thấy máy trạm.' };
       }
-      if ([ComputerStatus.IN_USE, ComputerStatus.MAINTENANCE].includes(computer.status)) {
-        await transaction.rollback();
-        return { allowed: false, code: 'MACHINE_UNAVAILABLE', message: 'Máy trạm hiện không khả dụng.' };
-      }
+      // if ([ComputerStatus.IN_USE, ComputerStatus.MAINTENANCE].includes(computer.status)) {
+      //   await transaction.rollback();
+      //   return { allowed: false, code: 'MACHINE_UNAVAILABLE', message: 'Máy trạm hiện không khả dụng.' };
+      // }
 
       const user = await db.User.findOne({
         where: { username },
@@ -80,6 +80,16 @@ class BillingService {
         lock: transaction.LOCK.UPDATE
       });
       if (existingSession) {
+        if (existingSession.computer_id === computerId) {
+          await transaction.commit();
+          return {
+            allowed: true,
+            memberId: member.member_id,
+            combo: null,
+            computer,
+            resumedSession: existingSession
+          };
+        }
         await transaction.rollback();
         return { allowed: false, code: 'MEMBER_ALREADY_IN_USE', message: 'Hội viên đang có một phiên sử dụng máy khác.' };
       }
