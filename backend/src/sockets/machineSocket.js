@@ -129,7 +129,7 @@ function registerMachineSocket(io) {
             }
             const computer = await findComputer(machine);
             if (computer) {
-                const activeSession = await db.RentalSession.findOne({
+                let activeSession = await db.RentalSession.findOne({
                     where: {
                         computer_id: computer.computer_id,
                         status: db.RentalSession.Status.ACTIVE
@@ -142,6 +142,29 @@ function registerMachineSocket(io) {
                 });
 
                 const hasActiveLocalSession = data.status === ComputerStatus.IN_USE;
+                if (!activeSession && hasActiveLocalSession && data.memberId) {
+                    const member = await db.Member.findByPk(data.memberId);
+                    if (member) {
+                        await billingService.startSession({
+                            memberId: data.memberId,
+                            computerId: computer.computer_id,
+                            startedAt: data.sessionStartedAt
+                                ? new Date(data.sessionStartedAt)
+                                : new Date()
+                        });
+                        activeSession = await db.RentalSession.findOne({
+                            where: {
+                                computer_id: computer.computer_id,
+                                status: db.RentalSession.Status.ACTIVE
+                            },
+                            include: [{
+                                model: db.Member,
+                                as: 'member',
+                                include: [{ model: db.User, as: 'userInfo', attributes: ['username'] }]
+                            }]
+                        });
+                    }
+                }
                 const previousStatus = computer.status;
                 if (activeSession && hasActiveLocalSession) {
                     computer.status = ComputerStatus.IN_USE;

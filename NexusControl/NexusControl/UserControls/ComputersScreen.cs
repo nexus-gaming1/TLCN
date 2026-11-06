@@ -1,4 +1,5 @@
 ﻿using AntdUI;
+using NexusControl.Enums;
 using NexusControl.Forms;
 using NexusControl.Models;
 using NexusControl.Services;
@@ -388,16 +389,16 @@ namespace NexusControl.UserControls
                         SendMessageToComputer();
                         break;
                     case "recharge":
-                        _ = RechargeComputerAsync();
+                        _ = ExecuteBalanceActionAsync(BalanceAction.TopUp);
                         break;
                     case "withdraw":
-                        _ = WithdrawFromComputerAsync();
+                        _ = ExecuteBalanceActionAsync(BalanceAction.Withdraw);
                         break;
                     case "free_topup":
-                        _ = ExecuteFreeBalanceActionAsync(true);
+                        _ = ExecuteBalanceActionAsync(BalanceAction.BonusAdd);
                         break;
                     case "free_withdraw":
-                        _ = ExecuteFreeBalanceActionAsync(false);
+                        _ = ExecuteBalanceActionAsync(BalanceAction.BonusDeduct);
                         break;
                     case "combo":
                         ShowCombo();
@@ -421,75 +422,69 @@ namespace NexusControl.UserControls
             await ExecuteActionAsync(() => _computerApiService.SendCommandAsync(ipAddress, macAddress, command), command);
         }
 
-        private async Task RechargeComputerAsync()
-        {
-            await ExecuteBalanceActionAsync(true);
-        }
         private void SendMessageToComputer()
         {
             // Implement the logic to send a message to the computer
         }
-        private async Task WithdrawFromComputerAsync()
-        {
-            await ExecuteBalanceActionAsync(false);
-        }
 
-        private async Task ExecuteBalanceActionAsync(bool topUp)
+        private async Task ExecuteBalanceActionAsync(BalanceAction action)
         {
             if (_selectedComputer?.MemberId is not int memberId)
             {
-                MessageBox.Show("Máy hiện chưa có hội viên đang đăng nhập.", "Không thể thực hiện", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            if (!TryGetAmount(out var amount)) return;
-            var response = topUp
-                ? await _computerApiService.TopUpAsync(memberId, amount)
-                : await _computerApiService.WithdrawAsync(memberId, amount);
-            ShowActionResult(response, topUp ? "Nạp tiền" : "Rút tiền");
-        }
-
-        private async Task ExecuteFreeBalanceActionAsync(bool topUp)
-        {
-            if (_selectedComputer?.MemberId is not int memberId)
-            {
-                MessageBox.Show("Máy hiện chưa có hội viên đang đăng nhập.", "Không thể thực hiện", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Máy hiện chưa có hội viên đang đăng nhập.", "Không thể thực hiện",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
             var balanceResponse = await _computerApiService.GetMemberBalanceAsync(memberId);
             if (!balanceResponse.IsSuccess || balanceResponse.Data == null)
             {
-                MessageBox.Show(balanceResponse.Message ?? "Không thể tải số dư hội viên.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(balanceResponse.Message ?? "Không thể tải số dư hội viên.",
+                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            if (!AmountInputForm.TryShowFreeBalance(
-                this,
-                topUp ? "Tặng tiền miễn phí" : "Trừ tiền miễn phí",
+            using var dialog = new AmountInputForm(
+                action,
+                _selectedComputer.ComputerName,
+                _selectedComputer.CurrentUsername,
                 balanceResponse.Data.RealBalance,
-                balanceResponse.Data.BonusBalance,
-                topUp,
-                out var amount))
+                balanceResponse.Data.BonusBalance);
+            if (dialog.ShowDialog(this) != DialogResult.OK)
             {
                 return;
             }
 
-            var response = topUp
-                ? await _computerApiService.AddFreeBalanceAsync(
-                    memberId,
-                    amount,
-                    $"Máy {_selectedComputer?.ComputerName ?? "--"} - nhân viên {_userSessionService.FullName ?? _userSessionService.Username ?? "--"}")
-                : await _computerApiService.DeductFreeBalanceAsync(
-                    memberId,
-                    amount,
-                    $"Máy {_selectedComputer?.ComputerName ?? "--"} - nhân viên {_userSessionService.FullName ?? _userSessionService.Username ?? "--"}");
-            ShowActionResult(response, topUp ? "Tặng tiền miễn phí" : "Trừ tiền miễn phí");
+            var description =
+                $"Máy {_selectedComputer.ComputerName} - nhân viên {_userSessionService.FullName ?? _userSessionService.Username ?? "--"}";
+            ApiResponse<object> response = action switch
+            {
+                BalanceAction.TopUp => await _computerApiService.TopUpAsync(memberId, dialog.Amount),
+                BalanceAction.Withdraw => await _computerApiService.WithdrawAsync(memberId, dialog.Amount),
+                BalanceAction.BonusAdd => await _computerApiService.AddFreeBalanceAsync(memberId, dialog.Amount, description),
+                BalanceAction.BonusDeduct => await _computerApiService.DeductFreeBalanceAsync(memberId, dialog.Amount, description),
+                _ => throw new ArgumentOutOfRangeException(nameof(action), action, "Loại giao dịch không hợp lệ.")
+            };
+
+            ShowActionResult(response, GetBalanceActionName(action));
             if (response.IsSuccess)
             {
                 await ReloadAsync();
             }
         }
+
+        private static string GetBalanceActionName(BalanceAction action)
+        {
+            return action switch
+            {
+                BalanceAction.TopUp => "Nạp tiền",
+                BalanceAction.Withdraw => "Rút tiền",
+                BalanceAction.BonusAdd => "Tặng tiền miễn phí",
+                BalanceAction.BonusDeduct => "Trừ tiền miễn phí",
+                _ => "Giao dịch số dư"
+            };
+        }
+
         private void ShowCombo()
         {
             // Implement the logic to show combo 
@@ -539,10 +534,6 @@ namespace NexusControl.UserControls
                 }
         }
 
-        private bool TryGetAmount(out decimal amount)
-        {
-            return AmountInputForm.TryShow(this, "Nhập số tiền", out amount);
-        }
     }
 
 }

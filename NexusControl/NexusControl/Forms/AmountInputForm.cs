@@ -1,101 +1,108 @@
 using System;
-using System.Drawing;
+using System.Collections.Generic;
 using System.Windows.Forms;
+using NexusControl.Constants;
+using NexusControl.Enums;
 
 namespace NexusControl.Forms
 {
-    public sealed partial class AmountInputForm : Form
+    public partial class AmountInputForm : Form
     {
-        private readonly decimal _currentRealBalance;
-        private readonly decimal _currentBonusBalance;
-        private readonly bool _isFreeBalanceTransaction;
-        private readonly bool _isTopUp;
+        private readonly BalanceAction _action;
+        private readonly decimal _realBalance;
+        private readonly decimal _bonusBalance;
 
-        public decimal Amount => _amountInput.Value;
+        public decimal Amount => ip_Money.Value;
 
         public AmountInputForm()
-            : this("Tặng miễn phí", 500000, 50000, true, true)
+            : this(BalanceAction.BonusAdd, "Máy mẫu", "Người dùng mẫu", 500000, 50000)
         {
         }
 
         public AmountInputForm(
-            string title,
-            decimal currentRealBalance = 0,
-            decimal currentBonusBalance = 0,
-            bool isFreeBalanceTransaction = false,
-            bool isTopUp = true)
+            BalanceAction balanceAction,
+            string computerName,
+            string username,
+            decimal realBalance,
+            decimal bonusBalance)
         {
-            _currentRealBalance = currentRealBalance;
-            _currentBonusBalance = currentBonusBalance;
-            _isFreeBalanceTransaction = isFreeBalanceTransaction;
-            _isTopUp = isTopUp;
-
             InitializeComponent();
-            Text = title;
-            ConfigureForm();
+            divider1.Text = null;
+            _action = balanceAction;
+            _realBalance = realBalance;
+            _bonusBalance = bonusBalance;
+            lbl_Computer.Text = $"Máy tính: {computerName}";
+            lbl_User.Text = $"Người dùng: {username}";
+            lbl_balance.Text = $"{realBalance:N0}đ";
+            lbl_bonus_balance.Text = $"{bonusBalance:N0}đ";
+            ConfigShield();
+            lbl_balance.ForeColor = AppColors.Blue;
+            lbl_bonus_balance.ForeColor = AppColors.Purple;
+            ip_Money.Value = 0;
             UpdatePreview();
         }
 
-        private void ConfigureForm()
+        private void ConfigShield()
         {
-            if (!_isFreeBalanceTransaction)
+            if (_action == BalanceAction.TopUp || _action == BalanceAction.BonusAdd)
             {
-                ClientSize = new Size(280, 120);
-                _amountInput.Minimum = 1000;
-                _amountInput.Location = new Point(20, 20);
-                _amountInput.Width = 240;
-                _transactionLabel.Visible = false;
-                _amountInWordsLabel.Visible = false;
-                _balanceSummaryLabel.Visible = false;
-                _validationLabel.Visible = false;
-                _cancelButton.Location = new Point(65, 65);
-                _confirmButton.Location = new Point(155, 65);
-                _confirmButton.DialogResult = DialogResult.OK;
-                return;
+                sd_Action.LabelColor = AppColors.Green;
+                sd_Action.Label = "Thêm";
+            }
+            else
+            {
+                sd_Action.LabelColor = AppColors.Red;
+                sd_Action.Label = "Trừ";
             }
 
-            _transactionLabel.Text = _isTopUp ? "Tặng miễn phí" : "Trừ miễn phí";
-            _transactionLabel.ForeColor = _isTopUp ? Color.SeaGreen : Color.Firebrick;
-            _amountInput.Minimum = 0;
-            _amountInput.Location = new Point(20, 40);
-            _amountInput.Width = 410;
-            _cancelButton.Location = new Point(245, 185);
-            _confirmButton.Location = new Point(335, 185);
-            _confirmButton.DialogResult = DialogResult.None;
+            if (_action == BalanceAction.BonusAdd || _action == BalanceAction.BonusDeduct)
+            {
+                sd_Action.Color = AppColors.Purple;
+                sd_Action.Text = "Tiền miễn phí";
+            }
+            else
+            {
+                sd_Action.Text = "Tiền Tài khoản";
+                sd_Action.Color = AppColors.Blue;
+            }
         }
 
-        private void ConfirmButton_Click(object? sender, EventArgs e)
+        private void divider1_Click(object sender, EventArgs e)
         {
-            if (!IsValidAmount())
-            {
-                DialogResult = DialogResult.None;
-                return;
-            }
+        }
 
-            DialogResult = DialogResult.OK;
+        private void ip_Money_ValueChanged(object sender, AntdUI.DecimalEventArgs e)
+        {
+            UpdatePreview();
+        }
+
+        private string ip_Money_ValueFormatter(object sender, AntdUI.InputNumberEventArgs e)
+        {
+            return e.Value.ToString() + "đ";
         }
 
         private void UpdatePreview()
         {
-            if (!_isFreeBalanceTransaction) return;
+            var amount = Amount;
+            var isTopUp = _action == BalanceAction.TopUp || _action == BalanceAction.BonusAdd;
+            var isBonus = _action == BalanceAction.BonusAdd || _action == BalanceAction.BonusDeduct;
+            var newRealBalance = isBonus || isTopUp
+                ? _realBalance
+                : _realBalance - amount;
+            var newBonusBalance = isBonus
+                ? (isTopUp ? _bonusBalance + amount : _bonusBalance - amount)
+                : _bonusBalance;
 
-            var amount = _amountInput.Value;
-            var valid = IsValidAmount();
-            var newBonus = _isTopUp ? _currentBonusBalance + amount : _currentBonusBalance - amount;
-            _balanceSummaryLabel.Text =
-                $"Thực tế: {_currentRealBalance:N0} → {_currentRealBalance:N0} VNĐ\r\n" +
-                $"Miễn phí: {_currentBonusBalance:N0} → {newBonus:N0} VNĐ";
-            _amountInWordsLabel.Text = $"Bằng chữ: {ToVietnameseWords(amount)}";
-            _validationLabel.Text = valid
-                ? string.Empty
-                : amount <= 0 ? "Số tiền phải lớn hơn 0." : "Không được trừ vượt quá số dư miễn phí.";
-            _confirmButton.Enabled = valid;
+            lbl_ByText.Text = $"Bằng chữ: {ToVietnameseWords(amount)}";
+            lbl_balancePpreview.Text = $"{newRealBalance:N0}đ";
+            lbl_bonus_Preview.Text = $"{newBonusBalance:N0}đ";
+            buttonShadow1.Enabled = IsValidAmount(amount);
         }
 
-        private bool IsValidAmount()
+        private bool IsValidAmount(decimal amount)
         {
-            return _amountInput.Value > 0 &&
-                (_isTopUp || _amountInput.Value <= _currentBonusBalance);
+            if (amount <= 0) return false;
+            return _action != BalanceAction.BonusDeduct || amount <= _bonusBalance;
         }
 
         private static string ToVietnameseWords(decimal value)
@@ -110,7 +117,7 @@ namespace NexusControl.Forms
             if (number < 0) return $"Âm {ReadVietnameseNumber(-number)}";
 
             var units = new[] { "", "nghìn", "triệu", "tỷ" };
-            var parts = new System.Collections.Generic.List<string>();
+            var parts = new List<string>();
             var unitIndex = 0;
             while (number > 0)
             {
@@ -140,33 +147,23 @@ namespace NexusControl.Forms
             else if (hundreds > 0 && ones > 0) result += " lẻ";
             if (ones > 0)
             {
-                var oneText = ones == 1 && tens > 1 ? "mốt" : ones == 5 && tens > 0 ? "lăm" : digits[ones];
+                var oneText = ones == 1 && tens > 1
+                    ? "mốt"
+                    : ones == 5 && tens > 0
+                        ? "lăm"
+                        : digits[ones];
                 result += $" {oneText}";
             }
+
             return result.Trim();
         }
 
-        public static bool TryShow(IWin32Window owner, string title, out decimal amount)
+        private void buttonShadow1_Click(object sender, EventArgs e)
         {
-            using var dialog = new AmountInputForm(title);
-            var result = dialog.ShowDialog(owner);
-            amount = dialog.Amount;
-            return result == DialogResult.OK;
-        }
-
-        public static bool TryShowFreeBalance(
-            IWin32Window owner,
-            string title,
-            decimal currentRealBalance,
-            decimal currentBonusBalance,
-            bool isTopUp,
-            out decimal amount)
-        {
-            using var dialog = new AmountInputForm(
-                title, currentRealBalance, currentBonusBalance, true, isTopUp);
-            var result = dialog.ShowDialog(owner);
-            amount = dialog.Amount;
-            return result == DialogResult.OK;
+            if (IsValidAmount(Amount))
+            {
+                DialogResult = DialogResult.OK;
+            }
         }
     }
 }

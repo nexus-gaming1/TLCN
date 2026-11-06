@@ -31,9 +31,9 @@ class MachineStore {
             macAddress: data.macAddress || existing.macAddress || null,
             windowsUser: data.windowsUser || existing.windowsUser || null,
             status: data.status || 'ONLINE',
-            currentUser: existing.currentUser || null,
-            memberId: existing.memberId || null,
-            sessionStartedAt: existing.sessionStartedAt || null,
+            currentUser: data.username || existing.currentUser || null,
+            memberId: data.memberId || existing.memberId || null,
+            sessionStartedAt: data.sessionStartedAt || existing.sessionStartedAt || null,
             performance: existing.performance || null,
             socketId,
             connectedAt:
