@@ -150,3 +150,12 @@ vite.config.ts.timestamp-*
 # .NET build output
 **/[Bb]in/
 **/[Oo]bj/
+*.v2
+*.json
+*.bin
+NetClient/.vs/NetClient.slnx/DesignTimeBuild/.dtbcache.v2
+NetClient/.vs/NetClient.slnx/v18/.futdcache.v2
+NetClient/.vs/NetClient.slnx/v18/.suo
+/NetClient/.vs/NetClient.slnx/DesignTimeBuild
+/NetClient/.vs/NetClient.slnx
+/NetClient/.vs
