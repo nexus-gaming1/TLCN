@@ -385,13 +385,14 @@ public class SocketService : BackgroundService
                 return;
             }
 
-            if (!_sessionService.Login(result.Username))
+            if (!_sessionService.Login(result.Username, result.AccessToken))
             {
                 await _ipcServerService.SendLoginResultAsync(false, "Không thể khởi tạo phiên làm việc.");
                 return;
             }
 
-            await _ipcServerService.SetUsernameAsync(result.Username);
+            //gửi username và access token xuống UI qua named pipe để UI gọi REST API với token này
+            await _ipcServerService.SetUsernameAsync(result.Username, result.AccessToken);
             await _ipcServerService.HideOverlayAsync();
             await _ipcServerService.SendLoginResultAsync(true, null);
 

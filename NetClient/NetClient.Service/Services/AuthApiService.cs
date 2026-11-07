@@ -35,10 +35,14 @@ public sealed class AuthApiService
 
         if (payload?.Status == "success" && payload.Data?.User != null)
         {
+            // Backend hỗ trợ cả accessToken và token (tương thích ngược)
+            string? token = payload.Data.AccessToken ?? payload.Data.Token;
+
             return new AuthLoginResult(
                 true,
                 null,
-                payload.Data.User.Username);
+                payload.Data.User.Username,
+                token);
         }
 
         var message = payload?.Message;
@@ -49,7 +53,7 @@ public sealed class AuthApiService
                 : $"Backend từ chối đăng nhập (HTTP {(int)response.StatusCode}).";
         }
 
-        return new AuthLoginResult(false, message, null);
+        return new AuthLoginResult(false, message, null, null);
     }
 
     private sealed class AuthLoginResponse
@@ -68,6 +72,11 @@ public sealed class AuthApiService
     {
         [JsonPropertyName("user")]
         public AuthUser? User { get; set; }
+
+        [JsonPropertyName("accessToken")]
+        public string? AccessToken { get; set; }
+        [JsonPropertyName("token")]
+        public string? Token { get; set; }
     }
 
     private sealed class AuthUser
@@ -77,4 +86,4 @@ public sealed class AuthApiService
     }
 }
 
-public sealed record AuthLoginResult(bool Success, string? Error, string? Username);
+public sealed record AuthLoginResult(bool Success, string? Error, string? Username, string? AccessToken);

@@ -19,6 +19,7 @@ public class SessionService
 
     public string MachineId { get; }
     public string Hostname { get; }
+    public string? AccessToken { get; private set; }
 
     public event Action<MachineStatus, MachineStatus>? StatusChanged;
     public event Action<string>? UserLoggedIn;
@@ -60,7 +61,7 @@ public class SessionService
         }
     }
 
-    public bool Login(string username)
+    public bool Login(string username, string? accessToken = null)
     {
         lock (_lock)
         {
@@ -73,6 +74,7 @@ public class SessionService
             var oldStatus = CurrentStatus;
             CurrentUser = username.Trim();
             CurrentStatus = MachineStatus.IN_USE;
+            AccessToken = accessToken; //lưu access token vào phiên
 
             _logger.LogInformation("User logged in: {User}. Status changed from {Old} to {New}", CurrentUser, oldStatus, CurrentStatus);
 
@@ -90,6 +92,7 @@ public class SessionService
             var prevUser = CurrentUser;
             CurrentUser = null;
             CurrentStatus = MachineStatus.ONLINE;
+            AccessToken = null; //xoá access token khi đăng xuất
 
             _logger.LogInformation("User logged out (was {User}). Status changed from {Old} to {New}", prevUser, oldStatus, CurrentStatus);
 

@@ -43,6 +43,9 @@ public class IpcMessage
 
     [JsonPropertyName("success")]
     public bool? Success { get; set; }
+
+    [JsonPropertyName("accessToken")]
+    public string? AccessToken { get; set; } ///Chuỗi JWT AccessToken được Backend cấp khi đăng nhập thành công --> giao từ Service xuống NetClientApp gọi REST API.
 }
 
 public static class IpcConstants

@@ -149,7 +149,8 @@ public class IpcServerService : BackgroundService
                 var msgUser = JsonSerializer.Serialize(new IpcMessage
                 {
                     Action = IpcAction.SetUsername,
-                    Username = _sessionService.CurrentUser
+                    Username = _sessionService.CurrentUser,
+                    AccessToken = _sessionService.AccessToken //truyền token khi đồng bộ lại
                 });
                 await writer.WriteLineAsync(msgUser.AsMemory(), ct);
 
@@ -308,8 +309,8 @@ public class IpcServerService : BackgroundService
     public Task HideOverlayAsync(CancellationToken ct = default)
         => SendMessageAsync(new IpcMessage { Action = IpcAction.HideOverlay }, ct);
 
-    public Task SetUsernameAsync(string username, CancellationToken ct = default)
-        => SendMessageAsync(new IpcMessage { Action = IpcAction.SetUsername, Username = username }, ct);
+    public Task SetUsernameAsync(string username, string? accessToken = null, CancellationToken ct = default)
+        => SendMessageAsync(new IpcMessage { Action = IpcAction.SetUsername, Username = username, AccessToken = accessToken }, ct);
 
     public Task SetStatusAsync(string status, CancellationToken ct = default)
         => SendMessageAsync(new IpcMessage { Action = IpcAction.SetStatus, Status = status, MachineId = _sessionService.MachineId }, ct);
