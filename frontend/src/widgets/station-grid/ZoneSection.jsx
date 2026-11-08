@@ -2,7 +2,7 @@ import React from 'react';
 import { Info, Monitor } from 'lucide-react';
 import StationCard from '../../entities/station/ui/StationCard';
 
-export default function ZoneSection({ zone, filter = 'all', searchQuery = '', onSelectStation }) {
+export default function ZoneSection({ zone, filter = 'all', searchQuery = '', onSelectStation, onContextMenu }) {
     if (!zone) return null;
 
     const filteredStations = (zone.stations || []).filter(st => {
@@ -43,6 +43,7 @@ export default function ZoneSection({ zone, filter = 'all', searchQuery = '', on
                         key={station.id}
                         station={station}
                         onClick={(st) => onSelectStation && onSelectStation(st)}
+                        onContextMenu={onContextMenu}
                     />
                 ))}
             </div>

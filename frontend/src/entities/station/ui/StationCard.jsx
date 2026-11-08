@@ -11,7 +11,7 @@ const typeIconMap = {
     locked: Lock
 };
 
-export default function StationCard({ station, onClick }) {
+export default function StationCard({ station, onClick, onContextMenu }) {
     if (!station) return null;
 
     const statusUpper = String(station.status || '').toUpperCase();
@@ -47,6 +47,7 @@ export default function StationCard({ station, onClick }) {
     return (
         <div
             onClick={() => onClick && onClick(station)}
+            onContextMenu={(event) => onContextMenu?.(event, station)}
             title={tooltipText}
             className="cursor-pointer group rounded-xl p-3 bg-white border border-slate-200/80 shadow-sm hover:shadow hover:border-sky-300 transition-all duration-200 flex flex-col justify-between w-40"
         >
@@ -126,6 +127,13 @@ export default function StationCard({ station, onClick }) {
                                     </>
                                 )}
                             </span>
+                        </div>
+                        <div className="text-[10px] font-mono text-slate-400 truncate">
+                            {station.ip || station.ip_address || '--'} • {station.zoneName || station.zone_name || 'Khu thường'}
+                        </div>
+                        <div className="text-[10px] text-slate-500 truncate">
+                            {station.remainingMinutes != null ? `${station.remainingMinutes} phút còn lại` : 'Không giới hạn thời gian'}
+                            {station.hasActiveCombo ? ' • Combo đang dùng' : ''}
                         </div>
                     </div>
                 </div>

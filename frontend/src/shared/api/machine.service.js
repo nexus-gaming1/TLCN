@@ -50,6 +50,24 @@ class MachineService {
     return response.data;
   }
 
+  async sendCommandByAddress(ipAddress, macAddress, command, message = null) {
+    const response = await apiClient.post('/computers/by-address/command', {
+      ipAddress,
+      macAddress,
+      command,
+      message
+    });
+    return response.data;
+  }
+
+  async logoutByAddress(ipAddress, macAddress) {
+    const response = await apiClient.post('/computers/by-address/logout', {
+      ipAddress,
+      macAddress
+    });
+    return response.data;
+  }
+
   /**
    * Switch session from one computer to another
    */

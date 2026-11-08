@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { X, Power, Lock, Unlock, ArrowRightLeft, Clock, User, Gamepad2, Cpu, CheckCircle2, AlertCircle , MemoryStick, HardDrive, MonitorCog} from 'lucide-react';
+import { X, Power, Lock, Unlock, ArrowRightLeft, Clock, User, Gamepad2, Cpu, CheckCircle2, AlertCircle, MemoryStick, HardDrive, MonitorCog, RotateCw, LogOut, Wallet, Coins, Gift, CreditCard } from 'lucide-react';
 import { STATION_TYPES } from '../../../shared/constants/stationConstants';
+import AmountInputModal from '../../transactions/ui/AmountInputModal';
 
-export default function StationDrawer({ station, isOpen, onClose, onAction, onSwitchStation, availableStations, machines = [] }) {
+export default function StationDrawer({ station, isOpen, onClose, onAction, onCommand, onSwitchStation, onReload, currentUser, availableStations, machines = [] }) {
     const [isSwitchModalOpen, setIsSwitchModalOpen] = useState(false);
     const [selectedTargetId, setSelectedTargetId] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
+    const [amountModalAction, setAmountModalAction] = useState(null);
     if (!station || !isOpen) return null;
     console.log('Station Data:', station);
-const currentMachine = Object.values(machines).find(
-    machine => machine.localIp === station?.ip
-    && machine.macAddress === station?.mac_address
-);
+    const currentMachine = Object.values(machines).find(
+        machine => String(machine.localIp || '').trim().toLowerCase()
+            === String(station?.ip || station?.ip_address || '').trim().toLowerCase()
+    );
 
     const currentStatusUpper = String(station.status || '').toUpperCase();
     const isOffline = currentStatusUpper === 'OFFLINE';
@@ -63,6 +65,19 @@ const currentMachine = Object.values(machines).find(
             onClose();
         } catch (error) {
             showToast(error.message || 'Lỗi khi thực hiện chuyển trạm máy', true);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleCommand = async (command) => {
+        if (!onCommand) return;
+        setIsSubmitting(true);
+        try {
+            await onCommand(station, command);
+            showToast(`Đã gửi lệnh ${command} tới máy ${station.id}.`);
+        } catch (error) {
+            showToast(error.message || `Không thể gửi lệnh ${command}.`, true);
         } finally {
             setIsSubmitting(false);
         }
@@ -151,6 +166,97 @@ const currentMachine = Object.values(machines).find(
                         </button>
                     </div>
 
+                    <div className="space-y-2">
+                        <h4 className="text-xs font-extrabold uppercase text-slate-400 font-mono tracking-wider">
+                            Lệnh máy trạm
+                        </h4>
+                        <div className="grid grid-cols-3 gap-2">
+                            <button
+                                disabled={isSubmitting || isOffline}
+                                onClick={() => handleCommand('LOGOUT')}
+                                className="flex items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[11px] font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                <LogOut className="h-3.5 w-3.5" /> Đăng xuất
+                            </button>
+                            <button
+                                disabled={isSubmitting || isOffline}
+                                onClick={() => handleCommand('RESTART')}
+                                className="flex items-center justify-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 p-2.5 text-[11px] font-bold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                <RotateCw className="h-3.5 w-3.5" /> Khởi động lại
+                            </button>
+                            <button
+                                disabled={isSubmitting || isOffline}
+                                onClick={() => handleCommand('SHUTDOWN')}
+                                className="flex items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-[11px] font-bold text-rose-700 transition hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                                <Power className="h-3.5 w-3.5" /> Tắt máy
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Balance Operations Section (Ported from ComputersScreen.cs & AmountInputForm.cs) */}
+                    {(station.user || station.member_id) && (
+                        <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-extrabold uppercase text-slate-500 font-mono tracking-wider flex items-center gap-1.5">
+                                    <Wallet className="w-3.5 h-3.5 text-blue-600" /> Giao Dịch Số Dư Hội Viên
+                                </h4>
+                                {station.hasActiveCombo && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 font-bold border border-purple-200">
+                                        Đang dùng Combo
+                                    </span>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                                <div className="p-2.5 rounded-lg bg-blue-50/70 border border-blue-200/70">
+                                    <span className="text-[10px] font-bold text-blue-700 block uppercase">Số dư tài khoản</span>
+                                    <span className="font-mono text-sm font-extrabold text-blue-700">
+                                        {station.real_balance != null ? `${Number(station.real_balance).toLocaleString('vi-VN')}đ` : '--'}
+                                    </span>
+                                </div>
+                                <div className="p-2.5 rounded-lg bg-purple-50/70 border border-purple-200/70">
+                                    <span className="text-[10px] font-bold text-purple-700 block uppercase">Số dư miễn phí</span>
+                                    <span className="font-mono text-sm font-extrabold text-purple-700">
+                                        {station.bonus_balance != null ? `${Number(station.bonus_balance).toLocaleString('vi-VN')}đ` : '--'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 pt-1">
+                                <button
+                                    type="button"
+                                    onClick={() => setAmountModalAction('TOPUP')}
+                                    className="flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:scale-95 text-emerald-800 border border-emerald-200 font-bold text-xs transition cursor-pointer shadow-2xs"
+                                >
+                                    <Wallet className="w-3.5 h-3.5 text-emerald-600" /> Nạp tiền
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAmountModalAction('WITHDRAW')}
+                                    className="flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 active:scale-95 text-rose-800 border border-rose-200 font-bold text-xs transition cursor-pointer shadow-2xs"
+                                >
+                                    <Coins className="w-3.5 h-3.5 text-rose-600" /> Rút tiền
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAmountModalAction('BONUS_ADD')}
+                                    className="flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-purple-50 hover:bg-purple-100 active:scale-95 text-purple-800 border border-purple-200 font-bold text-xs transition cursor-pointer shadow-2xs"
+                                >
+                                    <Gift className="w-3.5 h-3.5 text-purple-600" /> Tặng miễn phí
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setAmountModalAction('BONUS_DEDUCT')}
+                                    className="flex items-center justify-center gap-1.5 p-2.5 rounded-xl bg-amber-50 hover:bg-amber-100 active:scale-95 text-amber-800 border border-amber-200 font-bold text-xs transition cursor-pointer shadow-2xs"
+                                >
+                                    <CreditCard className="w-3.5 h-3.5 text-amber-600" /> Trừ miễn phí
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Active Session Info */}
                     <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/70 space-y-3">
                         <h4 className="text-xs font-extrabold uppercase text-slate-400 font-mono tracking-wider">Thông Tin Phiên Sử Dụng</h4>
@@ -170,6 +276,28 @@ const currentMachine = Object.values(machines).find(
                         <div className="flex items-center justify-between text-xs py-1">
                             <span className="text-slate-500 flex items-center gap-1.5"><Cpu className="w-3.5 h-3.5 text-slate-400" /> Telemetry / Loại node:</span>
                             <span className="font-mono text-slate-700">{station.telemetry || 'Standard Node'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs py-1 border-t border-slate-200/50">
+                            <span className="text-slate-500">Thời gian bắt đầu:</span>
+                            <span className="font-mono text-slate-700">
+                                {station.sessionStartedAt
+                                    ? new Date(station.sessionStartedAt).toLocaleString('vi-VN')
+                                    : '--'}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs py-1">
+                            <span className="text-slate-500">Thời gian còn lại:</span>
+                            <span className="font-mono font-bold text-amber-700">
+                                {station.remainingMinutes != null ? `${station.remainingMinutes} phút` : '--'}
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs py-1">
+                            <span className="text-slate-500">Combo đang dùng:</span>
+                            <span className="font-bold text-slate-700">{station.hasActiveCombo ? 'Có' : 'Không'}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs py-1 border-t border-slate-200/50">
+                            <span className="text-slate-500">Địa chỉ mạng:</span>
+                            <span className="font-mono text-slate-700">{station.ip || station.ip_address || '--'}</span>
                         </div>
                     </div>
                 </div>
@@ -291,6 +419,21 @@ const currentMachine = Object.values(machines).find(
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Amount Input Modal for Balance Actions */}
+            {amountModalAction && (
+                <AmountInputModal
+                    isOpen={Boolean(amountModalAction)}
+                    action={amountModalAction}
+                    station={station}
+                    currentUser={currentUser}
+                    onClose={() => setAmountModalAction(null)}
+                    onSuccess={(msg) => {
+                        showToast(msg);
+                        onReload?.();
+                    }}
+                />
             )}
         </div>
     );

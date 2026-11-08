@@ -1,6 +1,16 @@
 import { apiClient } from './client';
 
 class MemberService {
+  async getMemberById(memberId) {
+    try {
+      const response = await apiClient.get(`/members/${memberId}`);
+      return response?.data || response;
+    } catch (error) {
+      console.error(`Lỗi khi lấy thông tin hội viên #${memberId}:`, error);
+      throw error;
+    }
+  }
+
   async getMembers() {
     try {
       const response = await apiClient.get('/members');

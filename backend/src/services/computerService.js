@@ -164,6 +164,8 @@ class ComputerService {
           zoneName: zone?.zone_name || null,
           hourlyRate,
           remainingMinutes,
+          realBalance: Number(session?.member?.real_balance || 0),
+          bonusBalance: Number(session?.member?.bonus_balance || 0),
           hasActiveCombo: Boolean(session?.comboTime)
         };
       });

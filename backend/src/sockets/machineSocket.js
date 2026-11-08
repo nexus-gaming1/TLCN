@@ -207,6 +207,15 @@ function registerMachineSocket(io) {
             );
 
             broadcastMachineUpdate(machine);
+
+            if (data.status === ComputerStatus.IN_USE && data.memberId) {
+                try {
+                    const computerSocketService = require('../services/computerSocketService');
+                    computerSocketService.syncMemberSessionTime(data.memberId).catch(() => {});
+                } catch (syncErr) {
+                    // socket error ignored during initial register
+                }
+            }
         });
 
 
@@ -248,6 +257,8 @@ function registerMachineSocket(io) {
                     'machine:heartbeat',
                     {
                         machineId: machine.machineId,
+                        localIp: machine.localIp,
+                        macAddress: machine.macAddress,
                         performance: machine.performance
                     }
                 );
@@ -400,6 +411,12 @@ function registerMachineSocket(io) {
                         );
                     }
                     broadcastMachineUpdate(machine);
+                    try {
+                        const computerSocketService = require('../services/computerSocketService');
+                        computerSocketService.syncMemberSessionTime(memberId).catch(() => {});
+                    } catch (syncErr) {
+                        // ignored
+                    }
                 }
             }
         });
@@ -465,6 +482,7 @@ function registerMachineSocket(io) {
                     machine.currentUser = null;
                     machine.memberId = null;
                     machine.sessionStartedAt = null;
+                    machine.remainingMinutes = null;
                     machine.lastStatusChange = new Date().toISOString();
 
                     broadcastMachineUpdate(machine);

@@ -1,4 +1,5 @@
 const sePayService = require('../services/sePayService');
+const computerSocketService = require('../services/computerSocketService');
 
 /**
  * WebhookController
@@ -19,6 +20,10 @@ class WebhookController {
   async handleSePay(req, res, next) {
     try {
       const result = await this.sePayService.processWebhook(req.body);
+
+      if (result && result.member_id) {
+        await computerSocketService.syncMemberSessionTime(result.member_id);
+      }
 
       return res.json({
         status: 'success',

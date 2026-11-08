@@ -37,18 +37,22 @@ const DEFAULT_STATUS_CONFIG = Object.freeze({
 export function mapComputerToMachineDTO(c) {
   if (!c) return null;
 
-  const zoneId = c.zone_id || 1;
+  const zoneId = c.zone_id || c.zoneId || 1;
   const zoneIcon = ZONE_ICON_MAP[zoneId] || 'military_tech';
   const statusConfig = STATUS_CONFIG_MAP[c.status] || DEFAULT_STATUS_CONFIG;
 
   // Extract zone name & description populated from backend CSDL Seeder
-  const zoneName = c.zone_name || c.ComputerZone?.zone_name || `Zone ${zoneId}`;
+  const zoneName = c.zone_name || c.zoneName || c.ComputerZone?.zone_name || `Zone ${zoneId}`;
   const zoneDesc = c.ComputerZone?.description || '';
 
   // Optional Chaining (?.): Extract active user info & logs cleanly from backend response
   const latestLog = c.ComputerStatusLogs?.[0] || c.RentalSessions?.[0];
   const memberObj = latestLog?.Member || c.Member;
-  const userName = memberObj?.userInfo?.full_name || memberObj?.userInfo?.username || c.user || null;
+  const userName = memberObj?.userInfo?.full_name
+    || memberObj?.userInfo?.username
+    || c.currentUsername
+    || c.user
+    || null;
 
   const userInitials = userName
     ? userName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
@@ -66,28 +70,39 @@ export function mapComputerToMachineDTO(c) {
   const tierLevel = Number(c.ComputerZone?.tier_level || (zoneId === 3 ? 1 : (zoneId === 1 || zoneId === 2) ? 2 : zoneId === 4 ? 3 : 4));
 
   return {
-    id: c.computer_name || c.id || `PC-${c.computer_id}`,
-    computer_id: c.computer_id,
-    numericId: String(c.computer_id || 1).padStart(2, '0'),
-    ip: c.ip_address || `192.168.1.${100 + (c.computer_id || 1)}`,
-    mac_address: c.mac_address || 'F4:D4:88:5A:00:00',
-    port: `Port #${c.computer_id || 1}`,
+    id: c.computer_name || c.computerName || c.id || `PC-${c.computer_id || c.computerId}`,
+    computer_id: c.computer_id || c.computerId,
+    numericId: String(c.computer_id || c.computerId || 1).padStart(2, '0'),
+    ip: c.ip_address || c.ipAddress || `192.168.1.${100 + (c.computer_id || c.computerId || 1)}`,
+    mac_address: c.mac_address || c.macAddress || 'F4:D4:88:5A:00:00',
+    port: `Port #${c.computer_id || c.computerId || 1}`,
     zoneId: `zone-${zoneId}`,
     zone_id: zoneId,
     zoneName,
     zoneIcon,
     tier_level: tierLevel,
     specDescription: zoneDesc,
-    price_per_hour: pricePerHour,
+    price_per_hour: Number(c.hourlyRate ?? pricePerHour),
+    zone_name: zoneName,
+    member_id: c.memberId || c.member_id || memberObj?.member_id || null,
+    memberId: c.memberId || c.member_id || memberObj?.member_id || null,
+    real_balance: c.realBalance ?? c.real_balance ?? memberObj?.real_balance ?? null,
+    bonus_balance: c.bonusBalance ?? c.bonus_balance ?? memberObj?.bonus_balance ?? null,
+    sessionStartedAt: c.sessionStartedAt || null,
+    remainingMinutes: c.remainingMinutes ?? null,
+    hasActiveCombo: Boolean(c.hasActiveCombo),
     is_remote_enabled: Boolean(c.is_remote_enabled),
     cpu: c.is_remote_enabled ? 'Cloud vGPU Core' : 'Intel Core High Performance',
     gpu: c.is_remote_enabled ? 'RTX 4090 Cloud vGPU' : 'NVIDIA GeForce RTX',
     ram: '32GB DDR5',
     bootImage: 'Win11-Pro-Cyber-v25.02',
     userName,
+    user: userName,
     userRank: memberObj?.Rank?.name ? `Rank ${memberObj.Rank.name}` : null,
     userInitials,
     currentGame,
+    game: currentGame,
+    ip_address: c.ip_address || c.ipAddress || null,
     cleanStatus: statusConfig.cleanStatus,
     status: statusConfig.status,
     statusLabel: statusConfig.statusLabel,

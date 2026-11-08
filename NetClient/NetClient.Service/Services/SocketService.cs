@@ -25,6 +25,7 @@ public class SocketService : BackgroundService
     private bool _sessionClearedForDisconnect;
     private readonly string _serverUrl;
     private readonly int _heartbeatIntervalSeconds;
+    private readonly int _connectTimeoutSeconds;
 
     public SocketService(
         ILogger<SocketService> logger,
@@ -47,6 +48,10 @@ public class SocketService : BackgroundService
         if (!int.TryParse(_configuration["Client:HeartbeatIntervalSeconds"], out _heartbeatIntervalSeconds) || _heartbeatIntervalSeconds <= 0)
         {
             _heartbeatIntervalSeconds = 5;
+        }
+        if (!int.TryParse(_configuration["Client:ConnectTimeoutSeconds"], out _connectTimeoutSeconds) || _connectTimeoutSeconds <= 0)
+        {
+            _connectTimeoutSeconds = 10;
         }
 
         // Subscribe to local session state changes
@@ -82,6 +87,7 @@ public class SocketService : BackgroundService
                 if (!_client.Connected)
                 {
                     _isRegistered = false;
+                    _disconnectedAt ??= DateTimeOffset.UtcNow;
                     if (_disconnectedAt.HasValue &&
                         !_sessionClearedForDisconnect &&
                         DateTimeOffset.UtcNow - _disconnectedAt.Value >= TimeSpan.FromSeconds(15))
@@ -90,8 +96,11 @@ public class SocketService : BackgroundService
                     }
                     try
                     {
-                        _logger.LogInformation("Connecting to Socket.IO backend at {Url}...", _serverUrl);
-                        await _client.ConnectAsync(stoppingToken);
+                        _logger.LogInformation(
+                            "Connecting to Socket.IO backend at {Url} (timeout: {TimeoutSeconds}s)...",
+                            _serverUrl,
+                            _connectTimeoutSeconds);
+                        await ConnectWithTimeoutAsync(stoppingToken);
                         nextRegistrationAttempt = DateTimeOffset.UtcNow;
                     }
                     catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -105,6 +114,7 @@ public class SocketService : BackgroundService
                             "Unable to connect to Socket.IO backend. Retrying in {RetrySeconds} seconds.",
                             retryDelay.TotalSeconds);
 
+                        await DisconnectAfterFailedConnectAsync();
                         await Task.Delay(retryDelay, stoppingToken);
                         continue;
                     }
@@ -121,6 +131,7 @@ public class SocketService : BackgroundService
                 await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             }
         }
+
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
             _logger.LogInformation("SocketService is stopping gracefully.");
@@ -142,6 +153,44 @@ public class SocketService : BackgroundService
             }
 
             _heartbeatTimer?.Dispose();
+        }
+    }
+
+    private async Task ConnectWithTimeoutAsync(CancellationToken stoppingToken)
+    {
+        if (_client == null)
+        {
+            throw new InvalidOperationException("Socket.IO client has not been initialized.");
+        }
+
+        using var connectTimeout = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        connectTimeout.CancelAfter(TimeSpan.FromSeconds(_connectTimeoutSeconds));
+
+        try
+        {
+            await _client.ConnectAsync(connectTimeout.Token);
+        }
+        catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"Socket.IO connection to {_serverUrl} timed out after {_connectTimeoutSeconds} seconds.");
+        }
+    }
+
+    private async Task DisconnectAfterFailedConnectAsync()
+    {
+        if (_client == null || !_client.Connected)
+        {
+            return;
+        }
+
+        try
+        {
+            await _client.DisconnectAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to reset Socket.IO client after a connection attempt.");
         }
     }
 

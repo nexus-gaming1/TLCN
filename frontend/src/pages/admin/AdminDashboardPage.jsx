@@ -8,9 +8,10 @@ import ZoneSection from '../../widgets/station-grid/ZoneSection';
 import StationListView from '../../widgets/station-grid/StationListView';
 import StationDrawer from '../../features/station-drawer/ui/StationDrawer';
 import BootromLogModal from '../../features/bootrom/BootromLogModal';
+import AmountInputModal from '../../features/transactions/ui/AmountInputModal';
 import dashboardService from '../../shared/api/dashboard.service';
 import machineService from '../../shared/api/machine.service';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RotateCw, Power, LogOut, Info, Lock, Unlock, ArrowRightLeft, Wallet, Coins, Gift, CreditCard } from 'lucide-react';
 import { useMachines } from '../../shared/hooks/useMachines';
 import { useMachineSocket } from '../../shared/hooks/useMachineSocket';
 export default function AdminDashboardPage({ user, onLogout }) {
@@ -24,12 +25,26 @@ export default function AdminDashboardPage({ user, onLogout }) {
     const [loading, setLoading] = useState(true);
     const [isBootromModalOpen, setIsBootromModalOpen] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
+    const [contextMenu, setContextMenu] = useState(null);
+    const [balanceModal, setBalanceModal] = useState({ isOpen: false, action: 'TOPUP', station: null });
 
     const showGlobalToast = (text, isError = false) => {
         setToastMessage({ text, isError });
         setTimeout(() => setToastMessage(null), 3500);
     };
-const {
+
+    const openBalanceModal = (action, station) => {
+        if (!station) return;
+        if (!station.user && !station.member_id) {
+            showGlobalToast('Máy hiện chưa có hội viên đăng nhập.', true);
+            setContextMenu(null);
+            return;
+        }
+        setBalanceModal({ isOpen: true, action, station });
+        setContextMenu(null);
+    };
+
+    const {
         data: machines = {},
         isLoading,
         isError,
@@ -44,7 +59,137 @@ const {
         }
         if (showLoading) setLoading(false);
     }, []);
-  useMachineSocket();
+
+    const updateStationFromSocket = useCallback((machine) => {
+        if (!machine) return;
+
+        const matchesMachine = (station) => {
+            if (!station) return false;
+
+            // 1. So khớp ID máy / Computer ID
+            const machineCompId = machine.computerId || machine.computer_id;
+            const stationCompId = station.computer_id || station.computerId;
+            if (machineCompId && stationCompId && Number(machineCompId) === Number(stationCompId)) {
+                return true;
+            }
+
+            // 2. So khớp tên máy / machineId
+            const mId = String(machine.machineId || machine.computerName || '').trim().toLowerCase();
+            const sId = String(station.id || station.computer_name || '').trim().toLowerCase();
+            if (mId && sId && (sId === mId || station.id === machine.machineId)) {
+                return true;
+            }
+
+            // 3. So khớp địa chỉ IP
+            const socketIp = String(machine.localIp || '').trim().toLowerCase();
+            const stationIp = String(station.ip || station.ip_address || '').trim().toLowerCase();
+            if (socketIp && stationIp && socketIp === stationIp) {
+                return true;
+            }
+
+            // 4. So khớp địa chỉ MAC
+            const socketMac = String(machine.macAddress || '').replace(/[:-]/g, '').trim().toLowerCase();
+            const stationMac = String(station.mac_address || station.macAddress || '').replace(/[:-]/g, '').trim().toLowerCase();
+            if (socketMac && stationMac && socketMac === stationMac) {
+                return true;
+            }
+
+            return false;
+        };
+
+        const updateStation = (station) => {
+            if (!matchesMachine(station)) return station;
+
+            const status = String(machine.status || station.status || 'OFFLINE').toUpperCase();
+            const typeMap = {
+                ONLINE: 'ready',
+                IN_USE: machine.isRemote ? 'cloud' : 'local',
+                OFFLINE: 'off',
+                LOCKED: 'locked',
+                MAINTENANCE: 'maint',
+                REMOTE: 'cloud'
+            };
+
+            return {
+                ...station,
+                status,
+                type: typeMap[status] || station.type,
+                user: machine.currentUser || (status === 'ONLINE' ? null : station.user),
+                userName: machine.currentUser || (status === 'ONLINE' ? null : station.userName),
+                member_id: machine.memberId !== undefined ? machine.memberId : station.member_id,
+                sessionStartedAt: machine.sessionStartedAt !== undefined ? machine.sessionStartedAt : station.sessionStartedAt,
+                remainingMinutes: machine.remainingMinutes !== undefined
+                    ? machine.remainingMinutes
+                    : (status === 'ONLINE' || status === 'OFFLINE' ? null : station.remainingMinutes),
+                real_balance: machine.realBalance !== undefined ? machine.realBalance : station.real_balance,
+                bonus_balance: machine.bonusBalance !== undefined ? machine.bonusBalance : station.bonus_balance,
+                hasActiveCombo: machine.hasActiveCombo !== undefined ? machine.hasActiveCombo : station.hasActiveCombo,
+                ip: station.ip || machine.localIp,
+                ip_address: station.ip_address || machine.localIp,
+                mac_address: station.mac_address || machine.macAddress,
+                performance: machine.performance || station.performance,
+                telemetry: machine.performance
+                    ? `CPU ${Number(machine.performance.cpuUsage || 0).toFixed(1)}% • RAM ${Number(machine.performance.ramUsage || 0).toFixed(1)}% • GPU ${machine.performance.gpuUsage == null ? '--' : `${Number(machine.performance.gpuUsage).toFixed(1)}%`}`
+                    : station.telemetry
+            };
+        };
+
+        setAllStationsList((stations) => stations.map(updateStation));
+        setSelectedStation((station) => station ? updateStation(station) : station);
+        setOverviewData((current) => {
+            if (!current?.zones) return current;
+
+            const updatedZones = current.zones.map((zone) => ({
+                ...zone,
+                stations: (zone.stations || []).map(updateStation)
+            }));
+            const updatedStations = updatedZones.flatMap((zone) => zone.stations || []);
+            const inUse = updatedStations.filter((station) => station.status === 'IN_USE').length;
+            const remote = updatedStations.filter((station) =>
+                station.status === 'REMOTE' || station.type === 'cloud'
+            ).length;
+            const online = updatedStations.filter((station) => station.status === 'ONLINE' || station.type === 'ready').length;
+            const maintenance = updatedStations.filter((station) =>
+                ['MAINTENANCE', 'OFFLINE'].includes(station.status) || station.type === 'maint' || station.type === 'off'
+            ).length;
+
+            return {
+                ...current,
+                metrics: {
+                    ...current.metrics,
+                    totalStations: updatedStations.length,
+                    occupancyRate: updatedStations.length
+                        ? (((inUse + remote) / updatedStations.length) * 100).toFixed(1)
+                        : '0.0',
+                    localCount: inUse,
+                    cloudCount: remote,
+                    readyCount: online,
+                    maintCount: maintenance
+                },
+                zones: updatedZones
+            };
+        });
+    }, []);
+
+    const handleMachinesList = useCallback((machinesList) => {
+        Object.values(machinesList || {}).forEach(updateStationFromSocket);
+    }, [updateStationFromSocket]);
+
+    const handleHeartbeat = useCallback(({ localIp, performance }) => {
+        if (!localIp || !performance) return;
+        updateStationFromSocket({ localIp, performance });
+    }, [updateStationFromSocket]);
+
+    useMachineSocket({
+        onMachinesList: handleMachinesList,
+        onMachineUpdated: updateStationFromSocket,
+        onHeartbeat: handleHeartbeat,
+        onSessionTimeUpdated: updateStationFromSocket
+    });
+
+    useEffect(() => {
+        handleMachinesList(machines);
+    }, [handleMachinesList, machines]);
 
     useEffect(() => {
         loadDashboardData();
@@ -57,6 +202,55 @@ const {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, []);
+
+    useEffect(() => {
+        const closeContextMenu = () => setContextMenu(null);
+        window.addEventListener('click', closeContextMenu);
+        return () => window.removeEventListener('click', closeContextMenu);
+    }, []);
+
+    const handleCommand = async (command) => {
+        if (!contextMenu?.station) return;
+        const station = contextMenu.station;
+        const ipAddress = station.ip || station.ip_address;
+        if (!ipAddress) {
+            showGlobalToast('Không tìm thấy địa chỉ IP của máy.', true);
+            return;
+        }
+
+        try {
+            if (command === 'LOGOUT') {
+                await machineService.logoutByAddress(ipAddress, station.mac_address);
+            } else {
+                await machineService.sendCommandByAddress(ipAddress, station.mac_address, command);
+            }
+            showGlobalToast(`Đã gửi lệnh ${command} tới ${station.id}.`);
+        } catch (error) {
+            showGlobalToast(error.message || `Không thể gửi lệnh ${command}.`, true);
+        } finally {
+            setContextMenu(null);
+        }
+    };
+
+    const handleStationCommand = async (station, command) => {
+        const ipAddress = station.ip || station.ip_address;
+        if (!ipAddress) {
+            throw new Error('Không tìm thấy địa chỉ IP của máy.');
+        }
+
+        if (command === 'LOGOUT') {
+            await machineService.logoutByAddress(ipAddress, station.mac_address);
+        } else {
+            await machineService.sendCommandByAddress(ipAddress, station.mac_address, command);
+        }
+    };
+
+    const handleContextStatusAction = async (status) => {
+        if (!contextMenu?.station) return;
+        const station = contextMenu.station;
+        setContextMenu(null);
+        await handleStationAction(station.computer_id, status);
+    };
 
     // Action Handler for station status change (ONLINE, OFFLINE, LOCKED, MAINTENANCE)
     const handleStationAction = async (computerId, newStatus) => {
@@ -256,8 +450,10 @@ const {
                             <StationListView
                                 stations={sortedGlobalList}
                                 onSelectStation={(st) => setSelectedStation(st)}
-                                onAction={handleStationAction}
-                                onSwitchModalOpen={(st) => setSelectedStation(st)}
+                                onContextMenu={(event, station) => {
+                                    event.preventDefault();
+                                    setContextMenu({ x: event.clientX, y: event.clientY, station });
+                                }}
                             />
                         ) : (
                             /* GRID VIEW BY ZONES */
@@ -270,6 +466,10 @@ const {
                                         filter={filter}
                                         searchQuery={searchQuery}
                                         onSelectStation={(st) => setSelectedStation(st)}
+                                        onContextMenu={(event, station) => {
+                                            event.preventDefault();
+                                            setContextMenu({ x: event.clientX, y: event.clientY, station });
+                                        }}
                                     />
                                 );
                             })
@@ -287,9 +487,12 @@ const {
                 isOpen={!!selectedStation}
                 onClose={() => setSelectedStation(null)}
                 onAction={handleStationAction}
+                onCommand={handleStationCommand}
                 onSwitchStation={handleStationSwitch}
+                onReload={() => loadDashboardData(false)}
+                currentUser={user}
                 availableStations={allStationsList}
-                machines= {machines}
+                machines={machines}
             />
 
             {/* BOOTROM LOGS TECHNICAL MODAL */}
@@ -297,6 +500,80 @@ const {
                 isOpen={isBootromModalOpen}
                 onClose={() => setIsBootromModalOpen(false)}
             />
+
+            {/* AMOUNT INPUT MODAL FOR CONTEXT MENU ACTIONS */}
+            {balanceModal.isOpen && (
+                <AmountInputModal
+                    isOpen={balanceModal.isOpen}
+                    action={balanceModal.action}
+                    station={balanceModal.station}
+                    currentUser={user}
+                    onClose={() => setBalanceModal({ isOpen: false, action: 'TOPUP', station: null })}
+                    onSuccess={(msg) => {
+                        showGlobalToast(msg);
+                        loadDashboardData(false);
+                    }}
+                />
+            )}
+
+            {contextMenu && (
+                <div
+                    className="fixed z-[60] min-w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-2xl"
+                    style={{ left: contextMenu.x, top: contextMenu.y }}
+                    onClick={(event) => event.stopPropagation()}
+                >
+                    <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100" onClick={() => { setSelectedStation(contextMenu.station); setContextMenu(null); }}>
+                        <Info className="h-4 w-4" /> Thông tin máy
+                    </button>
+                    <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100" onClick={() => handleCommand('LOGOUT')}>
+                        <LogOut className="h-4 w-4" /> Đăng xuất máy
+                    </button>
+
+                    {/* Giao dịch số dư tài khoản & tiền miễn phí (Bám sát ComputersScreen.cs:367-382) */}
+                    {(contextMenu.station.user || contextMenu.station.member_id) && (
+                        <>
+                            <div className="my-1 border-t border-slate-100" />
+                            <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50" onClick={() => openBalanceModal('TOPUP', contextMenu.station)}>
+                                <Wallet className="h-4 w-4 text-emerald-600" /> Nạp tiền
+                            </button>
+                            <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-rose-700 hover:bg-rose-50" onClick={() => openBalanceModal('WITHDRAW', contextMenu.station)}>
+                                <Coins className="h-4 w-4 text-rose-600" /> Rút tiền
+                            </button>
+                            <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-purple-700 hover:bg-purple-50" onClick={() => openBalanceModal('BONUS_ADD', contextMenu.station)}>
+                                <Gift className="h-4 w-4 text-purple-600" /> Tặng tiền miễn phí
+                            </button>
+                            <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50" onClick={() => openBalanceModal('BONUS_DEDUCT', contextMenu.station)}>
+                                <CreditCard className="h-4 w-4 text-amber-600" /> Trừ tiền miễn phí
+                            </button>
+                        </>
+                    )}
+
+                    <div className="my-1 border-t border-slate-100" />
+                    <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100" onClick={() => handleCommand('RESTART')}>
+                        <RotateCw className="h-4 w-4" /> Khởi động lại
+                    </button>
+                    <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-rose-700 hover:bg-rose-50" onClick={() => handleCommand('SHUTDOWN')}>
+                        <Power className="h-4 w-4" /> Tắt máy
+                    </button>
+                    <div className="my-1 border-t border-slate-100" />
+                    <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-emerald-700 hover:bg-emerald-50" onClick={() => handleContextStatusAction('ONLINE')}>
+                        <Power className="h-4 w-4" /> Bật máy
+                    </button>
+                    <button
+                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-amber-700 hover:bg-amber-50"
+                        onClick={() => handleContextStatusAction(contextMenu.station.status === 'LOCKED' ? 'ONLINE' : 'LOCKED')}
+                    >
+                        {contextMenu.station.status === 'LOCKED' ? <Unlock className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                        {contextMenu.station.status === 'LOCKED' ? 'Mở khóa máy' : 'Tạm khóa máy'}
+                    </button>
+                    <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-rose-700 hover:bg-rose-50" onClick={() => handleContextStatusAction('OFFLINE')}>
+                        <Power className="h-4 w-4" /> Tắt trạng thái máy
+                    </button>
+                    <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-sky-700 hover:bg-sky-50" onClick={() => { setSelectedStation(contextMenu.station); setContextMenu(null); }}>
+                        <ArrowRightLeft className="h-4 w-4" /> Chuyển máy
+                    </button>
+                </div>
+            )}
         </div>
     );
 }
