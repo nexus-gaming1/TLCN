@@ -66,6 +66,20 @@ export default function MemberTable({
 }) {
   const isAllSelected = members.length > 0 && selectedIds.length === members.length;
 
+  if (members.length === 0) {
+    return (
+      <div className="w-full bg-white rounded-lg shadow-flat border border-slate-200 p-12 flex flex-col items-center justify-center text-center min-h-[360px]">
+        <div className="w-16 h-16 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mb-4">
+          <Award className="w-8 h-8 text-sky-600" />
+        </div>
+        <h3 className="text-base font-bold text-slate-800">Không tìm thấy hội viên phù hợp</h3>
+        <p className="text-xs text-slate-500 mt-1 max-w-sm">
+          Vui lòng thử thay đổi từ khóa tìm kiếm (Tên, UID, SĐT, Email) hoặc làm mới bộ lọc phân hạng, trạng thái.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full bg-white rounded-lg shadow-flat border border-slate-200 flex flex-col">
       <div className="w-full overflow-x-auto rounded-lg">

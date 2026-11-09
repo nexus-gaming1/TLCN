@@ -92,7 +92,7 @@ class MemberService {
   /**
    * Chỉnh sửa thông tin hồ sơ cơ bản (Họ tên, Số điện thoại)
    */
-  async updateMemberInfo(memberId, { full_name, phone_number, phone }) {
+  async updateMemberInfo(memberId, { full_name, fullName, phone_number, phone }) {
     try {
       const member = await db.Member.findByPk(memberId);
       if (!member) return null;
@@ -100,8 +100,9 @@ class MemberService {
       const user = await db.User.findByPk(memberId);
       if (user) {
         let userDirty = false;
-        if (full_name !== undefined) {
-          user.full_name = full_name;
+        const newName = full_name !== undefined ? full_name : fullName;
+        if (newName !== undefined) {
+          user.full_name = newName;
           userDirty = true;
         }
         if (userDirty) {
@@ -117,6 +118,7 @@ class MemberService {
 
       return {
         ...member.toJSON(),
+        full_name: user ? user.full_name : null,
         userInfo: user ? user.toJSON() : null
       };
     } catch (error) {
@@ -146,6 +148,7 @@ class MemberService {
 
       return {
         ...member.toJSON(),
+        status: user.status,
         userInfo: user.toJSON()
       };
     } catch (error) {

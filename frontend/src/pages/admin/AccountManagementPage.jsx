@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { AlertCircle } from 'lucide-react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -24,6 +25,7 @@ import MemberPrintView from '../../features/members/ui/MemberPrintView';
 export default function AccountManagementPage({ user, onLogout }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -67,6 +69,7 @@ export default function AccountManagementPage({ user, onLogout }) {
   // Auto-fetch members from Backend Service on mount
   const fetchMemberData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await memberService.getMembers();
       if (data) {
@@ -74,6 +77,7 @@ export default function AccountManagementPage({ user, onLogout }) {
       }
     } catch (err) {
       console.error('Lỗi khi tải danh sách hội viên:', err);
+      setError('Không thể kết nối máy chủ hoặc cơ sở dữ liệu để tải danh sách hội viên. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -239,6 +243,23 @@ export default function AccountManagementPage({ user, onLogout }) {
       <div className="pl-[240px] print:hidden">
         <main className="relative pt-16 min-h-screen bg-slate-50/50 w-full px-6 py-6 pb-24 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
+
+            {/* Error Banner khi mất kết nối backend / timeout */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                  <span>{error}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchMemberData}
+                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors shrink-0"
+                >
+                  Thử lại
+                </button>
+              </div>
+            )}
 
             {/* KPI Summary Cards */}
             <MemberKpiCards {...metrics} />
