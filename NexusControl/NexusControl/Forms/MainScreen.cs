@@ -1,5 +1,6 @@
 ﻿using NexusControl.Services;
 using NexusControl.UserControls;
+using NexusControl.Views;
 namespace NexusControl.Forms
 {
     public partial class MainScreen : Form
@@ -23,7 +24,15 @@ namespace NexusControl.Forms
 
         private void LoadScreen(UserControl screen)
         {
-            panel1.Controls.Clear();
+            // Giải phóng an toàn các UserControl cũ bằng cách duyệt ngược từ cuối lên
+            for (int i = panel1.Controls.Count - 1; i >= 0; i--)
+            {
+                Control c = panel1.Controls[i];
+                panel1.Controls.RemoveAt(i); // Gỡ khỏi giao diện trước
+                c.Dispose();                 // Giải phóng RAM sau
+            }
+
+            //panel1.Controls.Clear();
             screen.Dock = DockStyle.Fill;
             panel1.Controls.Add(screen);
         }
@@ -79,11 +88,31 @@ namespace NexusControl.Forms
                 case "nhomnguoisudung":
                     // Load the profile content
                     break;
+                case "fnb_orders":
+                    LoadScreen(new OrderManagementView());
+                    break;
 
                 default:
                     // Handle unknown selection
                     break;
-                }
             }
         }
+
+        private void thayĐổiTàiKhoảnToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+
+        }
+
+        private void ChangeAccount_Click(object sender, EventArgs e)
+        {
+            Form Login = new LoginScreen();
+            Login.ShowDialog();
+        }
+
+        private void table1_CellClick(object sender, AntdUI.TableClickEventArgs e)
+        {
+
+        }
+    }
 }

@@ -26,6 +26,7 @@ const comboRoutes = require('./src/routes/comboRoutes');
 const gameRoutes = require('./src/routes/gameRoutes');
 const categoryRoutes = require('./src/routes/categoryRoutes');
 const comboTimeService = require('./src/services/comboTimeService');
+const billingWorker = require('./src/services/billingWorker');
 const orderRoutes = require('./src/routes/orderRoutes');
 
 const errorHandler = require('./src/middleware/errorHandler');
@@ -115,7 +116,7 @@ async function startServer() {
     console.log('✅ Kết nối & Đồng bộ CSDL MySQL thành công!');
 
     // 3. Chạy seeder nạp dữ liệu mẫu
-    await seedData(db);
+    //await seedData(db);
 
     // 4. Quét & xử lý các combo đã hết hạn trong lúc backend tắt/restart (Rule 2.6)
     const expiredCount = await comboTimeService.checkAndExpireCombos();
@@ -132,6 +133,7 @@ async function startServer() {
       }
     }, 5000);
     if (expirationScheduler.unref) expirationScheduler.unref();
+    billingWorker.start();
 
     // 6. Bật server
     server.listen(PORT, () => {

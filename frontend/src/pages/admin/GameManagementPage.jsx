@@ -28,8 +28,7 @@ export default function GameManagementPage({ user, onLogout }) {
     is_available: 'all'
   });
 
-  // Selection & Modals State
-  const [selectedIds, setSelectedIds] = useState([]);
+  // Modals State
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingGame, setEditingGame] = useState(null);
 
@@ -167,20 +166,6 @@ export default function GameManagementPage({ user, onLogout }) {
     return filteredGames.slice(startIndex, startIndex + pageSize);
   }, [filteredGames, currentPage, pageSize]);
 
-  // Selection
-  const handleToggleSelect = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleToggleSelectAll = () => {
-    if (selectedIds.length === filteredGames.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(filteredGames.map((g) => g.game_id));
-    }
-  };
 
   // Thao tác Tạo Game Mới
   const handleCreateGame = async (gameData) => {

@@ -111,6 +111,8 @@
             Name = "LoginScreen";
             StartPosition = FormStartPosition.CenterParent;
             Text = "Đăng nhập nhân viên";
+            FormClosing += LoginScreen_FormClosing;
+            Load += LoginScreen_Load;
             Shown += LoginScreen_Shown;
             flowPanel1.ResumeLayout(false);
             ResumeLayout(false);

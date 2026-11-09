@@ -219,11 +219,11 @@ test('[API / Route Testing Suite] Hành vi HTTP End-to-End, mã lỗi RESTful & 
   // ----------------------------------------------------------------------------
   await t.test('[AC-04] [HTTP 200] Tuyến GET công khai trả về dữ liệu chuẩn JSON', async () => {
     // Stub dữ liệu cho tầng service
-    gameService.getGames = async (filter) => ({
+    gameService.getGames = async (_filter) => ({
       games: [sampleGame],
       metrics: { totalGames: 1, availableGames: 1 }
     });
-    gameService.getGameById = async (id) => sampleGame;
+    gameService.getGameById = async (_id) => sampleGame;
     gameService.getMetrics = async () => ({ totalGames: 1, availableGames: 1, remoteRate: 100 });
     categoryService.getCategories = async () => [{ category_id: 1, name: 'FPS' }];
 

@@ -51,6 +51,7 @@ class AuthService {
     const tokenPayload = {
       user_id: user.user_id,
       username: user.username,
+      member_id: user.memberProfile?.member_id || null,
       role: user.role,
     };
 
@@ -86,6 +87,22 @@ class AuthService {
       tokenType: 'Bearer',
       user: userData
     };
+  }
+
+  /**
+   * Đăng nhập cho Nexus Control dựa trên luồng login hiện có.
+   * Chỉ tài khoản quản trị và nhân viên được phép truy cập ứng dụng quản lý.
+   */
+  async controlLogin({ username, password }) {
+    const result = await this.login({ username, password });
+    const allowedRoles = ['ADMIN', 'EMPLOYEE'];
+
+    if (!allowedRoles.includes(result.user.role)) {
+      await this.logout({ refreshToken: result.refreshToken });
+      throw new Error('Tài khoản không có quyền truy cập ứng dụng quản lý.');
+    }
+
+    return result;
   }
 
   /**

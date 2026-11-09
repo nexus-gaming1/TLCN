@@ -2,12 +2,12 @@
 {
     partial class ComputersScreen
     {
-        /// <summary> 
+        /// <summary>
         /// Required designer variable.
         /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary> 
+        /// <summary>
         /// Clean up any resources being used.
         /// </summary>
         /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
@@ -22,38 +22,52 @@
 
         #region Component Designer generated code
 
-        /// <summary> 
-        /// Required method for Designer support - do not modify 
+        /// <summary>
+        /// Required method for Designer support - do not modify
         /// the contents of this method with the code editor.
         /// </summary>
         private void InitializeComponent()
         {
-            label1 = new Label();
+            lblResult = new Label();
+            tb_Computer = new AntdUI.Table();
             SuspendLayout();
             // 
-            // label1
+            // lblResult
             // 
-            label1.AutoSize = true;
-            label1.Location = new Point(3, 11);
-            label1.Name = "label1";
-            label1.Size = new Size(66, 20);
-            label1.TabIndex = 0;
-            label1.Text = "Máy tính";
-            label1.Click += label1_Click;
+            lblResult.Dock = DockStyle.Fill;
+            lblResult.Location = new Point(0, 0);
+            lblResult.Name = "lblResult";
+            lblResult.Padding = new Padding(8, 0, 0, 0);
+            lblResult.Size = new Size(777, 438);
+            lblResult.TabIndex = 1;
+            lblResult.Text = "Đang tải...";
+            lblResult.TextAlign = ContentAlignment.MiddleLeft;
+            // 
+            // tb_Computer
+            // 
+            tb_Computer.Dock = DockStyle.Fill;
+            tb_Computer.Gap = 12;
+            tb_Computer.Location = new Point(0, 0);
+            tb_Computer.Name = "tb_Computer";
+            tb_Computer.Size = new Size(777, 438);
+            tb_Computer.TabIndex = 2;
+            tb_Computer.Text = "tb_Computer";
+            tb_Computer.CellClick += tb_Computer_CellClick;
             // 
             // ComputersScreen
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            Controls.Add(label1);
+            Controls.Add(tb_Computer);
+            Controls.Add(lblResult);
             Name = "ComputersScreen";
             Size = new Size(777, 438);
+            Load += ComputersScreen_Load;
             ResumeLayout(false);
-            PerformLayout();
         }
 
         #endregion
-
-        private Label label1;
+        private Label lblResult;
+        private AntdUI.Table tb_Computer;
     }
 }
