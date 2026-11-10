@@ -7,6 +7,8 @@ const TelemetryService = require('./telemetryService');
 const { SessionType } = require('../constants/enums');
 const { Op } = require('sequelize');
 
+const IPV4_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const MAC_REGEX = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
 
 class ComputerService {
   constructor(
@@ -186,6 +188,66 @@ class ComputerService {
       const { computer_name, zone_id, status, ip_address, mac_address, is_remote_enabled } = computerData;
       const db = this.models;
 
+      // Validate IP format if provided
+      if (ip_address && !IPV4_REGEX.test(ip_address.trim())) {
+        const err = new Error('Địa chỉ IP không đúng định dạng IPv4 hợp lệ');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      // Validate MAC format if provided
+      if (mac_address && !MAC_REGEX.test(mac_address.trim())) {
+        const err = new Error('Địa chỉ MAC không đúng định dạng PXE hợp lệ');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      // Validate zone exists if provided
+      if (zone_id) {
+        const zoneExists = await db.ComputerZone.findByPk(Number(zone_id));
+        if (!zoneExists) {
+          const err = new Error('Phân khu máy trạm không tồn tại');
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      // Check duplicate computer_name
+      if (computer_name && computer_name.trim()) {
+        const existingName = await db.Computer.findOne({
+          where: { computer_name: computer_name.trim() }
+        });
+        if (existingName) {
+          const err = new Error(`Tên máy trạm '${computer_name.trim()}' đã tồn tại trên hệ thống`);
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      // Check duplicate IP
+      if (ip_address && ip_address.trim()) {
+        const existingIp = await db.Computer.findOne({
+          where: { ip_address: ip_address.trim() }
+        });
+        if (existingIp) {
+          const err = new Error(`Địa chỉ IP '${ip_address.trim()}' đã được gán cho máy khác`);
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      // Check duplicate MAC
+      if (mac_address && mac_address.trim()) {
+        const existingMac = await db.Computer.findOne({
+          where: { mac_address: mac_address.trim() }
+        });
+        if (existingMac) {
+          const err = new Error(`Địa chỉ MAC '${mac_address.trim()}' đã được gán cho máy khác`);
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
       return await db.sequelize.transaction(async (t) => {
         // If computer_name, ip_address, mac_address are fully provided
         if (computer_name && ip_address && mac_address) {
@@ -251,6 +313,81 @@ class ComputerService {
       const computer = await db.Computer.findByPk(computerId);
       if (!computer) return null;
 
+      // Validate zone if changing
+      if (updateData.zone_id) {
+        const zoneExists = await db.ComputerZone.findByPk(Number(updateData.zone_id));
+        if (!zoneExists) {
+          const err = new Error('Phân khu máy trạm không tồn tại');
+          err.statusCode = 400;
+          throw err;
+        }
+        computer.zone_id = Number(updateData.zone_id);
+      }
+
+      // Validate name uniqueness
+      if (updateData.computer_name && updateData.computer_name.trim() !== computer.computer_name) {
+        const existingName = await db.Computer.findOne({
+          where: {
+            computer_name: updateData.computer_name.trim(),
+            computer_id: { [Op.ne]: computerId }
+          }
+        });
+        if (existingName) {
+          const err = new Error(`Tên máy trạm '${updateData.computer_name.trim()}' đã tồn tại`);
+          err.statusCode = 400;
+          throw err;
+        }
+        computer.computer_name = updateData.computer_name.trim();
+      }
+
+      // Validate IP format & uniqueness
+      if (updateData.ip_address !== undefined && updateData.ip_address !== null) {
+        const trimmedIp = String(updateData.ip_address).trim();
+        if (trimmedIp && !IPV4_REGEX.test(trimmedIp)) {
+          const err = new Error('Địa chỉ IP không đúng định dạng IPv4 hợp lệ');
+          err.statusCode = 400;
+          throw err;
+        }
+        if (trimmedIp && trimmedIp !== computer.ip_address) {
+          const existingIp = await db.Computer.findOne({
+            where: {
+              ip_address: trimmedIp,
+              computer_id: { [Op.ne]: computerId }
+            }
+          });
+          if (existingIp) {
+            const err = new Error(`Địa chỉ IP '${trimmedIp}' đã được gán cho máy khác`);
+            err.statusCode = 400;
+            throw err;
+          }
+        }
+        computer.ip_address = trimmedIp || null;
+      }
+
+      // Validate MAC format & uniqueness
+      if (updateData.mac_address !== undefined && updateData.mac_address !== null) {
+        const trimmedMac = String(updateData.mac_address).trim();
+        if (trimmedMac && !MAC_REGEX.test(trimmedMac)) {
+          const err = new Error('Địa chỉ MAC không đúng định dạng PXE hợp lệ');
+          err.statusCode = 400;
+          throw err;
+        }
+        if (trimmedMac && trimmedMac !== computer.mac_address) {
+          const existingMac = await db.Computer.findOne({
+            where: {
+              mac_address: trimmedMac,
+              computer_id: { [Op.ne]: computerId }
+            }
+          });
+          if (existingMac) {
+            const err = new Error(`Địa chỉ MAC '${trimmedMac}' đã được gán cho máy khác`);
+            err.statusCode = 400;
+            throw err;
+          }
+        }
+        computer.mac_address = trimmedMac || null;
+      }
+
       if (updateData.status) {
         const transaction = await db.sequelize.transaction();
         try {
@@ -273,11 +410,9 @@ class ComputerService {
         }
       }
 
-      if (updateData.zone_id) computer.zone_id = updateData.zone_id;
-      if (updateData.computer_name) computer.computer_name = updateData.computer_name;
-      if (updateData.ip_address !== undefined) computer.ip_address = updateData.ip_address;
-      if (updateData.mac_address !== undefined) computer.mac_address = updateData.mac_address;
-      if (updateData.is_remote_enabled !== undefined) computer.is_remote_enabled = updateData.is_remote_enabled;
+      if (updateData.is_remote_enabled !== undefined) {
+        computer.is_remote_enabled = Boolean(updateData.is_remote_enabled);
+      }
 
       await computer.save();
       return computer;
@@ -294,6 +429,18 @@ class ComputerService {
     try {
       const computer = await this.models.Computer.findByPk(computerId);
       if (!computer) return false;
+
+      if (computer.status === ComputerStatus.IN_USE || computer.status === ComputerStatus.REMOTE) {
+        const error = new Error('Không thể xóa máy trạm đang có phiên sử dụng');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      // Delete associated status logs to maintain database integrity
+      if (this.models.ComputerStatusLog) {
+        await this.models.ComputerStatusLog.destroy({ where: { computer_id: computerId } });
+      }
+
       await computer.destroy();
       return true;
     } catch (error) {

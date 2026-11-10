@@ -1,5 +1,5 @@
 import React from 'react';
-import { Eye, Edit, Trash2, HardDrive, Cpu, AlertTriangle, CheckCircle, PowerOff, Wrench } from 'lucide-react';
+import { Monitor, Eye, Edit, Trash2, HardDrive, Cpu, AlertTriangle, CheckCircle, PowerOff, Wrench } from 'lucide-react';
 
 /**
  * Status Badge Helper
@@ -117,9 +117,20 @@ export default function MachineTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs font-medium text-slate-800">
-            {machines.map((m) => {
-              const isSelected = selectedIds.includes(m.id);
-              const statusUpper = String(m.status || '').toUpperCase();
+            {machines.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="py-12 text-center text-slate-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Monitor className="w-8 h-8 text-slate-400 stroke-[1.5]" />
+                    <span className="text-sm font-semibold text-slate-700">Không tìm thấy máy trạm nào</span>
+                    <span className="text-xs text-slate-400">Thử thay đổi bộ lọc tìm kiếm hoặc khai báo máy mới</span>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              machines.map((m) => {
+                const isSelected = selectedIds.includes(m.id);
+                const statusUpper = String(m.status || '').toUpperCase();
 
               return (
                 <tr
@@ -316,7 +327,8 @@ export default function MachineTable({
                   </td>
                 </tr>
               );
-            })}
+            })
+          )}
           </tbody>
         </table>
       </div>

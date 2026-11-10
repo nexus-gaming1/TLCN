@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -42,10 +43,12 @@ export default function MachineManagementPage({ user, onLogout }) {
   const [editingMachine, setEditingMachine] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   // Helper with safe try/catch/finally to re-fetch live machine fleet list & zones from MySQL CSDL
   const refreshMachineList = async (showLoading = true) => {
     if (showLoading) setLoading(true);
+    setErrorMessage(null);
     try {
       const [machinesData, zonesData] = await Promise.all([
         machineService.getMachines(),
@@ -59,6 +62,7 @@ export default function MachineManagementPage({ user, onLogout }) {
       }
     } catch (error) {
       console.error('Lỗi khi nạp lại danh sách máy trạm:', error.message);
+      setErrorMessage(error.message || 'Mất kết nối hoặc quá thời gian chờ phản hồi từ máy chủ.');
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -338,7 +342,23 @@ export default function MachineManagementPage({ user, onLogout }) {
       <div className="pl-[240px]">
         <main className="relative pt-16 min-h-screen bg-slate-100 w-full px-6 py-6 pb-24 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
-
+            {/* Network / Server Disconnection Banner */}
+            {errorMessage && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <span className="font-medium">{errorMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => refreshMachineList(true)}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Thử lại</span>
+                </button>
+              </div>
+            )}
 
             {/* KPI Summary Cards */}
             <MachineKpiCards
@@ -406,37 +426,44 @@ export default function MachineManagementPage({ user, onLogout }) {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3.5 bg-white p-4 rounded-xl border border-slate-200">
-                  {paginatedMachines.map((m) => {
-                    const statusGroup = getStatusGroup(m.status);
-                    const stationType = m.type || (
-                      statusGroup === ComputerStatus.ONLINE
-                        ? 'ready'
-                        : statusGroup === ComputerStatus.MAINTENANCE
-                        ? 'maint'
-                        : statusGroup === ComputerStatus.IN_USE
-                        ? (m.is_remote_enabled ? 'cloud' : 'local')
-                        : statusGroup === ComputerStatus.LOCKED
-                        ? 'locked'
-                        : 'off'
-                    );
+                {paginatedMachines.length === 0 ? (
+                  <div className="p-12 text-center text-slate-500 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col items-center justify-center gap-2">
+                    <span className="text-sm font-semibold text-slate-700">Không có máy trạm nào khớp với bộ lọc</span>
+                    <span className="text-xs text-slate-400">Vui lòng thử chọn lại phân khu hoặc trạng thái</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3.5 bg-white p-4 rounded-xl border border-slate-200">
+                    {paginatedMachines.map((m) => {
+                      const statusGroup = getStatusGroup(m.status);
+                      const stationType = m.type || (
+                        statusGroup === ComputerStatus.ONLINE
+                          ? 'ready'
+                          : statusGroup === ComputerStatus.MAINTENANCE
+                          ? 'maint'
+                          : statusGroup === ComputerStatus.IN_USE
+                          ? (m.is_remote_enabled ? 'cloud' : 'local')
+                          : statusGroup === ComputerStatus.LOCKED
+                          ? 'locked'
+                          : 'off'
+                      );
 
-                    return (
-                      <StationCard
-                        key={m.id}
-                        station={{
-                          id: m.id,
-                          user: m.userName,
-                          game: m.currentGame || m.cleanStatus,
-                          type: stationType,
-                          time: m.sessionTime ? m.sessionTime.split('/')[0].trim() : '00:00',
-                          latency: m.ip
-                        }}
-                        onClick={() => alert(`Chi tiết máy ${m.id}`)}
-                      />
-                    );
-                  })}
-                </div>
+                      return (
+                        <StationCard
+                          key={m.id}
+                          station={{
+                            id: m.id,
+                            user: m.userName,
+                            game: m.currentGame || m.cleanStatus,
+                            type: stationType,
+                            time: m.sessionTime ? m.sessionTime.split('/')[0].trim() : '00:00',
+                            latency: m.ip
+                          }}
+                          onClick={() => alert(`Chi tiết máy ${m.id}`)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
                 {/* Dynamic Pagination cho Grid view */}
                 <Pagination
                   currentPage={currentPage}
