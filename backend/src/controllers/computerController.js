@@ -543,7 +543,7 @@ class ComputerController {
   async toggleHardwareSpec(req, res, next) {
     try {
       const { id } = req.params;
-      const { is_active } = req.body;
+      const { is_active } = req.body || {};
       const profile = await computerService.toggleHardwareSpec(id, is_active);
       return res.json({
         status: 'success',

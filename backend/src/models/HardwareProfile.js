@@ -1,18 +1,18 @@
 const { Model, DataTypes } = require('sequelize');
 
 class HardwareProfile extends Model {
-  softDelete() {
+  softDelete(options = {}) {
     this.is_deleted = true;
     this.deleted_at = new Date();
     this.is_active = false;
-    return this.save();
+    return this.save(options);
   }
 
-  restore() {
+  restore(options = {}) {
     this.is_deleted = false;
     this.deleted_at = null;
     this.is_active = true;
-    return this.save();
+    return this.save(options);
   }
 }
 

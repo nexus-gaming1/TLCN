@@ -75,7 +75,7 @@ class PricingPlanController {
   async togglePricingPlanStatus(req, res, next) {
     try {
       const { id } = req.params;
-      const { is_active } = req.body;
+      const { is_active } = req.body || {};
       const updated = await pricingPlanService.togglePricingPlanStatus(id, is_active);
       if (!updated) {
         return res.status(404).json({

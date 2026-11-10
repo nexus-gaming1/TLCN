@@ -107,7 +107,7 @@ export default function TransactionManagementPage({ user, onLogout }) {
             <Sidebar activeNav="transactions" />
 
             {/* Main Content Area — đồng bộ khoảng cách với ManageConfigPage */}
-            <div className="pl-[240px]">
+            <div className="lg:pl-[240px]">
                 <main className="relative pt-16 min-h-screen bg-slate-100 w-full px-6 py-6 pb-24 flex flex-col justify-between">
                     <div className="flex flex-col w-full gap-6">
 

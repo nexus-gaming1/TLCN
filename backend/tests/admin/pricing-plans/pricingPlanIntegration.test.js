@@ -151,6 +151,11 @@ test('[Pricing Plan Module] MySQL Database & Sequelize ORM Integration Suite', a
     const foundInActive = allActive.plans.some((p) => p.pricing_plan_id === createdPlanId);
     assert.strictEqual(foundInActive, false, 'Bảng giá đã xóa mềm không được hiển thị trong danh sách hoạt động');
 
+    // Xác minh getAllPricingPlans({ is_deleted: true }) trả về bản ghi đã xóa mềm
+    const allTrash = await pricingPlanService.getAllPricingPlans({ is_deleted: true });
+    const foundInTrash = allTrash.plans.some((p) => p.pricing_plan_id === createdPlanId);
+    assert.strictEqual(foundInTrash, true, 'Bảng giá đã xóa mềm phải xuất hiện khi lọc thùng rác');
+
     // 2. Khôi phục bảng giá (Restore)
     const restored = await pricingPlanService.restorePricingPlan(createdPlanId);
     assert.strictEqual(restored.success, true);
@@ -159,5 +164,12 @@ test('[Pricing Plan Module] MySQL Database & Sequelize ORM Integration Suite', a
     assert.strictEqual(reloaded.is_deleted, false, 'is_deleted phải trở lại false');
     assert.strictEqual(reloaded.is_active, true, 'is_active phải trở lại true');
     assert.strictEqual(reloaded.deleted_at, null, 'deleted_at phải trở lại null');
+
+    // 3. Cập nhật lại zone_ids trong MySQL
+    const zones = await db.ComputerZone.findAll({ limit: 2 });
+    const updatedWithZones = await pricingPlanService.updatePricingPlan(createdPlanId, {
+      zone_ids: zones.map((z) => z.zone_id)
+    });
+    assert.strictEqual(updatedWithZones.ComputerZones.length, zones.length);
   });
 });

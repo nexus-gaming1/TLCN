@@ -4,7 +4,32 @@ import { Monitor, Cpu, MemoryStick, HardDrive } from 'lucide-react';
  * HardwareKpiBento component
  * Renders 4 high-density bento summary cards for fleet hardware telemetry
  */
-export default function HardwareKpiBento({ metrics = {} }) {
+export default function HardwareKpiBento({ metrics = {}, isLoading = false }) {
+  if (isLoading && !metrics) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((idx) => (
+          <div
+            key={idx}
+            className="bg-white rounded-xl p-4 sm:p-5 shadow-xs border border-slate-200/90 animate-pulse space-y-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-2 flex-1">
+                <div className="h-3 w-28 bg-slate-200 rounded" />
+                <div className="h-6 w-36 bg-slate-200 rounded" />
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-slate-200 shrink-0" />
+            </div>
+            <div className="pt-3 border-t border-slate-100 flex justify-between">
+              <div className="h-3 w-24 bg-slate-200 rounded" />
+              <div className="h-3 w-16 bg-slate-200 rounded" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const {
     totalMachines = 0,
     activeZones = 0,
@@ -68,14 +93,14 @@ export default function HardwareKpiBento({ metrics = {} }) {
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {cards.map((c) => {
         const IconComponent = c.icon;
 
         return (
           <div
             key={c.id}
-            className="bg-white rounded-lg p-4 sm:p-5 shadow-flat border border-slate-200 flex flex-col justify-between hover:shadow-sm transition-all duration-200 group"
+            className="bg-white rounded-xl p-4 sm:p-5 shadow-xs border border-slate-200/90 flex flex-col justify-between hover:shadow-md transition-all duration-200 group"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col space-y-1 min-w-0">

@@ -129,7 +129,7 @@ const handleExportExcel = async () => {
       <Sidebar activeNav="reports" bootromStatus="ONLINE" role="ADMIN" />
 
       {/* vùng nội dung chính */}
-      <div className="pl-[240px]">
+      <div className="lg:pl-[240px]">
         <main className="relative pt-16 pb-20 min-h-screen bg-[#F8F9FA] w-full px-8 py-6 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
             

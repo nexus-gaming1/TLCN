@@ -1,5 +1,11 @@
 const db = require('../models');
 
+function createHttpError(message, statusCode = 400) {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  return err;
+}
+
 /**
  * Chuẩn hóa chuỗi thời gian về định dạng HH:mm:ss chuẩn cho MySQL TIME
  */
@@ -23,10 +29,10 @@ function sanitizeTime(t) {
 function validatePlanName(name) {
   const trimmed = typeof name === 'string' ? name.trim() : '';
   if (!trimmed) {
-    throw new Error('Tên bảng giá không được để trống');
+    throw createHttpError('Tên bảng giá không được để trống', 400);
   }
   if (trimmed.length > 100) {
-    throw new Error('Tên bảng giá không được vượt quá 100 ký tự');
+    throw createHttpError('Tên bảng giá không được vượt quá 100 ký tự', 400);
   }
   return trimmed;
 }
@@ -36,14 +42,15 @@ function validatePlanName(name) {
  */
 function validatePricePerHour(price, isCreation = true) {
   if (price === undefined || price === null || price === '') {
-    throw new Error('Giá cước mỗi giờ là bắt buộc');
+    throw createHttpError('Giá cước mỗi giờ là bắt buộc', 400);
   }
   const parsed = Number(price);
   if (isNaN(parsed) || parsed < 0) {
-    throw new Error(
+    throw createHttpError(
       isCreation
         ? 'Giá cước mỗi giờ phải là một số không âm hợp lệ'
-        : 'Giá cước mỗi giờ cập nhật phải là số không âm hợp lệ'
+        : 'Giá cước mỗi giờ cập nhật phải là số không âm hợp lệ',
+      400
     );
   }
   return parsed;
@@ -56,7 +63,7 @@ function validateTimeRange(startTime, endTime) {
   const sanitizedStart = sanitizeTime(startTime);
   const sanitizedEnd = sanitizeTime(endTime);
   if ((sanitizedStart && !sanitizedEnd) || (!sanitizedStart && sanitizedEnd)) {
-    throw new Error('Khung giờ bắt đầu và kết thúc phải được cấu hình đồng bộ');
+    throw createHttpError('Khung giờ bắt đầu và kết thúc phải được cấu hình đồng bộ', 400);
   }
   return { start: sanitizedStart, end: sanitizedEnd };
 }
@@ -227,7 +234,7 @@ class PricingPlanService {
     try {
       const plan = await db.PricingPlan.findByPk(id, { transaction });
       if (!plan) {
-        throw new Error(`Không tìm thấy bảng giá với ID: ${id}`);
+        throw createHttpError(`Không tìm thấy bảng giá với ID: ${id}`, 404);
       }
 
       const {
@@ -285,7 +292,7 @@ class PricingPlanService {
     try {
       const plan = await db.PricingPlan.findByPk(id);
       if (!plan) {
-        throw new Error(`Không tìm thấy bảng giá với ID: ${id}`);
+        throw createHttpError(`Không tìm thấy bảng giá với ID: ${id}`, 404);
       }
 
       plan.is_active = isActive !== undefined ? Boolean(isActive) : !plan.is_active;
@@ -307,7 +314,7 @@ class PricingPlanService {
     try {
       const plan = await db.PricingPlan.findByPk(id);
       if (!plan) {
-        throw new Error(`Không tìm thấy bảng giá với ID: ${id}`);
+        throw createHttpError(`Không tìm thấy bảng giá với ID: ${id}`, 404);
       }
 
       await plan.softDelete();
@@ -325,7 +332,7 @@ class PricingPlanService {
     try {
       const plan = await db.PricingPlan.findByPk(id);
       if (!plan) {
-        throw new Error(`Không tìm thấy bảng giá với ID: ${id}`);
+        throw createHttpError(`Không tìm thấy bảng giá với ID: ${id}`, 404);
       }
 
       await plan.restore();

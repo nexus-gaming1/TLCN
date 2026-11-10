@@ -4,6 +4,33 @@ const HardwareProfileDto = require('../dtos/hardwareProfileDto');
 const defaultValidator = require('../validators/hardwareSpecValidator');
 const TelemetryService = require('./telemetryService');
 
+function createHttpError(message, statusCode = 500) {
+  const err = new Error(message);
+  err.statusCode = statusCode;
+  return err;
+}
+
+function handleServiceError(action, error) {
+  if (error?.name === 'SequelizeUniqueConstraintError') {
+    const conflictErr = createHttpError(
+      'Mẫu cấu hình phần cứng đã tồn tại trong hệ thống',
+      409
+    );
+    console.error(`[HardwareProfile] ${action} failed (409):`, error.message);
+    throw conflictErr;
+  }
+  if (error?.name === 'SequelizeValidationError' || error?.name === 'SequelizeForeignKeyConstraintError') {
+    const badReqErr = createHttpError(error.message || 'Dữ liệu cấu hình không hợp lệ', 400);
+    console.error(`[HardwareProfile] ${action} failed (400):`, error.message);
+    throw badReqErr;
+  }
+  if (!error.statusCode) {
+    error.statusCode = 500;
+  }
+  console.error(`[HardwareProfile] ${action} failed (${error.statusCode}):`, error.message);
+  throw error;
+}
+
 async function executeWithDeadlockRetry(fn, maxRetries = 3) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -118,20 +145,39 @@ class HardwareProfileService {
         }))
       };
     } catch (error) {
-      if (!error.statusCode) error.statusCode = 500;
-      throw error;
+      handleServiceError('getHardwareSpecs', error);
     }
   }
 
   /**
-   * Helper to find hardware profile by Primary Key or Profile Name
+   * Helper to find non-deleted hardware profile by Primary Key or Profile Name
    */
   async findProfileByIdOrName(specId, transaction) {
     const db = this.models;
     if (!db.HardwareProfile) return null;
     let profile = await db.HardwareProfile.findByPk(specId, { transaction });
+    if (profile && profile.is_deleted) {
+      profile = null;
+    }
     if (!profile) {
-      profile = await db.HardwareProfile.findOne({ where: { profile_name: specId }, transaction });
+      profile = await db.HardwareProfile.findOne({
+        where: { profile_name: specId, is_deleted: false },
+        transaction
+      });
+    }
+    return profile;
+  }
+
+  /**
+   * Validate specId and resolve non-deleted profile or throw 400/404
+   */
+  async findProfileOrFail(specId, invalidMsg, notFoundMsg, transaction) {
+    if (!this.validator.isValidSpecId(specId)) {
+      throw createHttpError(invalidMsg, 400);
+    }
+    const profile = await this.findProfileByIdOrName(specId, transaction);
+    if (!profile) {
+      throw createHttpError(notFoundMsg, 404);
     }
     return profile;
   }
@@ -168,11 +214,11 @@ class HardwareProfileService {
 
       const db = this.models;
       if (db.HardwareProfile) {
-        const existing = await db.HardwareProfile.findOne({ where: { profile_name: nameToSave } });
+        const existing = await db.HardwareProfile.findOne({
+          where: { profile_name: nameToSave, is_deleted: false }
+        });
         if (existing) {
-          const err = new Error(`Mẫu cấu hình với tên '${nameToSave}' đã tồn tại trong hệ thống`);
-          err.statusCode = 409;
-          throw err;
+          throw createHttpError(`Mẫu cấu hình với tên '${nameToSave}' đã tồn tại trong hệ thống`, 409);
         }
       }
 
@@ -193,12 +239,12 @@ class HardwareProfileService {
             t
           );
 
+          console.info(`[HardwareProfile] Created profile '${nameToSave}' (ID: ${profile ? profile.profile_id : 'N/A'})`);
           return { status: 'success', message: 'Tạo mẫu cấu hình phần cứng thành công', profile };
         });
       });
     } catch (error) {
-      if (!error.statusCode) error.statusCode = 500;
-      throw error;
+      handleServiceError('createHardwareSpec', error);
     }
   }
 
@@ -208,65 +254,63 @@ class HardwareProfileService {
   async updateHardwareSpec(specId, updateData) {
     try {
       if (!this.validator.isValidSpecId(specId)) {
-        const err = new Error('Mã định danh cấu hình (specId) không hợp lệ');
-        err.statusCode = 400;
-        throw err;
+        throw createHttpError('Mã định danh cấu hình (specId) không hợp lệ', 400);
       }
 
       await this.validator.validateHardwareSpecInput(updateData, false, this.models);
       const persistenceData = HardwareProfileDto.toPersistence(updateData);
       const db = this.models;
 
-      return await db.sequelize.transaction(async (t) => {
-        const profile = await this.findProfileByIdOrName(specId, t);
+      return await executeWithDeadlockRetry(async () => {
+        return await db.sequelize.transaction(async (t) => {
+          const profile = await this.findProfileOrFail(
+            specId,
+            'Mã định danh cấu hình (specId) không hợp lệ',
+            `Không tìm thấy mẫu cấu hình phần cứng với mã định danh: ${specId}`,
+            t
+          );
 
-        if (!profile) {
-          const err = new Error(`Không tìm thấy mẫu cấu hình phần cứng với mã định danh: ${specId}`);
-          err.statusCode = 404;
-          throw err;
-        }
-
-        if (persistenceData.profile_name && persistenceData.profile_name !== profile.profile_name) {
-          const existing = await db.HardwareProfile.findOne({
-            where: {
-              profile_name: persistenceData.profile_name,
-              profile_id: { [Op.ne]: profile.profile_id }
-            },
-            transaction: t
-          });
-          if (existing) {
-            const err = new Error(`Mẫu cấu hình với tên '${persistenceData.profile_name}' đã tồn tại trong hệ thống`);
-            err.statusCode = 409;
-            throw err;
+          if (persistenceData.profile_name && persistenceData.profile_name !== profile.profile_name) {
+            const existing = await db.HardwareProfile.findOne({
+              where: {
+                profile_name: persistenceData.profile_name,
+                profile_id: { [Op.ne]: profile.profile_id },
+                is_deleted: false
+              },
+              transaction: t
+            });
+            if (existing) {
+              throw createHttpError(`Mẫu cấu hình với tên '${persistenceData.profile_name}' đã tồn tại trong hệ thống`, 409);
+            }
+            profile.profile_name = persistenceData.profile_name;
           }
-          profile.profile_name = persistenceData.profile_name;
-        }
 
-        if (persistenceData.description !== undefined) profile.description = persistenceData.description;
-        if (persistenceData.cpu_model !== null) profile.cpu_model = persistenceData.cpu_model;
-        if (persistenceData.gpu_model !== null) profile.gpu_model = persistenceData.gpu_model;
-        if (persistenceData.ram_capacity !== null) profile.ram_capacity = persistenceData.ram_capacity;
-        if (persistenceData.storage_type !== null) profile.storage_type = persistenceData.storage_type;
-        if (persistenceData.monitor !== null) profile.monitor = persistenceData.monitor;
-        if (persistenceData.gear !== null) profile.gear = persistenceData.gear;
-        if (persistenceData.zone_id !== null && persistenceData.zone_id !== undefined) {
-          profile.zone_id = persistenceData.zone_id;
-        }
+          if (updateData.description !== undefined) profile.description = persistenceData.description;
+          const updatableFields = ['cpu_model', 'gpu_model', 'ram_capacity', 'storage_type', 'monitor', 'gear'];
+          for (const field of updatableFields) {
+            if (persistenceData[field] !== null) {
+              profile[field] = persistenceData[field];
+            }
+          }
+          if (persistenceData.zone_id !== null && persistenceData.zone_id !== undefined) {
+            profile.zone_id = persistenceData.zone_id;
+          }
 
-        await profile.save({ transaction: t });
+          await profile.save({ transaction: t });
 
-        await this.syncAssignedComputers(
-          updateData.assignedComputers,
-          profile.profile_id,
-          persistenceData.zone_id,
-          t
-        );
+          await this.syncAssignedComputers(
+            updateData.assignedComputers,
+            profile.profile_id,
+            persistenceData.zone_id,
+            t
+          );
 
-        return { status: 'success', message: 'Cập nhật mẫu cấu hình phần cứng thành công', profile };
+          console.info(`[HardwareProfile] Updated profile '${profile.profile_name}' (ID: ${profile.profile_id})`);
+          return { status: 'success', message: 'Cập nhật mẫu cấu hình phần cứng thành công', profile };
+        });
       });
     } catch (error) {
-      if (!error.statusCode) error.statusCode = 500;
-      throw error;
+      handleServiceError('updateHardwareSpec', error);
     }
   }
 
@@ -276,39 +320,38 @@ class HardwareProfileService {
   async deleteHardwareSpec(specId) {
     try {
       if (!this.validator.isValidSpecId(specId)) {
-        const err = new Error('Mã định danh cấu hình cần xóa không hợp lệ');
-        err.statusCode = 400;
-        throw err;
+        throw createHttpError('Mã định danh cấu hình cần xóa không hợp lệ', 400);
       }
 
       const db = this.models;
-      return await db.sequelize.transaction(async (t) => {
-        const profile = await this.findProfileByIdOrName(specId, t);
+      return await executeWithDeadlockRetry(async () => {
+        return await db.sequelize.transaction(async (t) => {
+          const profile = await this.findProfileOrFail(
+            specId,
+            'Mã định danh cấu hình cần xóa không hợp lệ',
+            `Không tìm thấy mẫu cấu hình phần cứng để xóa với mã định danh: ${specId}`,
+            t
+          );
 
-        if (!profile) {
-          const err = new Error(`Không tìm thấy mẫu cấu hình phần cứng để xóa với mã định danh: ${specId}`);
-          err.statusCode = 404;
-          throw err;
-        }
-
-        await db.Computer.update(
-          { hardware_profile_id: null },
-          { where: { hardware_profile_id: profile.profile_id }, transaction: t }
-        );
-        // Xóa mềm cấu hình phần cứng (Soft Delete)
-        if (typeof profile.softDelete === 'function') {
-          await profile.softDelete();
-        } else {
-          profile.is_deleted = true;
-          profile.deleted_at = new Date();
-          profile.is_active = false;
-          await profile.save({ transaction: t });
-        }
-        return true;
+          await db.Computer.update(
+            { hardware_profile_id: null },
+            { where: { hardware_profile_id: profile.profile_id }, transaction: t }
+          );
+          // Xóa mềm cấu hình phần cứng (Soft Delete)
+          if (typeof profile.softDelete === 'function') {
+            await profile.softDelete({ transaction: t });
+          } else {
+            profile.is_deleted = true;
+            profile.deleted_at = new Date();
+            profile.is_active = false;
+            await profile.save({ transaction: t });
+          }
+          console.info(`[HardwareProfile] Soft-deleted profile '${profile.profile_name}' (ID: ${profile.profile_id})`);
+          return true;
+        });
       });
     } catch (error) {
-      if (!error.statusCode) error.statusCode = 500;
-      throw error;
+      handleServiceError('deleteHardwareSpec', error);
     }
   }
 
@@ -317,19 +360,18 @@ class HardwareProfileService {
    */
   async toggleHardwareSpec(specId, isActive) {
     try {
-      const profile = await this.findProfileByIdOrName(specId);
-      if (!profile) {
-        const err = new Error(`Không tìm thấy mẫu cấu hình phần cứng: ${specId}`);
-        err.statusCode = 404;
-        throw err;
-      }
+      const profile = await this.findProfileOrFail(
+        specId,
+        'Mã định danh cấu hình không hợp lệ',
+        `Không tìm thấy mẫu cấu hình phần cứng: ${specId}`
+      );
 
       profile.is_active = isActive !== undefined ? Boolean(isActive) : !profile.is_active;
       await profile.save();
+      console.info(`[HardwareProfile] Toggled profile '${profile.profile_name}' (ID: ${profile.profile_id}) -> is_active=${profile.is_active}`);
       return profile;
     } catch (error) {
-      if (!error.statusCode) error.statusCode = 500;
-      throw error;
+      handleServiceError('toggleHardwareSpec', error);
     }
   }
 }

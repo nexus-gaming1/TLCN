@@ -291,7 +291,7 @@ export default function GameManagementPage({ user, onLogout }) {
       <Sidebar activeNav="games" role="ADMIN" />
 
       {/* Main Content Area - Thêm pl-[240px] để tránh hoàn toàn bị Sidebar che khuất & triệt tiêu thanh cuộn ngang */}
-      <div className="pl-[240px] w-full min-h-screen overflow-x-hidden">
+      <div className="lg:pl-[240px] w-full min-h-screen overflow-x-hidden">
         <main className="relative pt-16 pb-20 min-h-screen w-full px-6 py-6 flex flex-col justify-between overflow-x-hidden">
           <div className="flex flex-col gap-6 max-w-7xl mx-auto w-full">
 

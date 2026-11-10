@@ -464,9 +464,60 @@ test('[AC-09] [Ca âm & Ca dương] PricingPlanService - CRUD operations & Not F
     assert.strictEqual(restoreRes.success, true);
     assert.strictEqual(mockPlan.is_deleted, false);
     assert.strictEqual(mockPlan.is_active, true);
+
+    // [Ca âm]: restorePricingPlan không tồn tại -> 404
+    await assert.rejects(
+      async () => {
+        await pricingPlanService.restorePricingPlan(999);
+      },
+      (err) => err.statusCode === 404 && err.message.includes('Không tìm thấy bảng giá với ID: 999')
+    );
+
+    // [Ca âm]: updatePricingPlan với khung giờ lệch
+    await assert.rejects(
+      async () => {
+        await pricingPlanService.updatePricingPlan(10, { start_time: '8:00', end_time: 'null' });
+      },
+      (err) => err.statusCode === 400 && err.message.includes('đồng bộ')
+    );
   } finally {
     db.PricingPlan.findByPk = origFindByPk;
     db.ZonePricingPlan.destroy = origDestroyZone;
     db.ZonePricingPlan.bulkCreate = origBulkCreate;
+  }
+});
+
+test('[AC-09] [Ca âm & Ca biên] PricingPlanService - getAllPricingPlans & getPricingPlanById error propagation and deleted filters', async () => {
+  const origFindAll = db.PricingPlan.findAll;
+  const origZoneFindAll = db.ComputerZone.findAll;
+  const origFindByPk = db.PricingPlan.findByPk;
+
+  try {
+    let capturedWhere = null;
+    db.PricingPlan.findAll = async ({ where }) => {
+      capturedWhere = where;
+      return [{ is_active: false, price_per_hour: 10000, start_time: null, end_time: null }];
+    };
+    db.ComputerZone.findAll = async () => [];
+
+    const deletedRes = await pricingPlanService.getAllPricingPlans({ is_deleted: 'true' });
+    assert.deepStrictEqual(capturedWhere, { is_deleted: true });
+    assert.strictEqual(deletedRes.metrics.totalPlans, 1);
+    assert.strictEqual(deletedRes.metrics.activePlans, 0);
+    assert.strictEqual(deletedRes.metrics.avgRate, 0);
+
+    db.PricingPlan.findAll = async () => {
+      throw new Error('DB Read Timeout');
+    };
+    await assert.rejects(() => pricingPlanService.getAllPricingPlans(), { message: 'DB Read Timeout' });
+
+    db.PricingPlan.findByPk = async () => {
+      throw new Error('DB Lookup Error');
+    };
+    await assert.rejects(() => pricingPlanService.getPricingPlanById(1), { message: 'DB Lookup Error' });
+  } finally {
+    db.PricingPlan.findAll = origFindAll;
+    db.ComputerZone.findAll = origZoneFindAll;
+    db.PricingPlan.findByPk = origFindByPk;
   }
 });

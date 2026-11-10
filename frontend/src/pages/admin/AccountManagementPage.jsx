@@ -293,7 +293,7 @@ export default function AccountManagementPage({ user, onLogout }) {
       <FloatingToast toast={toast} onClose={() => setToast(null)} />
 
       {/* Main Content Area: ẩn khi in để nhường chỗ cho bản in A4 */}
-      <div className="pl-[240px] print:hidden">
+      <div className="lg:pl-[240px] print:hidden">
         <main className="relative pt-16 min-h-screen bg-slate-50/50 w-full px-6 py-6 pb-24 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
 

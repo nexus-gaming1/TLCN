@@ -40,7 +40,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
       <Sidebar role="EMPLOYEE" />
 
       {/* MAIN CONTENT WRAPPER */}
-      <div className="pl-[240px]">
+      <div className="lg:pl-[240px]">
         <main className="pt-20 pb-16 px-6 max-w-7xl mx-auto space-y-6">
           {/* Welcome Card */}
           <div className="p-6 rounded-2xl bg-white border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-4">

@@ -67,15 +67,20 @@ export const apiClient = {
     };
 
     const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+    const timeoutMs = options.timeout || 15000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       // credentials: 'include' đảm bảo HttpOnly Cookie nexus_refresh_token được tự động gửi kèm
       const res = await fetch(url, {
         cache: 'no-cache',
         credentials: 'include',
+        signal: options.signal || controller.signal,
         ...options,
         headers,
       });
+      clearTimeout(timeoutId);
 
       // Nếu gặp lỗi 401 (Access Token hết hạn hoặc không hợp lệ) và chưa từng retry
       const isAuthEndpoint = endpoint.includes('/auth/login') || endpoint.includes('/auth/refresh') || endpoint.includes('/auth/logout');
@@ -102,6 +107,17 @@ export const apiClient = {
 
       return data;
     } catch (err) {
+      clearTimeout(timeoutId);
+      if (err.name === 'AbortError') {
+        const timeoutErr = new Error(`Yêu cầu máy chủ quá thời gian chờ (${Math.round(timeoutMs / 1000)}s). Vui lòng kiểm tra lại kết nối mạng.`);
+        console.error(`[API Timeout] ${endpoint}:`, timeoutErr);
+        throw timeoutErr;
+      }
+      if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
+        const netErr = new Error('Mất kết nối với máy chủ backend (Port 3001). Vui lòng kiểm tra đường truyền.');
+        console.error(`[API Network Error] ${endpoint}:`, netErr);
+        throw netErr;
+      }
       console.error(`[API Error] ${endpoint}:`, err);
       throw err;
     }
