@@ -227,7 +227,7 @@ const {
             <Sidebar role="ADMIN" />
 
             {/* MAIN CONTENT WRAPPER */}
-            <div className="pl-[240px]">
+            <div className="lg:pl-[240px]">
                 <main className="w-full pt-16 min-h-screen bg-[#F8F9FA] pb-20">
                     <section className="p-6 bg-white border-b border-slate-200/80">
                         <SubHeader

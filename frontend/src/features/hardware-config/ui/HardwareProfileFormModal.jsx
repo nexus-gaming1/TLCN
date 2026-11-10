@@ -106,6 +106,7 @@ export default function HardwareProfileFormModal({
 
   const [selectedComputers, setSelectedComputers] = useState([]);
   const [errorNotice, setErrorNotice] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Sync state when modal opens or target hardware/CSDL presets change
   useEffect(() => {
@@ -192,10 +193,28 @@ export default function HardwareProfileFormModal({
     return field?.select || presetList[0] || 'Chưa thiết lập';
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.profileName.trim()) {
+    const UNSAFE_REGEX = /<script|javascript:|data:\s*text\/html|\0/i;
+    const trimmedName = formData.profileName.trim();
+    if (!trimmedName) {
       setErrorNotice('Vui lòng nhập Tên mẫu cấu hình (Profile Name)!');
+      return;
+    }
+    if (trimmedName.length > 100) {
+      setErrorNotice('Tên mẫu cấu hình không được vượt quá 100 ký tự!');
+      return;
+    }
+    if (UNSAFE_REGEX.test(trimmedName)) {
+      setErrorNotice('Tên mẫu cấu hình chứa ký tự không an toàn!');
+      return;
+    }
+    if (formData.description && formData.description.length > 500) {
+      setErrorNotice('Mô tả cấu hình không được vượt quá 500 ký tự!');
+      return;
+    }
+    if (formData.description && UNSAFE_REGEX.test(formData.description)) {
+      setErrorNotice('Mô tả cấu hình chứa nội dung không an toàn!');
       return;
     }
 
@@ -204,13 +223,27 @@ export default function HardwareProfileFormModal({
       return acc;
     }, {});
 
+    for (const field of HARDWARE_FIELDS) {
+      const val = finalSpecs[field.key] || '';
+      const maxLen = field.key === 'gear' ? 255 : 150;
+      if (val.length > maxLen) {
+        setErrorNotice(`${field.label} không được vượt quá ${maxLen} ký tự!`);
+        return;
+      }
+      if (UNSAFE_REGEX.test(val)) {
+        setErrorNotice(`${field.label} chứa nội dung không an toàn!`);
+        return;
+      }
+    }
+
     const selectedZone = zones.find((z) => String(z.zone_id) === String(formData.zoneId)) || {};
 
+    let payload;
     if (isEditMode) {
-      const updatedProfile = {
+      payload = {
         ...hardware,
-        id: hardware?.id || formData.profileName.trim(),
-        profileName: formData.profileName.trim(),
+        id: hardware?.id || trimmedName,
+        profileName: trimmedName,
         zoneId: formData.zoneId,
         zoneName: selectedZone.zone_name || hardware?.zoneName || 'Phân Khu',
         description: formData.description.trim(),
@@ -234,12 +267,10 @@ export default function HardwareProfileFormModal({
         gear: finalSpecs.gear,
         assignedComputers: selectedComputers
       };
-
-      if (onSubmit) onSubmit(updatedProfile);
     } else {
-      const newProfile = {
-        id: formData.profileName.toUpperCase().replace(/\s+/g, '-'),
-        profileName: formData.profileName.trim(),
+      payload = {
+        id: trimmedName.toUpperCase().replace(/\s+/g, '-'),
+        profileName: trimmedName,
         zoneId: formData.zoneId,
         zoneName: selectedZone.zone_name || 'Phân Khu Mặc Định',
         description: formData.description.trim(),
@@ -254,12 +285,20 @@ export default function HardwareProfileFormModal({
         assignedComputers: selectedComputers,
         telemetry: { cpuTemp: 48, gpuTemp: 45, fanSpeed: '55%', sanPing: '0.20ms' }
       };
-
-      if (onSubmit) onSubmit(newProfile);
     }
 
-    setErrorNotice('');
-    onClose();
+    try {
+      setIsSubmitting(true);
+      setErrorNotice('');
+      if (onSubmit) {
+        await onSubmit(payload);
+      }
+      onClose();
+    } catch (err) {
+      setErrorNotice(err.message || 'Lỗi khi lưu cấu hình máy');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const ModalIcon = isEditMode ? Edit3 : PlusCircle;
@@ -280,19 +319,19 @@ export default function HardwareProfileFormModal({
       };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150 overflow-hidden text-xs">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+      <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 animate-in fade-in zoom-in duration-150 overflow-hidden text-xs">
         {/* Header */}
-        <div className="px-6 py-3.5 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/80">
-          <div className="flex items-center gap-3">
+        <div className="px-4 sm:px-6 py-3.5 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0 bg-slate-50/80">
+          <div className="flex items-center gap-3 min-w-0">
             <div className={`w-9 h-9 rounded-xl ${headerTheme.bgIcon} text-white flex items-center justify-center font-bold shadow-xs shrink-0`}>
               <ModalIcon className="w-5 h-5" />
             </div>
-            <div>
-              <h3 className="text-sm font-extrabold text-slate-900">
+            <div className="min-w-0">
+              <h3 className="text-sm font-extrabold text-slate-900 truncate">
                 {headerTheme.title}
               </h3>
-              <p className="text-[11px] text-slate-500 font-medium">
+              <p className="text-[11px] text-slate-500 font-medium truncate">
                 {headerTheme.subTitle}
               </p>
             </div>
@@ -300,7 +339,7 @@ export default function HardwareProfileFormModal({
           <button
             onClick={onClose}
             type="button"
-            className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center transition"
+            className="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center transition cursor-pointer shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -308,14 +347,14 @@ export default function HardwareProfileFormModal({
 
         {/* Error Notice */}
         {errorNotice && (
-          <div className="mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 flex items-center gap-2">
+          <div className="mx-4 sm:mx-6 mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
             <span>{errorNotice}</span>
           </div>
         )}
 
         {/* Form Body - Scrollable */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-5 flex-1 text-xs">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 text-xs">
           {/* SECTION 1: Thông tin chung gói cấu hình */}
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-slate-900 font-extrabold text-xs uppercase tracking-wider border-b border-slate-100 pb-2">
@@ -469,15 +508,17 @@ export default function HardwareProfileFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition"
+              disabled={isSubmitting}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition disabled:opacity-50"
             >
               Hủy Bỏ
             </button>
             <button
               type="submit"
-              className={`px-6 py-2 ${headerTheme.btnBg} text-white text-xs font-extrabold rounded-xl shadow-xs transition`}
+              disabled={isSubmitting}
+              className={`px-6 py-2 ${headerTheme.btnBg} text-white text-xs font-extrabold rounded-xl shadow-xs transition disabled:opacity-60 cursor-pointer`}
             >
-              {headerTheme.btnText}
+              {isSubmitting ? 'Đang lưu...' : headerTheme.btnText}
             </button>
           </div>
         </form>

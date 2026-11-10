@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
+import FloatingToast from '../../shared/ui/FloatingToast';
 import machineService from '../../shared/api/machine.service';
 import MachineKpiCards from '../../features/machines/ui/MachineKpiCards';
 import MachineFilterBar from '../../features/machines/ui/MachineFilterBar';
@@ -42,10 +44,33 @@ export default function MachineManagementPage({ user, onLogout }) {
   const [editingMachine, setEditingMachine] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  // Thông báo toast nổi đa năng (Success, Warning, Error)
+  const showToast = (payload, type = 'success') => {
+    if (typeof payload === 'string') {
+      setToast({
+        type,
+        title: type === 'warning' ? 'Đã chuyển bảo trì' : type === 'error' ? 'Lỗi' : 'Thành công',
+        message: payload
+      });
+    } else {
+      setToast(payload);
+    }
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Helper with safe try/catch/finally to re-fetch live machine fleet list & zones from MySQL CSDL
   const refreshMachineList = async (showLoading = true) => {
     if (showLoading) setLoading(true);
+    setErrorMessage(null);
     try {
       const [machinesData, zonesData] = await Promise.all([
         machineService.getMachines(),
@@ -59,6 +84,7 @@ export default function MachineManagementPage({ user, onLogout }) {
       }
     } catch (error) {
       console.error('Lỗi khi nạp lại danh sách máy trạm:', error.message);
+      setErrorMessage(error.message || 'Mất kết nối hoặc quá thời gian chờ phản hồi từ máy chủ.');
     } finally {
       if (showLoading) setLoading(false);
     }
@@ -233,27 +259,45 @@ export default function MachineManagementPage({ user, onLogout }) {
     }
   };
 
-  const handleDeleteSelected = async () => {
-    if (selectedIds.length === 0) return;
-    if (window.confirm(`Xóa ${selectedIds.length} máy trạm đã chọn?`)) {
-      await executeBulkAction(
-        (computerId) => machineService.deleteMachine(computerId),
-        'Lỗi khi xóa máy trạm'
-      );
-    }
-  };
+  // Thao tác Bật/Tắt Trạng Thái Máy Trạm (Optimistic Update 0ms)
+  const handleToggleStatus = async (machine) => {
+    const isMaintenance = String(machine.status || '').toUpperCase() === ComputerStatus.MAINTENANCE;
+    const targetStatus = isMaintenance ? ComputerStatus.OFFLINE : ComputerStatus.MAINTENANCE;
+    const computerId = machine.computer_id || machine.id;
 
-  const handleDeleteSingle = async (machineId) => {
-    const comp = machines.find((m) => m.id === machineId);
-    const computerId = comp?.computer_id || machineId;
-    if (window.confirm(`Xóa máy trạm ${machineId}?`)) {
-      try {
-        await machineService.deleteMachine(computerId);
-        setSelectedIds((prev) => prev.filter((id) => id !== machineId));
-        await refreshMachineList(false);
-      } catch (error) {
-        alert(error.message || 'Lỗi khi xóa máy trạm');
+    try {
+      // Cập nhật giao diện lập tức (0ms)
+      setMachines((prev) =>
+        prev.map((m) =>
+          (m.id === machine.id || m.computer_id === computerId)
+            ? { ...m, status: targetStatus, cleanStatus: isMaintenance ? 'Tắt nguồn' : 'Bảo trì' }
+            : m
+        )
+      );
+
+      await machineService.changeStatus(computerId, targetStatus);
+      if (targetStatus === ComputerStatus.MAINTENANCE) {
+        showToast({
+          type: 'warning',
+          title: 'Đã chuyển sang bảo trì',
+          message: `Trạm máy "${machine.id}" đã được chuyển sang chế độ bảo trì.`
+        });
+      } else {
+        showToast({
+          type: 'success',
+          title: 'Đã kích hoạt máy trạm',
+          message: `Trạm máy "${machine.id}" đã sẵn sàng hoạt động.`
+        });
       }
+      await refreshMachineList(false);
+    } catch (err) {
+      console.error('Lỗi khi đổi trạng thái máy trạm:', err);
+      showToast({
+        type: 'error',
+        title: 'Lỗi cập nhật trạng thái',
+        message: err.message || 'Không thể thay đổi trạng thái máy trạm'
+      });
+      await refreshMachineList(false);
     }
   };
 
@@ -334,11 +378,30 @@ export default function MachineManagementPage({ user, onLogout }) {
       {/* Sidebar with activeNav set to 'hardware' */}
       <Sidebar activeNav="hardware" bootromStatus="ONLINE" role="ADMIN" />
 
+      {/* Floating Toast Notification (0ms Layout Shift) */}
+      <FloatingToast toast={toast} onClose={() => setToast(null)} />
+
       {/* Main Content */}
-      <div className="pl-[240px]">
+      <div className="lg:pl-[240px]">
         <main className="relative pt-16 min-h-screen bg-slate-100 w-full px-6 py-6 pb-24 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
-
+            {/* Network / Server Disconnection Banner */}
+            {errorMessage && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <span className="font-medium">{errorMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => refreshMachineList(true)}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Thử lại</span>
+                </button>
+              </div>
+            )}
 
             {/* KPI Summary Cards */}
             <MachineKpiCards
@@ -371,7 +434,6 @@ export default function MachineManagementPage({ user, onLogout }) {
               onReboot={handleRebootSelected}
               onMaintenance={handleMaintenanceSelected}
               onAssignZone={handleAssignZoneSelected}
-              onDelete={handleDeleteSelected}
               onClearSelection={() => setSelectedIds([])}
             />
 
@@ -389,7 +451,7 @@ export default function MachineManagementPage({ user, onLogout }) {
                   onToggleSelectAll={handleToggleSelectAll}
                   onLiveMirror={(id) => alert(`Đang kết nối Live Mirror xem màn hình máy ${id}...`)}
                   onEdit={(machineObj) => setEditingMachine(machineObj)}
-                  onDelete={handleDeleteSingle}
+                  onToggleStatus={handleToggleStatus}
                 />
                 {/* Dynamic Pagination liền mạch ở đáy bảng */}
                 <Pagination
@@ -406,37 +468,44 @@ export default function MachineManagementPage({ user, onLogout }) {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3.5 bg-white p-4 rounded-xl border border-slate-200">
-                  {paginatedMachines.map((m) => {
-                    const statusGroup = getStatusGroup(m.status);
-                    const stationType = m.type || (
-                      statusGroup === ComputerStatus.ONLINE
-                        ? 'ready'
-                        : statusGroup === ComputerStatus.MAINTENANCE
-                        ? 'maint'
-                        : statusGroup === ComputerStatus.IN_USE
-                        ? (m.is_remote_enabled ? 'cloud' : 'local')
-                        : statusGroup === ComputerStatus.LOCKED
-                        ? 'locked'
-                        : 'off'
-                    );
+                {paginatedMachines.length === 0 ? (
+                  <div className="p-12 text-center text-slate-500 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col items-center justify-center gap-2">
+                    <span className="text-sm font-semibold text-slate-700">Không có máy trạm nào khớp với bộ lọc</span>
+                    <span className="text-xs text-slate-400">Vui lòng thử chọn lại phân khu hoặc trạng thái</span>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3.5 bg-white p-4 rounded-xl border border-slate-200">
+                    {paginatedMachines.map((m) => {
+                      const statusGroup = getStatusGroup(m.status);
+                      const stationType = m.type || (
+                        statusGroup === ComputerStatus.ONLINE
+                          ? 'ready'
+                          : statusGroup === ComputerStatus.MAINTENANCE
+                          ? 'maint'
+                          : statusGroup === ComputerStatus.IN_USE
+                          ? (m.is_remote_enabled ? 'cloud' : 'local')
+                          : statusGroup === ComputerStatus.LOCKED
+                          ? 'locked'
+                          : 'off'
+                      );
 
-                    return (
-                      <StationCard
-                        key={m.id}
-                        station={{
-                          id: m.id,
-                          user: m.userName,
-                          game: m.currentGame || m.cleanStatus,
-                          type: stationType,
-                          time: m.sessionTime ? m.sessionTime.split('/')[0].trim() : '00:00',
-                          latency: m.ip
-                        }}
-                        onClick={() => alert(`Chi tiết máy ${m.id}`)}
-                      />
-                    );
-                  })}
-                </div>
+                      return (
+                        <StationCard
+                          key={m.id}
+                          station={{
+                            id: m.id,
+                            user: m.userName,
+                            game: m.currentGame || m.cleanStatus,
+                            type: stationType,
+                            time: m.sessionTime ? m.sessionTime.split('/')[0].trim() : '00:00',
+                            latency: m.ip
+                          }}
+                          onClick={() => alert(`Chi tiết máy ${m.id}`)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
                 {/* Dynamic Pagination cho Grid view */}
                 <Pagination
                   currentPage={currentPage}

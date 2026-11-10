@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, RotateCcw, Wrench, Tag, Trash2 } from 'lucide-react';
+import { CheckCircle, RotateCcw, Wrench, Tag } from 'lucide-react';
 
 /**
  * MachineBulkActionBar component for handling actions on multiple selected machines
@@ -9,7 +9,6 @@ export default function MachineBulkActionBar({
   onReboot,
   onMaintenance,
   onAssignZone,
-  onDelete,
   onClearSelection
 }) {
   if (selectedCount === 0) return null;
@@ -52,15 +51,6 @@ export default function MachineBulkActionBar({
         >
           <Tag className="w-3.5 h-3.5 text-indigo-600" />
           <span>Gán Zone Mới</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={onDelete}
-          className="px-3 py-1.5 bg-rose-100 text-rose-800 hover:bg-rose-200 border border-rose-200 rounded-lg text-xs font-bold transition-all flex items-center gap-1 shadow-xs"
-        >
-          <Trash2 className="w-3.5 h-3.5 text-rose-700" />
-          <span>Xóa Khỏi Hệ Thống</span>
         </button>
 
         <button

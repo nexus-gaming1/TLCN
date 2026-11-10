@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const express = require('express');
+const errorHandler = require('../../../src/middleware/errorHandler');
 const computerService = require('../../../src/services/computerService');
 const HardwareProfileService = require('../../../src/services/hardwareProfileService');
 const TelemetryService = require('../../../src/services/telemetryService');
@@ -394,7 +395,6 @@ test('Hardware Config - createHardwareSpec throws 409 Conflict when profileName 
 test('Hardware Config - deleteHardwareSpec unlinks computers and destroys profile without deleting physical computers', async () => {
   const testComp = await createIsolatedTestComputer('DELETE');
   const uniqueProfileName = `Test_Delete_Profile_${Date.now()}`;
-  const initialTotalComputers = await db.Computer.count();
 
   const createResult = await computerService.createHardwareSpec({
     profileName: uniqueProfileName,
@@ -410,9 +410,17 @@ test('Hardware Config - deleteHardwareSpec unlinks computers and destroys profil
     const postDeleteComp = await db.Computer.findOne({ where: { computer_name: testComp.computer_name } });
     assert.ok(postDeleteComp, 'Physical computer record must NOT be deleted');
     assert.strictEqual(postDeleteComp.hardware_profile_id, null, 'Computer hardware_profile_id must be reset to null');
+    assert.strictEqual(postDeleteComp.is_deleted, false, 'Physical computer record must remain active');
 
-    const finalTotalComputers = await db.Computer.count();
-    assert.strictEqual(finalTotalComputers, initialTotalComputers, 'Total physical computer count must remain unchanged');
+    const softDeletedProfile = await db.HardwareProfile.findByPk(profileId);
+    assert.ok(softDeletedProfile, 'Soft-deleted hardware profile must remain in DB');
+    assert.strictEqual(softDeletedProfile.is_deleted, true, 'is_deleted flag must be set to true');
+    assert.strictEqual(softDeletedProfile.is_active, false, 'is_active flag must be set to false on soft delete');
+    assert.ok(softDeletedProfile.deleted_at, 'deleted_at timestamp must be populated');
+
+    const activeList = await computerService.getHardwareSpecs();
+    const stillVisible = activeList.specs.some((s) => s.profileName === uniqueProfileName);
+    assert.strictEqual(stillVisible, false, 'Soft-deleted profile must be hidden from getHardwareSpecs');
   } finally {
     await safeDestroy(testComp);
   }
@@ -538,4 +546,139 @@ test('Mock / Stub Quality - Simulated DB failure triggers transaction rollback a
 
   assert.strictEqual(transactionRolledBack, true, 'Transaction must be rolled back on DB failure');
   assert.strictEqual(transactionCommitted, false, 'Transaction must NOT be committed on DB failure');
+});
+
+// ============================================================================
+// 9. TOGGLE HARDWARE SPEC (UNIT & INTEGRATION) & FULL API CRUD ROUTES
+// ============================================================================
+
+test('Hardware Config Unit - toggleHardwareSpec throws 400 on invalid id and 404 when missing', async () => {
+  await assertRejection(
+    () => computerService.toggleHardwareSpec('', false),
+    HTTP_BAD_REQUEST,
+    'không hợp lệ'
+  );
+  await assertRejection(
+    () => computerService.toggleHardwareSpec(NON_EXISTENT_PROFILE_ID, false),
+    HTTP_NOT_FOUND,
+    'Không tìm thấy'
+  );
+});
+
+test('Hardware Config Integration - toggleHardwareSpec persists is_active changes in MySQL', async () => {
+  const uniqueName = `Test_Toggle_Profile_${Date.now()}`;
+  const created = await computerService.createHardwareSpec({
+    profileName: uniqueName,
+    zoneId: DEFAULT_ZONE_ID
+  });
+  const profileId = created.profile.profile_id;
+
+  try {
+    assert.strictEqual(created.profile.is_active, true);
+
+    const toggledOff = await computerService.toggleHardwareSpec(profileId, false);
+    assert.strictEqual(toggledOff.is_active, false);
+
+    const dbOff = await db.HardwareProfile.findByPk(profileId);
+    assert.strictEqual(dbOff.is_active, false, 'MySQL record must persist is_active=false');
+
+    const toggledOn = await computerService.toggleHardwareSpec(profileId, true);
+    assert.strictEqual(toggledOn.is_active, true);
+  } finally {
+    await safeCleanupProfile(profileId);
+  }
+});
+
+test('Hardware Config API E2E - Full CRUD & Toggle routes enforce RBAC (401/403) and return valid HTTP codes', async () => {
+  const app = express();
+  app.use(express.json());
+  app.use('/api/computers', computerRoutes);
+  app.use(errorHandler);
+
+  const server = app.listen(0);
+  const port = server.address().port;
+  const baseUrl = `http://127.0.0.1:${port}/api/computers/specs`;
+
+  const adminToken = generateToken({ user_id: 1, role: UserRole.ADMIN || 'ADMIN' });
+  const employeeToken = generateToken({ user_id: 2, role: UserRole.EMPLOYEE || 'EMPLOYEE' });
+  let createdProfileId = null;
+
+  try {
+    // 1. EMPLOYEE allowed on GET /specs -> 200 OK
+    const empGet = await fetch(baseUrl, { headers: { Authorization: `Bearer ${employeeToken}` } });
+    assert.strictEqual(empGet.status, 200, 'EMPLOYEE should read hardware specs (200 OK)');
+
+    // 2. EMPLOYEE blocked on POST /specs -> 403 Forbidden
+    const empPost = await fetch(baseUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${employeeToken}` },
+      body: JSON.stringify({ profileName: 'Unauthorized Profile', zoneId: DEFAULT_ZONE_ID })
+    });
+    assert.strictEqual(empPost.status, HTTP_FORBIDDEN, 'EMPLOYEE must be forbidden from creating hardware specs');
+
+    // 3. ADMIN POST /specs invalid payload -> 400 Bad Request
+    const badPost = await fetch(baseUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ profileName: '   ', zoneId: DEFAULT_ZONE_ID })
+    });
+    assert.strictEqual(badPost.status, HTTP_BAD_REQUEST, 'Empty profileName must return 400');
+
+    // 4. ADMIN POST /specs valid payload -> 201 Created
+    const uniqueName = `API_E2E_Profile_${Date.now()}`;
+    const createRes = await fetch(baseUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({
+        profileName: uniqueName,
+        zoneId: DEFAULT_ZONE_ID,
+        cpu: { model: 'Core i7-14700K' },
+        gpu: { model: 'RTX 4070 Ti' },
+        ram: { capacity: '32GB DDR5' }
+      })
+    });
+    assert.strictEqual(createRes.status, 201);
+    const createJson = await createRes.json();
+    assert.strictEqual(createJson.status, 'success');
+    createdProfileId = createJson.data.profile.profile_id;
+
+    // 5. ADMIN PUT /specs/:id -> 200 OK
+    const updateRes = await fetch(`${baseUrl}/${createdProfileId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ gpu: { model: 'RTX 4080 Super' } })
+    });
+    assert.strictEqual(updateRes.status, 200);
+
+    // 6. ADMIN PATCH /specs/:id/toggle -> 200 OK
+    const toggleRes = await fetch(`${baseUrl}/${createdProfileId}/toggle`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ is_active: false })
+    });
+    assert.strictEqual(toggleRes.status, 200);
+    const toggleJson = await toggleRes.json();
+    assert.strictEqual(toggleJson.data.is_active, false);
+
+    // 7. ADMIN PATCH /specs/999999/toggle -> 404 Not Found
+    const notFoundToggle = await fetch(`${baseUrl}/999999/toggle`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
+      body: JSON.stringify({ is_active: false })
+    });
+    assert.strictEqual(notFoundToggle.status, HTTP_NOT_FOUND);
+
+    // 8. ADMIN DELETE /specs/:id (Soft delete) -> 200 OK
+    const deleteRes = await fetch(`${baseUrl}/${createdProfileId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${adminToken}` }
+    });
+    assert.strictEqual(deleteRes.status, 200);
+    createdProfileId = null; // already soft-deleted
+  } finally {
+    if (createdProfileId) {
+      await safeCleanupProfile(createdProfileId);
+    }
+    server.close();
+  }
 });

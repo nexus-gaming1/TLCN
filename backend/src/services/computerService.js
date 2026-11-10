@@ -7,6 +7,8 @@ const TelemetryService = require('./telemetryService');
 const { SessionType } = require('../constants/enums');
 const { Op } = require('sequelize');
 
+const IPV4_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const MAC_REGEX = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
 
 class ComputerService {
   constructor(
@@ -27,6 +29,7 @@ class ComputerService {
     try {
       const db = this.models;
       const computers = await db.Computer.findAll({
+        where: { is_deleted: false },
         include: [
           {
             model: db.ComputerZone,
@@ -81,6 +84,7 @@ class ComputerService {
       const now = new Date();
       const db = this.models;
       const computers = await db.Computer.findAll({
+        where: { is_deleted: false },
         attributes: ['computer_id', 'computer_name', 'ip_address', 'mac_address', 'status'],
         include: [
           {
@@ -186,56 +190,133 @@ class ComputerService {
       const { computer_name, zone_id, status, ip_address, mac_address, is_remote_enabled } = computerData;
       const db = this.models;
 
-      return await db.sequelize.transaction(async (t) => {
-        // If computer_name, ip_address, mac_address are fully provided
-        if (computer_name && ip_address && mac_address) {
-          return await db.Computer.create({
-            computer_name: computer_name.trim(),
-            ip_address: ip_address.trim(),
-            mac_address: mac_address.trim(),
+      // Validate IP format if provided
+      if (ip_address && !IPV4_REGEX.test(ip_address.trim())) {
+        const err = new Error('Địa chỉ IP không đúng định dạng IPv4 hợp lệ');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      // Validate MAC format if provided
+      if (mac_address && !MAC_REGEX.test(mac_address.trim())) {
+        const err = new Error('Địa chỉ MAC không đúng định dạng PXE hợp lệ');
+        err.statusCode = 400;
+        throw err;
+      }
+
+      // Validate zone exists if provided
+      if (zone_id) {
+        const zoneExists = await db.ComputerZone.findByPk(Number(zone_id));
+        if (!zoneExists) {
+          const err = new Error('Phân khu máy trạm không tồn tại');
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      // Check duplicate computer_name
+      if (computer_name && computer_name.trim()) {
+        const existingName = await db.Computer.findOne({
+          where: { computer_name: computer_name.trim() }
+        });
+        if (existingName) {
+          const err = new Error(`Tên máy trạm '${computer_name.trim()}' đã tồn tại trên hệ thống`);
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      // Check duplicate IP
+      if (ip_address && ip_address.trim()) {
+        const existingIp = await db.Computer.findOne({
+          where: { ip_address: ip_address.trim() }
+        });
+        if (existingIp) {
+          const err = new Error(`Địa chỉ IP '${ip_address.trim()}' đã được gán cho máy khác`);
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      // Check duplicate MAC
+      if (mac_address && mac_address.trim()) {
+        const existingMac = await db.Computer.findOne({
+          where: { mac_address: mac_address.trim() }
+        });
+        if (existingMac) {
+          const err = new Error(`Địa chỉ MAC '${mac_address.trim()}' đã được gán cho máy khác`);
+          err.statusCode = 400;
+          throw err;
+        }
+      }
+
+      const runTransaction = async () => {
+        return await db.sequelize.transaction(async (t) => {
+          // If computer_name, ip_address, mac_address are fully provided
+          if (computer_name && ip_address && mac_address) {
+            return await db.Computer.create({
+              computer_name: computer_name.trim(),
+              ip_address: ip_address.trim(),
+              mac_address: mac_address.trim(),
+              zone_id: Number(zone_id) || 1,
+              status: status || ComputerStatus.OFFLINE,
+              is_remote_enabled: Boolean(is_remote_enabled)
+            }, { transaction: t });
+          }
+
+          // Auto-increment atomic creation to avoid race condition on computer_id / IP / MAC
+          const tempName = computer_name ? computer_name.trim() : `PC-PENDING-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+          const newComputer = await db.Computer.create({
+            computer_name: tempName,
+            ip_address: ip_address ? ip_address.trim() : null,
+            mac_address: mac_address ? mac_address.trim() : null,
             zone_id: Number(zone_id) || 1,
             status: status || ComputerStatus.OFFLINE,
             is_remote_enabled: Boolean(is_remote_enabled)
           }, { transaction: t });
-        }
 
-        // Auto-increment atomic creation to avoid race condition on computer_id / IP / MAC
-        const tempName = computer_name ? computer_name.trim() : `PC-PENDING-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-        const newComputer = await db.Computer.create({
-          computer_name: tempName,
-          ip_address: ip_address ? ip_address.trim() : null,
-          mac_address: mac_address ? mac_address.trim() : null,
-          zone_id: Number(zone_id) || 1,
-          status: status || ComputerStatus.OFFLINE,
-          is_remote_enabled: Boolean(is_remote_enabled)
-        }, { transaction: t });
+          const nextId = newComputer.computer_id;
+          const hexId = (nextId * 3).toString(16).padStart(2, '0').toUpperCase();
 
-        const nextId = newComputer.computer_id;
-        const hexId = (nextId * 3).toString(16).padStart(2, '0').toUpperCase();
+          let updated = false;
+          if (!computer_name) {
+            newComputer.computer_name = `PC-${String(nextId).padStart(3, '0')}`;
+            updated = true;
+          }
+          if (!ip_address) {
+            const subnet = Math.floor(nextId / 250);
+            const host = (nextId % 250) + 1;
+            newComputer.ip_address = `192.168.${1 + subnet}.${host}`;
+            updated = true;
+          }
+          if (!mac_address) {
+            const octet4 = String(nextId % 100).padStart(2, '0');
+            newComputer.mac_address = `F4:D4:88:5A:${octet4}:${hexId}`;
+            updated = true;
+          }
 
-        let updated = false;
-        if (!computer_name) {
-          newComputer.computer_name = `PC-${String(nextId).padStart(3, '0')}`;
-          updated = true;
-        }
-        if (!ip_address) {
-          const subnet = Math.floor(nextId / 250);
-          const host = (nextId % 250) + 1;
-          newComputer.ip_address = `192.168.${1 + subnet}.${host}`;
-          updated = true;
-        }
-        if (!mac_address) {
-          const octet4 = String(nextId % 100).padStart(2, '0');
-          newComputer.mac_address = `F4:D4:88:5A:${octet4}:${hexId}`;
-          updated = true;
-        }
+          if (updated) {
+            await newComputer.save({ transaction: t });
+          }
 
-        if (updated) {
-          await newComputer.save({ transaction: t });
-        }
+          return newComputer;
+        });
+      };
 
-        return newComputer;
-      });
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          return await runTransaction();
+        } catch (txErr) {
+          const isDeadlock = txErr?.parent?.code === 'ER_LOCK_DEADLOCK' ||
+                             txErr?.original?.code === 'ER_LOCK_DEADLOCK' ||
+                             (txErr?.message && txErr.message.includes('Deadlock'));
+          if (isDeadlock && attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 50 * attempt));
+            continue;
+          }
+          throw txErr;
+        }
+      }
     } catch (error) {
       if (!error.statusCode) error.statusCode = 500;
       throw error;
@@ -250,6 +331,81 @@ class ComputerService {
       const db = this.models;
       const computer = await db.Computer.findByPk(computerId);
       if (!computer) return null;
+
+      // Validate zone if changing
+      if (updateData.zone_id) {
+        const zoneExists = await db.ComputerZone.findByPk(Number(updateData.zone_id));
+        if (!zoneExists) {
+          const err = new Error('Phân khu máy trạm không tồn tại');
+          err.statusCode = 400;
+          throw err;
+        }
+        computer.zone_id = Number(updateData.zone_id);
+      }
+
+      // Validate name uniqueness
+      if (updateData.computer_name && updateData.computer_name.trim() !== computer.computer_name) {
+        const existingName = await db.Computer.findOne({
+          where: {
+            computer_name: updateData.computer_name.trim(),
+            computer_id: { [Op.ne]: computerId }
+          }
+        });
+        if (existingName) {
+          const err = new Error(`Tên máy trạm '${updateData.computer_name.trim()}' đã tồn tại`);
+          err.statusCode = 400;
+          throw err;
+        }
+        computer.computer_name = updateData.computer_name.trim();
+      }
+
+      // Validate IP format & uniqueness
+      if (updateData.ip_address !== undefined && updateData.ip_address !== null) {
+        const trimmedIp = String(updateData.ip_address).trim();
+        if (trimmedIp && !IPV4_REGEX.test(trimmedIp)) {
+          const err = new Error('Địa chỉ IP không đúng định dạng IPv4 hợp lệ');
+          err.statusCode = 400;
+          throw err;
+        }
+        if (trimmedIp && trimmedIp !== computer.ip_address) {
+          const existingIp = await db.Computer.findOne({
+            where: {
+              ip_address: trimmedIp,
+              computer_id: { [Op.ne]: computerId }
+            }
+          });
+          if (existingIp) {
+            const err = new Error(`Địa chỉ IP '${trimmedIp}' đã được gán cho máy khác`);
+            err.statusCode = 400;
+            throw err;
+          }
+        }
+        computer.ip_address = trimmedIp || null;
+      }
+
+      // Validate MAC format & uniqueness
+      if (updateData.mac_address !== undefined && updateData.mac_address !== null) {
+        const trimmedMac = String(updateData.mac_address).trim();
+        if (trimmedMac && !MAC_REGEX.test(trimmedMac)) {
+          const err = new Error('Địa chỉ MAC không đúng định dạng PXE hợp lệ');
+          err.statusCode = 400;
+          throw err;
+        }
+        if (trimmedMac && trimmedMac !== computer.mac_address) {
+          const existingMac = await db.Computer.findOne({
+            where: {
+              mac_address: trimmedMac,
+              computer_id: { [Op.ne]: computerId }
+            }
+          });
+          if (existingMac) {
+            const err = new Error(`Địa chỉ MAC '${trimmedMac}' đã được gán cho máy khác`);
+            err.statusCode = 400;
+            throw err;
+          }
+        }
+        computer.mac_address = trimmedMac || null;
+      }
 
       if (updateData.status) {
         const transaction = await db.sequelize.transaction();
@@ -273,11 +429,9 @@ class ComputerService {
         }
       }
 
-      if (updateData.zone_id) computer.zone_id = updateData.zone_id;
-      if (updateData.computer_name) computer.computer_name = updateData.computer_name;
-      if (updateData.ip_address !== undefined) computer.ip_address = updateData.ip_address;
-      if (updateData.mac_address !== undefined) computer.mac_address = updateData.mac_address;
-      if (updateData.is_remote_enabled !== undefined) computer.is_remote_enabled = updateData.is_remote_enabled;
+      if (updateData.is_remote_enabled !== undefined) {
+        computer.is_remote_enabled = Boolean(updateData.is_remote_enabled);
+      }
 
       await computer.save();
       return computer;
@@ -294,7 +448,22 @@ class ComputerService {
     try {
       const computer = await this.models.Computer.findByPk(computerId);
       if (!computer) return false;
-      await computer.destroy();
+
+      if (computer.status === ComputerStatus.IN_USE || computer.status === ComputerStatus.REMOTE) {
+        const error = new Error('Không thể xóa máy trạm đang có phiên sử dụng');
+        error.statusCode = 400;
+        throw error;
+      }
+
+      // Xóa mềm máy trạm (Soft Delete)
+      if (typeof computer.softDelete === 'function') {
+        await computer.softDelete();
+      } else if (typeof computer.save === 'function') {
+        computer.is_deleted = true;
+        computer.deleted_at = new Date();
+        computer.status = ComputerStatus.MAINTENANCE;
+        await computer.save();
+      }
       return true;
     } catch (error) {
       if (!error.statusCode) error.statusCode = 500;
@@ -395,6 +564,10 @@ class ComputerService {
 
   async deleteHardwareSpec(specId) {
     return await this.hardwareProfileService.deleteHardwareSpec(specId);
+  }
+
+  async toggleHardwareSpec(specId, isActive) {
+    return await this.hardwareProfileService.toggleHardwareSpec(specId, isActive);
   }
 }
 

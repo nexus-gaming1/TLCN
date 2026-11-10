@@ -18,6 +18,20 @@ class PricingPlan extends Model {
     return this.save();
   }
 
+  softDelete() {
+    this.is_deleted = true;
+    this.deleted_at = new Date();
+    this.is_active = false;
+    return this.save();
+  }
+
+  restore() {
+    this.is_deleted = false;
+    this.deleted_at = null;
+    this.is_active = true;
+    return this.save();
+  }
+
   updatePrice(newPrice) {
     this.price_per_hour = newPrice;
     return this.save();
@@ -48,7 +62,9 @@ module.exports = (sequelize) => {
     start_time: { type: DataTypes.TIME },
     end_time: { type: DataTypes.TIME },
     apply_date: { type: DataTypes.DATEONLY },
-    is_active: { type: DataTypes.BOOLEAN, defaultValue: true }
+    is_active: { type: DataTypes.BOOLEAN, defaultValue: true },
+    is_deleted: { type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false },
+    deleted_at: { type: DataTypes.DATE, allowNull: true, defaultValue: null }
   }, {
     sequelize,
     modelName: 'PricingPlan',

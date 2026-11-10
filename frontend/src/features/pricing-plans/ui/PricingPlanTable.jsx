@@ -1,7 +1,6 @@
 import {
   Eye,
   Edit,
-  Trash2,
   Clock,
   Calendar,
   Layers,
@@ -37,8 +36,7 @@ export default function PricingPlanTable({
   plans = [],
   onViewDetail,
   onEdit,
-  onToggleActive,
-  onDelete
+  onToggleActive
 }) {
   if (!plans || plans.length === 0) {
     return (
@@ -156,30 +154,40 @@ export default function PricingPlanTable({
                     </span>
                   </td>
 
-                  {/* Trạng Thái Kích Hoạt */}
-                  <td className="py-3 px-4 text-center" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => onToggleActive && onToggleActive(plan)}
-                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition cursor-pointer border ${
-                        plan.isActive
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 hover:bg-emerald-100'
-                          : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
-                      }`}
-                      title="Nhấn để thay đổi trạng thái"
-                    >
-                      <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          plan.isActive ? 'bg-emerald-500' : 'bg-slate-400'
+                  {/* Trạng Thái Kích Hoạt (Cần gạt Toggle Switch 1-click giống Kho Game) */}
+                  <td className="py-3 px-4" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onToggleActive && onToggleActive(plan)}
+                        role="switch"
+                        aria-checked={plan.isActive}
+                        className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500/20 ${
+                          plan.isActive ? 'bg-emerald-500' : 'bg-slate-300'
                         }`}
-                      ></span>
-                      <span>{plan.isActive ? 'Kích hoạt' : 'Tạm ngưng'}</span>
-                    </button>
+                        title={plan.isActive ? 'Đang mở - Click để tạm ngưng' : 'Tạm tắt - Click để kích hoạt'}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                            plan.isActive ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                      <span
+                        className={`text-[11px] font-bold select-none ${
+                          plan.isActive ? 'text-emerald-700' : 'text-slate-400'
+                        }`}
+                      >
+                        {plan.isActive ? 'Đang mở' : 'Tạm tắt'}
+                      </span>
+                    </div>
                   </td>
 
                   {/* Thao Tác (Action Buttons) */}
                   <td className="py-3 px-4 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-end gap-1">
                       <button
+                        type="button"
                         onClick={() => onViewDetail && onViewDetail(plan)}
                         className="w-8 h-8 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 flex items-center justify-center transition cursor-pointer"
                         title="Xem chi tiết"
@@ -188,19 +196,12 @@ export default function PricingPlanTable({
                       </button>
 
                       <button
+                        type="button"
                         onClick={() => onEdit && onEdit(plan)}
                         className="w-8 h-8 rounded-lg text-slate-500 hover:text-amber-600 hover:bg-amber-50 flex items-center justify-center transition cursor-pointer"
                         title="Chỉnh sửa"
                       >
                         <Edit className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        onClick={() => onDelete && onDelete(plan)}
-                        className="w-8 h-8 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition cursor-pointer"
-                        title="Xóa bảng giá"
-                      >
-                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </td>

@@ -13,6 +13,7 @@ class MemberService {
           {
             model: db.User,
             as: 'userInfo',
+            where: { is_deleted: false },
             attributes: ['user_id', 'username', 'full_name', 'role', 'status']
           },
           {
@@ -75,6 +76,7 @@ class MemberService {
           {
             model: db.User,
             as: 'userInfo',
+            where: { is_deleted: false },
             attributes: ['user_id', 'username', 'full_name', 'role', 'status']
           },
           {
@@ -92,7 +94,7 @@ class MemberService {
   /**
    * Chỉnh sửa thông tin hồ sơ cơ bản (Họ tên, Số điện thoại)
    */
-  async updateMemberInfo(memberId, { full_name, phone_number, phone }) {
+  async updateMemberInfo(memberId, { full_name, fullName, phone_number, phone }) {
     try {
       const member = await db.Member.findByPk(memberId);
       if (!member) return null;
@@ -100,8 +102,9 @@ class MemberService {
       const user = await db.User.findByPk(memberId);
       if (user) {
         let userDirty = false;
-        if (full_name !== undefined) {
-          user.full_name = full_name;
+        const newName = full_name !== undefined ? full_name : fullName;
+        if (newName !== undefined) {
+          user.full_name = newName;
           userDirty = true;
         }
         if (userDirty) {
@@ -117,6 +120,7 @@ class MemberService {
 
       return {
         ...member.toJSON(),
+        full_name: user ? user.full_name : null,
         userInfo: user ? user.toJSON() : null
       };
     } catch (error) {
@@ -146,6 +150,7 @@ class MemberService {
 
       return {
         ...member.toJSON(),
+        status: user.status,
         userInfo: user.toJSON()
       };
     } catch (error) {
@@ -226,6 +231,21 @@ class MemberService {
       };
     } catch (error) {
       console.error('Lỗi khi tạo tài khoản hội viên:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Xóa mềm tài khoản hội viên (Soft Delete)
+   */
+  async deleteMember(memberId) {
+    try {
+      const user = await db.User.findByPk(memberId);
+      if (!user) return false;
+      await user.softDelete();
+      return true;
+    } catch (error) {
+      console.error('Lỗi khi xóa hội viên:', error);
       throw error;
     }
   }

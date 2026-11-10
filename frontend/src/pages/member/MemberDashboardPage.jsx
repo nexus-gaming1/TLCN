@@ -84,7 +84,7 @@ export default function MemberDashboardPage({ user, onLogout }) {
             <Header user={user} onLogout={handleLogout} />
             <Sidebar role="MEMBER" />
 
-            <div className="pl-[240px]">
+            <div className="lg:pl-[240px]">
                 <main className="w-full pt-16 pb-20">
 
                     <section className="p-6 bg-white border-b border-slate-200/80">

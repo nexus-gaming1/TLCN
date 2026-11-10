@@ -182,3 +182,53 @@ test('[AC-09] [Ca dương] pricingPlanController - deletePricingPlan returns 200
     pricingPlanService.deletePricingPlan = orig;
   }
 });
+
+test('[AC-09] [Ca dương] pricingPlanController - restorePricingPlan returns 200 on success', async () => {
+  const orig = pricingPlanService.restorePricingPlan;
+  pricingPlanService.restorePricingPlan = async (id) => ({
+    success: true,
+    message: 'Khôi phục bảng giá thành công',
+    data: { pricing_plan_id: Number(id), is_deleted: false, is_active: true }
+  });
+
+  try {
+    const req = { params: { id: '3' } };
+    const res = createMockRes();
+    await pricingPlanController.restorePricingPlan(req, res, () => {});
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.status, 'success');
+    assert.strictEqual(res.body.data.is_deleted, false);
+  } finally {
+    pricingPlanService.restorePricingPlan = orig;
+  }
+});
+
+test('[AC-09] [Ca âm] pricingPlanController - forwards service errors to next() across all endpoints', async () => {
+  const cases = [
+    { controllerMethod: 'getPricingPlanById', serviceMethod: 'getPricingPlanById', req: { params: { id: '1' } } },
+    { controllerMethod: 'createPricingPlan', serviceMethod: 'createPricingPlan', req: { body: {} } },
+    { controllerMethod: 'updatePricingPlan', serviceMethod: 'updatePricingPlan', req: { params: { id: '1' }, body: {} } },
+    { controllerMethod: 'togglePricingPlanStatus', serviceMethod: 'togglePricingPlanStatus', req: { params: { id: '1' }, body: {} } },
+    { controllerMethod: 'deletePricingPlan', serviceMethod: 'deletePricingPlan', req: { params: { id: '1' } } },
+    { controllerMethod: 'restorePricingPlan', serviceMethod: 'restorePricingPlan', req: { params: { id: '1' } } }
+  ];
+
+  for (const c of cases) {
+    const orig = pricingPlanService[c.serviceMethod];
+    pricingPlanService[c.serviceMethod] = async () => {
+      const err = new Error(`Mock failure in ${c.serviceMethod}`);
+      err.statusCode = 404;
+      throw err;
+    };
+
+    try {
+      const res = createMockRes();
+      let passedError = null;
+      await pricingPlanController[c.controllerMethod](c.req, res, (err) => { passedError = err; });
+      assert.ok(passedError, `${c.controllerMethod} must forward error to next()`);
+      assert.strictEqual(passedError.statusCode, 404);
+    } finally {
+      pricingPlanService[c.serviceMethod] = orig;
+    }
+  }
+});

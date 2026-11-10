@@ -111,8 +111,10 @@ const runMigrations = async () => {
     await ensureColumn('financial_transaction', 'member_id', 'used_by', 'INT NOT NULL DEFAULT 1');
     await ensureColumn('financial_transaction', null, 'processed_by', 'INT NULL');
 
-    // Thêm cột order_id để liên kết với đơn F&B
+    // Thêm cột order_id, txn_code, notes cho financial_transaction
     await ensureColumn('financial_transaction', null, 'order_id', 'INT NULL');
+    await ensureColumn('financial_transaction', null, 'txn_code', 'VARCHAR(50) NULL');
+    await ensureColumn('financial_transaction', null, 'notes', 'TEXT NULL');
     // Ép MySQL cập nhật lại ENUM của cột payment_method
     try {
       //// Dọn rác dữ liệu cũ trước khi ép kiểu ENUM mới để tránh lỗi "Data truncated"
@@ -133,6 +135,20 @@ const runMigrations = async () => {
     } catch (e) {
       // Ignored if table does not exist yet or already up to date
     }
+
+    // 9. pricing_plan, computer, hardware_profile, users: is_deleted, deleted_at (Soft Delete)
+    await ensureColumn('pricing_plan', null, 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await ensureColumn('pricing_plan', null, 'deleted_at', 'DATETIME NULL DEFAULT NULL');
+
+    await ensureColumn('computer', null, 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await ensureColumn('computer', null, 'deleted_at', 'DATETIME NULL DEFAULT NULL');
+
+    await ensureColumn('hardware_profile', null, 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await ensureColumn('hardware_profile', null, 'deleted_at', 'DATETIME NULL DEFAULT NULL');
+    await ensureColumn('hardware_profile', null, 'is_active', 'TINYINT(1) NOT NULL DEFAULT 1');
+
+    await ensureColumn('users', null, 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await ensureColumn('users', null, 'deleted_at', 'DATETIME NULL DEFAULT NULL');
 
     // Perform Sequelize sync with alter fallback
     await db.sequelize.sync({ alter: true }).catch((err) => {

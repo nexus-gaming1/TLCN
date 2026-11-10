@@ -18,9 +18,9 @@ class TransactionRepository {
     const { category, paymentMethod, status, dateRange, search } = filters;
     const whereClause = {};
 
-    if (category && category !== 'all') whereClause.category = category;
-    if (paymentMethod && paymentMethod !== 'all') whereClause.payment_method = paymentMethod;
-    if (status && status !== 'all') whereClause.status = status;
+    if (category && category !== 'all') whereClause.category = String(category).toUpperCase().trim();
+    if (paymentMethod && paymentMethod !== 'all') whereClause.payment_method = String(paymentMethod).toUpperCase().trim();
+    if (status && status !== 'all') whereClause.status = String(status).toUpperCase().trim();
 
     if (dateRange && dateRange !== 'all') {
       const now = new Date();
@@ -35,18 +35,20 @@ class TransactionRepository {
       whereClause.created_at = { [Op.gte]: start };
     }
 
-    if (search) {
-      const q = `%${search}%`;
+    if (search && String(search).trim()) {
+      const trimmedSearch = String(search).trim();
+      const q = `%${trimmedSearch}%`;
       const searchOr = [];
 
       // Phân tích mã giao dịch TXN-XXXXX hoặc số ID
-      const matchTxn = String(search).match(/txn-0*(\d+)/i);
+      const matchTxn = trimmedSearch.match(/txn-0*(\d+)/i);
       if (matchTxn) {
         searchOr.push({ transaction_id: parseInt(matchTxn[1], 10) });
-      } else if (!isNaN(parseInt(search, 10))) {
-        searchOr.push({ transaction_id: parseInt(search, 10) });
+      } else if (/^\d+$/.test(trimmedSearch)) {
+        searchOr.push({ transaction_id: parseInt(trimmedSearch, 10) });
       }
 
+      searchOr.push({ txn_code: { [Op.like]: q } });
       searchOr.push({ '$memberInfo.phone$': { [Op.like]: q } });
       searchOr.push({ '$memberInfo.userInfo.full_name$': { [Op.like]: q } });
 
@@ -61,8 +63,9 @@ class TransactionRepository {
    */
   async findAndCountAllWithAssociations(filters = {}, pagination = {}) {
     const whereClause = this.buildSearchFilters(filters);
-    const { page = 1, limit = 10 } = pagination;
-    const offset = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const safePage = Math.max(1, parseInt(pagination.page, 10) || 1);
+    const safeLimit = Math.min(100, Math.max(1, parseInt(pagination.limit, 10) || 10));
+    const offset = (safePage - 1) * safeLimit;
 
     const includeQuery = [
       {
@@ -91,8 +94,8 @@ class TransactionRepository {
       where: whereClause,
       include: includeQuery,
       order: [['transaction_id', 'DESC']],
-      limit: parseInt(limit, 10),
-      offset: parseInt(offset, 10),
+      limit: safeLimit,
+      offset,
       subQuery: false
     });
   }
@@ -148,9 +151,13 @@ class TransactionRepository {
   }
 
   /**
-   * Tính toán các chỉ số KPI tài chính hôm nay bằng SQL Aggregation
+   * Tính toán các chỉ số KPI tài chính bằng SQL Aggregation (hỗ trợ lọc theo khoảng thời gian/bộ lọc)
    */
-  async getTodayKpiMetrics(todayStart) {
+  async getTodayKpiMetrics(whereOrDateStart) {
+    const whereClause = whereOrDateStart instanceof Date
+      ? { created_at: { [Op.gte]: whereOrDateStart } }
+      : (whereOrDateStart && typeof whereOrDateStart === 'object' ? whereOrDateStart : {});
+
     return await this.models.FinancialTransaction.findOne({
       attributes: [
         [this.sequelize.fn('COUNT', this.sequelize.col('transaction_id')), 'totalTxnCount'],
@@ -196,9 +203,7 @@ class TransactionRepository {
           'pendingCount'
         ]
       ],
-      where: {
-        created_at: { [Op.gte]: todayStart }
-      },
+      where: whereClause,
       raw: true
     });
   }

@@ -1,60 +1,5 @@
 import React from 'react';
-import { Eye, Edit, Trash2, HardDrive, Cpu, AlertTriangle, CheckCircle, PowerOff, Wrench } from 'lucide-react';
-
-/**
- * Status Badge Helper
- * Aligned 100% with backend ComputerStatus enum
- */
-function StatusBadge({ status, statusLabel }) {
-  const statusUpper = String(status || '').toUpperCase();
-
-  if (statusUpper === 'ONLINE' || status === 'online') {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#f0fdf4] text-[#15803d] border border-emerald-200 rounded-full font-mono text-[11px] font-bold">
-        <span className="h-2 w-2 rounded-full bg-[#16a34a] animate-pulse"></span>
-        {statusLabel || 'Online (Sẵn sàng)'}
-      </span>
-    );
-  }
-  if (statusUpper === 'IN_USE' || status === 'in-use') {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#f0f9ff] text-[#0369a1] border border-sky-200 rounded-full font-mono text-[11px] font-bold">
-        <span className="h-2 w-2 rounded-full bg-[#0284c7]"></span>
-        {statusLabel || 'Đang sử dụng'}
-      </span>
-    );
-  }
-  if (statusUpper === 'MAINTENANCE' || status === 'maintenance') {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#fff1f2] text-[#be123c] border border-rose-200 rounded-full font-mono text-[11px] font-bold">
-        <span className="h-2 w-2 rounded-full bg-[#e11d48]"></span>
-        {statusLabel || 'Bảo trì'}
-      </span>
-    );
-  }
-  if (statusUpper === 'LOCKED' || status === 'locked') {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-900 rounded-full font-mono text-[11px] font-bold border border-amber-200">
-        <span className="h-2 w-2 rounded-full bg-amber-500"></span>
-        {statusLabel || 'Tạm khóa'}
-      </span>
-    );
-  }
-  if (statusUpper === 'REMOTE' || status === 'remote') {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-sky-50 text-sky-900 rounded-full font-mono text-[11px] font-bold border border-sky-200">
-        <span className="h-2 w-2 rounded-full bg-sky-500"></span>
-        {statusLabel || 'Cloud Remote'}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#f8fafc] text-[#475569] rounded-full font-mono text-[11px] font-bold border border-slate-200">
-      <span className="h-2 w-2 rounded-full bg-[#64748b]"></span>
-      {statusLabel || 'Offline (Tắt nguồn)'}
-    </span>
-  );
-}
+import { Monitor, Eye, Edit, HardDrive, Cpu, CheckCircle, PowerOff, Wrench } from 'lucide-react';
 
 /**
  * MachineTable component displaying complete fleet list populated directly from CSDL
@@ -66,7 +11,7 @@ export default function MachineTable({
   onToggleSelectAll,
   onLiveMirror,
   onEdit,
-  onDelete
+  onToggleStatus
 }) {
   const isAllSelected = machines.length > 0 && selectedIds.length === machines.length;
 
@@ -117,9 +62,20 @@ export default function MachineTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs font-medium text-slate-800">
-            {machines.map((m) => {
-              const isSelected = selectedIds.includes(m.id);
-              const statusUpper = String(m.status || '').toUpperCase();
+            {machines.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="py-12 text-center text-slate-500">
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <Monitor className="w-8 h-8 text-slate-400 stroke-[1.5]" />
+                    <span className="text-sm font-semibold text-slate-700">Không tìm thấy máy trạm nào</span>
+                    <span className="text-xs text-slate-400">Thử thay đổi bộ lọc tìm kiếm hoặc khai báo máy mới</span>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              machines.map((m) => {
+                const isSelected = selectedIds.includes(m.id);
+                const statusUpper = String(m.status || '').toUpperCase();
 
               return (
                 <tr
@@ -278,9 +234,33 @@ export default function MachineTable({
                     )}
                   </td>
 
-                  {/* Status Badge */}
+                  {/* Trạng thái (với direct Toggle Switch 1-click) */}
                   <td className="py-4 px-4 text-center min-w-[170px] whitespace-nowrap">
-                    <StatusBadge status={m.status} statusLabel={m.statusLabel} />
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onToggleStatus && onToggleStatus(m)}
+                        role="switch"
+                        aria-checked={statusUpper !== 'MAINTENANCE'}
+                        className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500/20 ${
+                          statusUpper !== 'MAINTENANCE' ? 'bg-emerald-500' : 'bg-slate-300'
+                        }`}
+                        title={statusUpper !== 'MAINTENANCE' ? 'Đang hoạt động - Click để chuyển bảo trì' : 'Đang bảo trì - Click để kích hoạt'}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                            statusUpper !== 'MAINTENANCE' ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                      <span
+                        className={`text-[11px] font-bold select-none ${
+                          statusUpper !== 'MAINTENANCE' ? 'text-emerald-700' : 'text-slate-400'
+                        }`}
+                      >
+                        {statusUpper !== 'MAINTENANCE' ? 'Hoạt động' : 'Bảo trì'}
+                      </span>
+                    </div>
                   </td>
 
                   {/* Thao Tác */}
@@ -303,20 +283,12 @@ export default function MachineTable({
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-
-                      <button
-                        type="button"
-                        onClick={() => onDelete && onDelete(m.id)}
-                        className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
-                        title="Xóa máy trạm"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </td>
                 </tr>
               );
-            })}
+            })
+          )}
           </tbody>
         </table>
       </div>

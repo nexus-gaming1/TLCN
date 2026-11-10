@@ -4,18 +4,22 @@ const computerController = require('../controllers/computerController');
 const { authenticateToken, authorizeRoles } = require('../middleware/authMiddleware');
 const { UserRole } = require('../constants/enums');
 
+// Staff / Admin fleet operations
 router.post(
     '/commands/broadcast',
+    authenticateToken,
+    authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE),
     computerController.broadcastCommand
 );
 
-router.get('/grid', computerController.getRoomLayoutGrid);
-router.get('/zones', computerController.getZones);
-router.get('/bootrom-logs', computerController.getBootromLogs);
-router.post('/wake-on-lan', computerController.wakeOnLan);
-router.get('/overview', computerController.getComputerOverview);
-router.get('/machinestore', computerController.getMachines);
+router.get('/grid', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getRoomLayoutGrid);
+router.get('/zones', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getZones);
+router.get('/bootrom-logs', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getBootromLogs);
+router.post('/wake-on-lan', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.wakeOnLan);
+router.get('/overview', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getComputerOverview);
+router.get('/machinestore', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getMachines);
 
+// Client machine agent endpoints
 router.post(
     '/by-address/logout',
     computerController.logoutByAddress
@@ -30,17 +34,20 @@ router.post(
 router.get('/specs', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getHardwareSpecs);
 router.post('/specs', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.createHardwareSpec);
 router.put('/specs/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.updateHardwareSpec);
+router.patch('/specs/:id/toggle', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.toggleHardwareSpec);
 router.delete('/specs/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.deleteHardwareSpec);
 
-router.get('/', computerController.getComputers);
-router.post('/', computerController.createComputer);
+// Computer Management CRUD (Protected with RBAC)
+router.get('/', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getComputers);
+router.post('/', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.createComputer);
 
-router.patch('/:id/status', computerController.changeStatus);
-router.post('/:id/switch', computerController.switchStation);
-router.get('/:id', computerController.getComputerById);
-router.put('/:id', computerController.updateComputer);
-router.delete('/:id', computerController.deleteComputer);
+router.patch('/:id/status', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.changeStatus);
+router.post('/:id/switch', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.switchStation);
+router.get('/:id', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getComputerById);
+router.put('/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.updateComputer);
+router.delete('/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.deleteComputer);
 
+// Client machine login/session endpoints
 router.post(
     "/:machineId/login",
     computerController.login

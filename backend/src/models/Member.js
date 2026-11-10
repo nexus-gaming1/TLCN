@@ -41,8 +41,13 @@ class Member extends Model {
     return (parseFloat(this.real_balance || 0) + parseFloat(this.bonus_balance || 0)) >= amount;
   }
 
-  updateProfile({ phone }) {
-    if (phone !== undefined) this.phone = phone;
+  updateProfile(profileData) {
+    if (typeof profileData === 'string') {
+      this.phone = profileData;
+    } else if (profileData && typeof profileData === 'object') {
+      if (profileData.phone !== undefined) this.phone = profileData.phone;
+      if (profileData.id_number !== undefined) this.id_number = profileData.id_number;
+    }
     return this.save();
   }
 }

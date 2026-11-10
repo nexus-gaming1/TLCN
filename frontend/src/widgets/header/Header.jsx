@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, Bell, Sliders, Gamepad2, ShieldCheck, LogOut, Home, ChevronDown, User, Settings } from 'lucide-react';
+import { Search, Bell, Sliders, Gamepad2, ShieldCheck, LogOut, Home, ChevronDown, User, Settings, Menu } from 'lucide-react';
 
 export default function Header({ user, searchQuery, setSearchQuery, metrics, onLogout, variant = 'full' }) {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -49,8 +49,16 @@ export default function Header({ user, searchQuery, setSearchQuery, metrics, onL
     const m = metrics || { totalStations: 120, localCount: 56, cloudCount: 28, readyCount: 28, maintCount: 8, shiftRevenue: 14850000 };
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white border-b border-slate-300 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] px-6 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-6 flex-shrink-0">
+        <header className="fixed top-0 left-0 right-0 z-40 h-16 bg-white border-b border-slate-300 shadow-[0_1px_2px_0_rgba(0,0,0,0.05)] px-4 sm:px-6 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 sm:gap-6 flex-shrink-0">
+                <button
+                    type="button"
+                    onClick={() => window.dispatchEvent(new CustomEvent('nexus:toggle-sidebar'))}
+                    className="lg:hidden p-2 rounded-lg bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 transition-colors cursor-pointer"
+                    aria-label="Mở menu điều hướng"
+                >
+                    <Menu className="w-5 h-5" />
+                </button>
                 <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center text-white shadow-sm shadow-sky-200">
                         <Gamepad2 className="w-5 h-5 shrink-0" />

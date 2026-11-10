@@ -12,6 +12,7 @@ router.get('/:id', pricingPlanController.getPricingPlanById);
 router.post('/', authenticateToken, authorizeRoles(UserRole.ADMIN), pricingPlanController.createPricingPlan);
 router.put('/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), pricingPlanController.updatePricingPlan);
 router.patch('/:id/toggle', authenticateToken, authorizeRoles(UserRole.ADMIN), pricingPlanController.togglePricingPlanStatus);
+router.patch('/:id/restore', authenticateToken, authorizeRoles(UserRole.ADMIN), pricingPlanController.restorePricingPlan);
 router.delete('/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), pricingPlanController.deletePricingPlan);
 
 module.exports = router;
