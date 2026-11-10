@@ -86,9 +86,19 @@ class PricingPlanService {
   /**
    * Lấy danh sách tất cả bảng giá + thống kê KPI metrics
    */
-  async getAllPricingPlans() {
+  async getAllPricingPlans(filters = {}) {
     try {
+      const where = {};
+      if (filters.include_deleted !== true && filters.include_deleted !== 'true') {
+        if (filters.is_deleted === true || filters.is_deleted === 'true') {
+          where.is_deleted = true;
+        } else {
+          where.is_deleted = false;
+        }
+      }
+
       const plans = await db.PricingPlan.findAll({
+        where,
         include: [
           {
             model: db.ComputerZone,
@@ -289,29 +299,39 @@ class PricingPlanService {
   }
 
   /**
-   * Xóa bảng giá
+   * Xóa mềm bảng giá (Soft Delete)
+   * Đánh dấu is_deleted = true, ghi nhận deleted_at, is_active = false
+   * Bảo toàn dữ liệu liên kết và lịch sử phiên chơi
    */
   async deletePricingPlan(id) {
-    const transaction = await db.sequelize.transaction();
     try {
-      const plan = await db.PricingPlan.findByPk(id, { transaction });
+      const plan = await db.PricingPlan.findByPk(id);
       if (!plan) {
         throw new Error(`Không tìm thấy bảng giá với ID: ${id}`);
       }
 
-      // Xóa liên kết trước
-      await db.ZonePricingPlan.destroy({
-        where: { pricing_plan_id: id },
-        transaction
-      });
-
-      await plan.destroy({ transaction });
-      await transaction.commit();
-
-      return { success: true, message: 'Đã xóa bảng giá thành công' };
+      await plan.softDelete();
+      return { success: true, message: 'Đã chuyển bảng giá vào thùng rác thành công', data: plan };
     } catch (error) {
-      await transaction.rollback();
       console.error('Lỗi khi xóa bảng giá:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Khôi phục bảng giá đã xóa mềm (Restore)
+   */
+  async restorePricingPlan(id) {
+    try {
+      const plan = await db.PricingPlan.findByPk(id);
+      if (!plan) {
+        throw new Error(`Không tìm thấy bảng giá với ID: ${id}`);
+      }
+
+      await plan.restore();
+      return { success: true, message: 'Khôi phục bảng giá thành công', data: plan };
+    } catch (error) {
+      console.error('Lỗi khi khôi phục bảng giá:', error);
       throw error;
     }
   }

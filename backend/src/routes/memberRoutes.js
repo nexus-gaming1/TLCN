@@ -10,5 +10,6 @@ router.post('/', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPL
 router.get('/:id', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), memberController.getMemberById);
 router.put('/:id/info', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), memberController.updateMemberInfo);
 router.put('/:id/status', authenticateToken, authorizeRoles(UserRole.ADMIN), memberController.updateAccountStatus);
+router.delete('/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), memberController.deleteMember);
 
 module.exports = router;

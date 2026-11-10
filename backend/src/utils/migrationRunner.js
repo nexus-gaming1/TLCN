@@ -134,6 +134,20 @@ const runMigrations = async () => {
       // Ignored if table does not exist yet or already up to date
     }
 
+    // 9. pricing_plan, computer, hardware_profile, users: is_deleted, deleted_at (Soft Delete)
+    await ensureColumn('pricing_plan', null, 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await ensureColumn('pricing_plan', null, 'deleted_at', 'DATETIME NULL DEFAULT NULL');
+
+    await ensureColumn('computer', null, 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await ensureColumn('computer', null, 'deleted_at', 'DATETIME NULL DEFAULT NULL');
+
+    await ensureColumn('hardware_profile', null, 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await ensureColumn('hardware_profile', null, 'deleted_at', 'DATETIME NULL DEFAULT NULL');
+    await ensureColumn('hardware_profile', null, 'is_active', 'TINYINT(1) NOT NULL DEFAULT 1');
+
+    await ensureColumn('users', null, 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await ensureColumn('users', null, 'deleted_at', 'DATETIME NULL DEFAULT NULL');
+
     // Perform Sequelize sync with alter fallback
     await db.sequelize.sync({ alter: true }).catch((err) => {
       console.warn('[Migration Warning] Sync alter notice:', err.message);

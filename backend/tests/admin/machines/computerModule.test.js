@@ -292,22 +292,17 @@ test('[Unit TC-09] [Service] deleteComputer - Chặn xóa máy trạm đang có 
   );
 });
 
-test('[Unit TC-10] [Service] deleteComputer - Xóa thành công máy trạm OFFLINE kèm dọn dẹp status logs', async () => {
-  let destroyedLogComputerId = null;
-  let computerDestroyed = false;
+test('[Unit TC-10] [Service] deleteComputer - Xóa mềm thành công máy trạm OFFLINE', async () => {
+  let computerSoftDeleted = false;
 
   const mockModels = {
     Computer: {
       findByPk: async () => ({
         computer_id: 8,
         status: ComputerStatus.OFFLINE,
-        destroy: async () => { computerDestroyed = true; }
+        softDelete: async () => { computerSoftDeleted = true; },
+        save: async () => { computerSoftDeleted = true; }
       })
-    },
-    ComputerStatusLog: {
-      destroy: async ({ where }) => {
-        destroyedLogComputerId = where.computer_id;
-      }
     }
   };
 
@@ -315,6 +310,5 @@ test('[Unit TC-10] [Service] deleteComputer - Xóa thành công máy trạm OFFL
   const success = await service.deleteComputer(8);
 
   assert.strictEqual(success, true);
-  assert.strictEqual(computerDestroyed, true, 'Máy trạm phải được destroy');
-  assert.strictEqual(destroyedLogComputerId, 8, 'Phải xóa sạch status logs của máy 8');
+  assert.strictEqual(computerSoftDeleted, true, 'Máy trạm phải được xóa mềm');
 });

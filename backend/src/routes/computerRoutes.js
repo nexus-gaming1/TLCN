@@ -34,6 +34,7 @@ router.post(
 router.get('/specs', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getHardwareSpecs);
 router.post('/specs', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.createHardwareSpec);
 router.put('/specs/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.updateHardwareSpec);
+router.patch('/specs/:id/toggle', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.toggleHardwareSpec);
 router.delete('/specs/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.deleteHardwareSpec);
 
 // Computer Management CRUD (Protected with RBAC)

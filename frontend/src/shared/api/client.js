@@ -139,8 +139,23 @@ export const apiClient = {
     return refreshPromise;
   },
 
-  get(endpoint, headers = {}) {
-    return this.request(endpoint, { method: 'GET', headers });
+  get(endpoint, options = {}) {
+    let finalEndpoint = endpoint;
+    let headers = options;
+    if (options && options.params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(options.params).forEach(([k, v]) => {
+        if (v !== undefined && v !== null && v !== '') {
+          searchParams.append(k, String(v));
+        }
+      });
+      const qs = searchParams.toString();
+      if (qs) {
+        finalEndpoint += (finalEndpoint.includes('?') ? '&' : '?') + qs;
+      }
+      headers = options.headers || {};
+    }
+    return this.request(finalEndpoint, { method: 'GET', headers });
   },
 
   post(endpoint, body, headers = {}) {

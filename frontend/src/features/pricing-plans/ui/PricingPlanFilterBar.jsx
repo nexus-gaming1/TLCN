@@ -46,8 +46,8 @@ export default function PricingPlanFilterBar({
               className="appearance-none h-10 bg-slate-50 hover:bg-slate-100 focus:bg-white focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 text-slate-800 text-xs font-bold pl-3 pr-8 py-2 rounded-lg border border-slate-200 outline-none cursor-pointer transition-colors shadow-inner"
             >
               <option value="all">Trạng thái: Tất cả</option>
-              <option value="ACTIVE">Đang kích hoạt</option>
-              <option value="INACTIVE">Đang tạm ngưng</option>
+              <option value="ACTIVE">Đang mở (Đang kích hoạt)</option>
+              <option value="INACTIVE">Tạm tắt (Đang tạm ngưng)</option>
             </select>
             <Filter className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>

@@ -387,9 +387,16 @@ test('[AC-09] [Ca âm & Ca dương] PricingPlanService - CRUD operations & Not F
       return this;
     },
     async save() { return this; },
-    async destroy() {
+    async softDelete() {
       destroyed = true;
-      return true;
+      this.is_deleted = true;
+      this.is_active = false;
+      return this;
+    },
+    async restore() {
+      this.is_deleted = false;
+      this.is_active = true;
+      return this;
     }
   };
 
@@ -447,10 +454,16 @@ test('[AC-09] [Ca âm & Ca dương] PricingPlanService - CRUD operations & Not F
       { message: 'Không tìm thấy bảng giá với ID: 999' }
     );
 
-    // [Ca dương]: deletePricingPlan thành công
+    // [Ca dương]: deletePricingPlan thành công (Soft Delete)
     const delRes = await pricingPlanService.deletePricingPlan(10);
     assert.strictEqual(delRes.success, true);
     assert.strictEqual(destroyed, true);
+
+    // [Ca dương]: restorePricingPlan thành công
+    const restoreRes = await pricingPlanService.restorePricingPlan(10);
+    assert.strictEqual(restoreRes.success, true);
+    assert.strictEqual(mockPlan.is_deleted, false);
+    assert.strictEqual(mockPlan.is_active, true);
   } finally {
     db.PricingPlan.findByPk = origFindByPk;
     db.ZonePricingPlan.destroy = origDestroyZone;

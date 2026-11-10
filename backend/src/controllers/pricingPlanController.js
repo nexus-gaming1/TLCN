@@ -7,7 +7,7 @@ const pricingPlanService = require('../services/pricingPlanService');
 class PricingPlanController {
   async getPricingPlans(req, res, next) {
     try {
-      const data = await pricingPlanService.getAllPricingPlans();
+      const data = await pricingPlanService.getAllPricingPlans(req.query);
       return res.json({
         status: 'success',
         data: data.plans,
@@ -96,10 +96,25 @@ class PricingPlanController {
   async deletePricingPlan(req, res, next) {
     try {
       const { id } = req.params;
-      await pricingPlanService.deletePricingPlan(id);
+      const result = await pricingPlanService.deletePricingPlan(id);
       return res.json({
         status: 'success',
-        message: 'Xóa bảng giá thành công'
+        data: result.data,
+        message: result.message || 'Xóa bảng giá thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async restorePricingPlan(req, res, next) {
+    try {
+      const { id } = req.params;
+      const result = await pricingPlanService.restorePricingPlan(id);
+      return res.json({
+        status: 'success',
+        data: result.data,
+        message: result.message || 'Khôi phục bảng giá thành công'
       });
     } catch (error) {
       next(error);

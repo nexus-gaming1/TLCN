@@ -5,8 +5,8 @@ import Footer from '../../widgets/footer/Footer';
 
 // Hardware Config Service, Components & Models
 import hardwareService from '../../shared/api/hardwareService';
-import toast from 'react-hot-toast';
 import { Loader2, AlertCircle } from 'lucide-react';
+import FloatingToast from '../../shared/ui/FloatingToast';
 import HardwareKpiBento from '../../features/hardware-config/ui/HardwareKpiBento';
 import HardwareFilterBar from '../../features/hardware-config/ui/HardwareFilterBar';
 import HardwareSpecsTable from '../../features/hardware-config/ui/HardwareSpecsTable';
@@ -37,6 +37,27 @@ export default function ManageConfigPage({ user, onLogout }) {
   const [isTelemetryModalOpen, setIsTelemetryModalOpen] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  // Thông báo toast nổi đa năng (Success, Warning, Error)
+  const showToast = (payload, type = 'success') => {
+    if (typeof payload === 'string') {
+      setToast({
+        type,
+        title: type === 'warning' ? 'Đã tạm ngưng' : type === 'error' ? 'Lỗi' : 'Thành công',
+        message: payload
+      });
+    } else {
+      setToast(payload);
+    }
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Fetch real specs & zone & computer & presets data from Backend API on mount
   const fetchHardwareData = useCallback(async () => {
@@ -55,7 +76,7 @@ export default function ManageConfigPage({ user, onLogout }) {
     } catch (err) {
       console.error('Lỗi khi tải thông số cấu hình từ CSDL API:', err);
       setError(err.message || 'Không thể kết nối CSDL máy chủ backend (Port 3001).');
-      toast.error('Không thể tải dữ liệu cấu hình máy từ máy chủ.');
+      showToast('Không thể tải dữ liệu cấu hình máy từ máy chủ.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -124,38 +145,58 @@ export default function ManageConfigPage({ user, onLogout }) {
   const handleSaveEditHardware = async (updatedItem) => {
     try {
       await hardwareService.updateHardwareSpec(updatedItem.id, updatedItem);
-      toast.success('Cập nhật mẫu cấu hình phần cứng thành công!');
+      showToast('Cập nhật mẫu cấu hình phần cứng thành công!', 'success');
       await fetchHardwareData();
     } catch (err) {
       console.error('Lỗi khi cập nhật mẫu cấu hình máy:', err);
       const msg = err.response?.data?.message || err.message || 'Không thể cập nhật cấu hình máy. Vui lòng thử lại!';
-      toast.error(msg);
+      showToast(msg, 'error');
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa mẫu cấu hình phần cứng ${id}?`)) {
-      try {
-        await hardwareService.deleteHardwareSpec(id);
-        toast.success(`Đã xóa cấu hình phần cứng ${id} thành công!`);
-        await fetchHardwareData();
-      } catch (err) {
-        console.error('Lỗi khi xóa mẫu cấu hình máy:', err);
-        const msg = err.response?.data?.message || err.message || 'Không thể xóa cấu hình phần cứng.';
-        toast.error(msg);
+  const handleToggleActive = async (item) => {
+    const newActiveState = item.is_active === false;
+    const profileName = item.profileName || item.id;
+    try {
+      // Optimistic update
+      setSpecs((prev) =>
+        prev.map((s) => (s.id === item.id ? { ...s, is_active: newActiveState } : s))
+      );
+      await hardwareService.toggleHardwareSpec(item.id, newActiveState);
+      if (newActiveState) {
+        showToast({
+          type: 'success',
+          title: 'Đã kích hoạt cấu hình máy',
+          message: `Mẫu cấu hình "${profileName}" đã được kích hoạt thành công.`
+        });
+      } else {
+        showToast({
+          type: 'warning',
+          title: 'Đã ngưng kích hoạt cấu hình máy',
+          message: `Mẫu cấu hình "${profileName}" đã tạm ngưng kích hoạt.`
+        });
       }
+      await fetchHardwareData();
+    } catch (err) {
+      console.error('Lỗi khi chuyển đổi trạng thái cấu hình:', err);
+      showToast({
+        type: 'error',
+        title: 'Lỗi cập nhật trạng thái',
+        message: err.message || 'Không thể thay đổi trạng thái cấu hình máy'
+      });
+      await fetchHardwareData();
     }
   };
 
   const handleCreateHardware = async (newHardware) => {
     try {
       await hardwareService.createHardwareSpec(newHardware);
-      toast.success('Thêm mẫu cấu hình phần cứng mới thành công!');
+      showToast('Thêm mẫu cấu hình phần cứng mới thành công!', 'success');
       await fetchHardwareData();
     } catch (err) {
       console.error('Lỗi khi tạo mẫu cấu hình máy:', err);
       const msg = err.response?.data?.message || err.message || 'Không thể tạo cấu hình máy. Vui lòng thử lại!';
-      toast.error(msg);
+      showToast(msg, 'error');
     }
   };
 
@@ -210,6 +251,9 @@ export default function ManageConfigPage({ user, onLogout }) {
 
       {/* Shared Sidebar Widget with activeNav='config' */}
       <Sidebar activeNav="config" bootromStatus="ONLINE" role="ADMIN" />
+
+      {/* Floating Toast Notification (0ms Layout Shift) */}
+      <FloatingToast toast={toast} onClose={() => setToast(null)} />
 
       {/* Main Content Area */}
       <div className="pl-[240px]">
@@ -267,7 +311,7 @@ export default function ManageConfigPage({ user, onLogout }) {
               }}
               onOpenTelemetry={handleOpenTelemetry}
               onEdit={handleEdit}
-              onDelete={handleDelete}
+              onToggleActive={handleToggleActive}
             />
 
             {/* Telemetry Diagnostics Peek Section */}

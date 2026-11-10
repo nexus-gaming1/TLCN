@@ -8,9 +8,17 @@ class PricingPlanService {
   /**
    * Lấy tất cả bảng giá máy, danh sách phân khu (zones) và metrics từ MySQL
    */
-  async getPricingPlans() {
+  async getPricingPlans(params = {}) {
     try {
-      const response = await apiClient.get('/pricing-plans');
+      const query = new URLSearchParams();
+      if (params.include_deleted !== undefined) {
+        query.append('include_deleted', params.include_deleted);
+      }
+      if (params.is_deleted !== undefined) {
+        query.append('is_deleted', params.is_deleted);
+      }
+      const queryString = query.toString() ? `?${query.toString()}` : '';
+      const response = await apiClient.get(`/pricing-plans${queryString}`);
       if (response && response.status === 'success') {
         const plansList = Array.isArray(response.data)
           ? response.data.map((p) => this.mapPricingPlan(p))
@@ -24,7 +32,7 @@ class PricingPlanService {
       return { plans: [], zones: [], metrics: null };
     } catch (error) {
       console.error('Lỗi khi tải bảng giá máy từ backend API /api/pricing-plans:', error);
-      return { plans: [], zones: [], metrics: null };
+      throw error;
     }
   }
 
@@ -84,7 +92,7 @@ class PricingPlanService {
   }
 
   /**
-   * Xóa bảng giá
+   * Xóa bảng giá (Xóa mềm - Chuyển vào thùng rác)
    */
   async deletePricingPlan(id) {
     try {
@@ -92,6 +100,19 @@ class PricingPlanService {
       return response.data;
     } catch (error) {
       console.error('Lỗi khi xóa bảng giá:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Khôi phục bảng giá đã xóa mềm (Restore)
+   */
+  async restorePricingPlan(id) {
+    try {
+      const response = await apiClient.patch(`/pricing-plans/${id}/restore`);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi khôi phục bảng giá:', error);
       throw error;
     }
   }
@@ -111,6 +132,8 @@ class PricingPlanService {
       endTime: p.end_time || null,
       applyDate: p.apply_date || null,
       isActive: Boolean(p.is_active),
+      isDeleted: Boolean(p.is_deleted),
+      deletedAt: p.deleted_at || null,
       zones: zones.map((z) => ({
         id: z.zone_id,
         zone_id: z.zone_id,

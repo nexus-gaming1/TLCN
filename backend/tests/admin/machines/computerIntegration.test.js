@@ -132,18 +132,20 @@ test('[Machine Fleet Module] MySQL Database & Sequelize ORM Integration Suite', 
   // ----------------------------------------------------------------------------
   // [INT-05] Ràng buộc xóa an toàn và dọn dẹp
   // ----------------------------------------------------------------------------
-  await suite.test('[INT-05] [Delete Integrity] Xóa máy trạm thành công và dọn sạch nhật ký trạng thái', async () => {
+  await suite.test('[INT-05] [Delete Integrity] Xóa mềm máy trạm thành công và bảo toàn dữ liệu', async () => {
     // Đổi về OFFLINE để xóa
     await computerService.updateComputer(createdComputerId, { status: ComputerStatus.OFFLINE });
 
     const deleted = await computerService.deleteComputer(createdComputerId);
-    assert.strictEqual(deleted, true, 'Xóa máy trạm phải thành công');
+    assert.strictEqual(deleted, true, 'Xóa mềm máy trạm phải thành công');
 
     const checkComputer = await db.Computer.findByPk(createdComputerId);
-    assert.strictEqual(checkComputer, null, 'Máy trạm phải không còn tồn tại trong MySQL');
+    assert.ok(checkComputer, 'Máy trạm phải được bảo toàn trong MySQL (Xóa mềm)');
+    assert.strictEqual(checkComputer.is_deleted, true, 'is_deleted phải là true');
 
-    const checkLogs = await db.ComputerStatusLog.findAll({ where: { computer_id: createdComputerId } });
-    assert.strictEqual(checkLogs.length, 0, 'Các bản ghi nhật ký của máy phải được dọn dẹp sạch sẽ');
+    const activeList = await computerService.getAllComputers();
+    const foundInActive = activeList.some((c) => c.id === createdComputerId);
+    assert.strictEqual(foundInActive, false, 'Máy trạm đã xóa mềm không được hiển thị trong danh sách hoạt động');
 
     createdComputerId = null; // Đã xóa xong, teardown không cần xóa lại
   });

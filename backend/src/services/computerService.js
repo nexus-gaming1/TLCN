@@ -29,6 +29,7 @@ class ComputerService {
     try {
       const db = this.models;
       const computers = await db.Computer.findAll({
+        where: { is_deleted: false },
         include: [
           {
             model: db.ComputerZone,
@@ -83,6 +84,7 @@ class ComputerService {
       const now = new Date();
       const db = this.models;
       const computers = await db.Computer.findAll({
+        where: { is_deleted: false },
         attributes: ['computer_id', 'computer_name', 'ip_address', 'mac_address', 'status'],
         include: [
           {
@@ -248,56 +250,73 @@ class ComputerService {
         }
       }
 
-      return await db.sequelize.transaction(async (t) => {
-        // If computer_name, ip_address, mac_address are fully provided
-        if (computer_name && ip_address && mac_address) {
-          return await db.Computer.create({
-            computer_name: computer_name.trim(),
-            ip_address: ip_address.trim(),
-            mac_address: mac_address.trim(),
+      const runTransaction = async () => {
+        return await db.sequelize.transaction(async (t) => {
+          // If computer_name, ip_address, mac_address are fully provided
+          if (computer_name && ip_address && mac_address) {
+            return await db.Computer.create({
+              computer_name: computer_name.trim(),
+              ip_address: ip_address.trim(),
+              mac_address: mac_address.trim(),
+              zone_id: Number(zone_id) || 1,
+              status: status || ComputerStatus.OFFLINE,
+              is_remote_enabled: Boolean(is_remote_enabled)
+            }, { transaction: t });
+          }
+
+          // Auto-increment atomic creation to avoid race condition on computer_id / IP / MAC
+          const tempName = computer_name ? computer_name.trim() : `PC-PENDING-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+          const newComputer = await db.Computer.create({
+            computer_name: tempName,
+            ip_address: ip_address ? ip_address.trim() : null,
+            mac_address: mac_address ? mac_address.trim() : null,
             zone_id: Number(zone_id) || 1,
             status: status || ComputerStatus.OFFLINE,
             is_remote_enabled: Boolean(is_remote_enabled)
           }, { transaction: t });
-        }
 
-        // Auto-increment atomic creation to avoid race condition on computer_id / IP / MAC
-        const tempName = computer_name ? computer_name.trim() : `PC-PENDING-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-        const newComputer = await db.Computer.create({
-          computer_name: tempName,
-          ip_address: ip_address ? ip_address.trim() : null,
-          mac_address: mac_address ? mac_address.trim() : null,
-          zone_id: Number(zone_id) || 1,
-          status: status || ComputerStatus.OFFLINE,
-          is_remote_enabled: Boolean(is_remote_enabled)
-        }, { transaction: t });
+          const nextId = newComputer.computer_id;
+          const hexId = (nextId * 3).toString(16).padStart(2, '0').toUpperCase();
 
-        const nextId = newComputer.computer_id;
-        const hexId = (nextId * 3).toString(16).padStart(2, '0').toUpperCase();
+          let updated = false;
+          if (!computer_name) {
+            newComputer.computer_name = `PC-${String(nextId).padStart(3, '0')}`;
+            updated = true;
+          }
+          if (!ip_address) {
+            const subnet = Math.floor(nextId / 250);
+            const host = (nextId % 250) + 1;
+            newComputer.ip_address = `192.168.${1 + subnet}.${host}`;
+            updated = true;
+          }
+          if (!mac_address) {
+            const octet4 = String(nextId % 100).padStart(2, '0');
+            newComputer.mac_address = `F4:D4:88:5A:${octet4}:${hexId}`;
+            updated = true;
+          }
 
-        let updated = false;
-        if (!computer_name) {
-          newComputer.computer_name = `PC-${String(nextId).padStart(3, '0')}`;
-          updated = true;
-        }
-        if (!ip_address) {
-          const subnet = Math.floor(nextId / 250);
-          const host = (nextId % 250) + 1;
-          newComputer.ip_address = `192.168.${1 + subnet}.${host}`;
-          updated = true;
-        }
-        if (!mac_address) {
-          const octet4 = String(nextId % 100).padStart(2, '0');
-          newComputer.mac_address = `F4:D4:88:5A:${octet4}:${hexId}`;
-          updated = true;
-        }
+          if (updated) {
+            await newComputer.save({ transaction: t });
+          }
 
-        if (updated) {
-          await newComputer.save({ transaction: t });
-        }
+          return newComputer;
+        });
+      };
 
-        return newComputer;
-      });
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          return await runTransaction();
+        } catch (txErr) {
+          const isDeadlock = txErr?.parent?.code === 'ER_LOCK_DEADLOCK' ||
+                             txErr?.original?.code === 'ER_LOCK_DEADLOCK' ||
+                             (txErr?.message && txErr.message.includes('Deadlock'));
+          if (isDeadlock && attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, 50 * attempt));
+            continue;
+          }
+          throw txErr;
+        }
+      }
     } catch (error) {
       if (!error.statusCode) error.statusCode = 500;
       throw error;
@@ -436,12 +455,15 @@ class ComputerService {
         throw error;
       }
 
-      // Delete associated status logs to maintain database integrity
-      if (this.models.ComputerStatusLog) {
-        await this.models.ComputerStatusLog.destroy({ where: { computer_id: computerId } });
+      // Xóa mềm máy trạm (Soft Delete)
+      if (typeof computer.softDelete === 'function') {
+        await computer.softDelete();
+      } else if (typeof computer.save === 'function') {
+        computer.is_deleted = true;
+        computer.deleted_at = new Date();
+        computer.status = ComputerStatus.MAINTENANCE;
+        await computer.save();
       }
-
-      await computer.destroy();
       return true;
     } catch (error) {
       if (!error.statusCode) error.statusCode = 500;
@@ -542,6 +564,10 @@ class ComputerService {
 
   async deleteHardwareSpec(specId) {
     return await this.hardwareProfileService.deleteHardwareSpec(specId);
+  }
+
+  async toggleHardwareSpec(specId, isActive) {
+    return await this.hardwareProfileService.toggleHardwareSpec(specId, isActive);
   }
 }
 

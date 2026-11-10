@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -11,6 +12,7 @@ import {
   PricingPlanDetailModal
 } from '../../features/pricing-plans';
 import Pagination from '../../shared/ui/Pagination';
+import FloatingToast from '../../shared/ui/FloatingToast';
 
 /**
  * PricingPlanManagementPage
@@ -22,6 +24,8 @@ export default function PricingPlanManagementPage({ user, onLogout }) {
   const [zones, setZones] = useState([]);
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [toast, setToast] = useState(null);
 
   // Pagination States
   const [currentPage, setCurrentPage] = useState(1);
@@ -38,9 +42,30 @@ export default function PricingPlanManagementPage({ user, onLogout }) {
   const [editingPlan, setEditingPlan] = useState(null);
   const [viewingPlan, setViewingPlan] = useState(null);
 
+  // Floating Toast Notification
+  const showToast = (payload, type = 'success') => {
+    if (typeof payload === 'string') {
+      setToast({
+        type,
+        title: type === 'warning' ? 'Đã tạm ngưng' : type === 'error' ? 'Lỗi' : 'Thành công',
+        message: payload
+      });
+    } else {
+      setToast(payload);
+    }
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
   // Fetch Pricing Plans from Backend API
   const fetchPlans = async (silent = false) => {
     if (!silent) setLoading(true);
+    setErrorMessage(null);
     try {
       const data = await pricingPlanService.getPricingPlans();
       if (data) {
@@ -50,6 +75,7 @@ export default function PricingPlanManagementPage({ user, onLogout }) {
       }
     } catch (err) {
       console.error('Lỗi khi tải danh sách bảng giá:', err);
+      setErrorMessage(err.message || 'Mất kết nối hoặc quá thời gian chờ phản hồi từ máy chủ.');
     } finally {
       if (!silent) setLoading(false);
     }
@@ -108,34 +134,50 @@ export default function PricingPlanManagementPage({ user, onLogout }) {
     try {
       if (editingPlan) {
         await pricingPlanService.updatePricingPlan(editingPlan.id, payload);
+        showToast('Cập nhật bảng giá thành công!');
       } else {
         await pricingPlanService.createPricingPlan(payload);
+        showToast('Tạo bảng giá mới thành công!');
       }
       setIsCreateModalOpen(false);
       setEditingPlan(null);
       await fetchPlans(false);
     } catch (err) {
-      alert(err.message || 'Có lỗi xảy ra khi lưu bảng giá');
+      showToast({
+        type: 'error',
+        title: 'Lỗi',
+        message: err.message || 'Có lỗi xảy ra khi lưu bảng giá'
+      });
     }
   };
 
   const handleToggleActive = async (plan) => {
+    const nextActive = !plan.isActive;
+    // Cập nhật giao diện tức thì (Optimistic Update 0ms giống Kho Game)
+    setPlans((prev) =>
+      prev.map((p) => (p.id === plan.id ? { ...p, isActive: nextActive } : p))
+    );
     try {
-      await pricingPlanService.togglePricingPlanStatus(plan.id, !plan.isActive);
+      await pricingPlanService.togglePricingPlanStatus(plan.id, nextActive);
+      showToast({
+        type: nextActive ? 'success' : 'warning',
+        title: nextActive ? 'Đã kích hoạt bảng giá' : 'Đã tạm ngưng bảng giá',
+        message: nextActive
+          ? `Bảng giá "${plan.name}" đã được kích hoạt thành công.`
+          : `Bảng giá "${plan.name}" đã chuyển sang trạng thái tạm ngưng.`
+      });
       await fetchPlans(true);
     } catch (err) {
-      alert(err.message || 'Có lỗi xảy ra khi cập nhật trạng thái kích hoạt bảng giá');
-    }
-  };
-
-  const handleDeletePlan = async (plan) => {
-    if (window.confirm(`Bạn có chắc chắn muốn xóa bảng giá "${plan.name}"?`)) {
-      try {
-        await pricingPlanService.deletePricingPlan(plan.id);
-        await fetchPlans(true);
-      } catch (err) {
-        alert(err.message || 'Có lỗi xảy ra khi xóa bảng giá');
-      }
+      // Rollback nếu có lỗi
+      setPlans((prev) =>
+        prev.map((p) => (p.id === plan.id ? { ...p, isActive: plan.isActive } : p))
+      );
+      showToast({
+        type: 'error',
+        title: 'Lỗi cập nhật trạng thái',
+        message: err.message || 'Có lỗi xảy ra khi cập nhật trạng thái kích hoạt bảng giá'
+      });
+      await fetchPlans(true);
     }
   };
 
@@ -149,6 +191,9 @@ export default function PricingPlanManagementPage({ user, onLogout }) {
         onLogout={onLogout}
       />
 
+      {/* Floating Toast Notification (Giống module kho game) */}
+      <FloatingToast toast={toast} onClose={() => setToast(null)} />
+
       {/* Shared Sidebar */}
       <Sidebar activeNav="promotions" bootromStatus="ONLINE" role="ADMIN" />
 
@@ -156,6 +201,24 @@ export default function PricingPlanManagementPage({ user, onLogout }) {
       <div className="pl-[240px]">
         <main className="relative pt-16 pb-20 min-h-screen bg-background w-full px-6 py-6 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-space-lg">
+            {/* Network / Server Disconnection Banner */}
+            {errorMessage && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2.5">
+                  <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                  <span className="font-medium">{errorMessage}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => fetchPlans(false)}
+                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Thử lại</span>
+                </button>
+              </div>
+            )}
+
             {/* KPI Summary Cards */}
             <PricingPlanKpiCards metrics={metrics} />
 
@@ -191,7 +254,6 @@ export default function PricingPlanManagementPage({ user, onLogout }) {
                   setIsCreateModalOpen(true);
                 }}
                 onToggleActive={handleToggleActive}
-                onDelete={handleDeletePlan}
               />
             )}
 

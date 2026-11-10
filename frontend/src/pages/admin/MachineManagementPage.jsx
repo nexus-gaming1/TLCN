@@ -3,6 +3,7 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
+import FloatingToast from '../../shared/ui/FloatingToast';
 import machineService from '../../shared/api/machine.service';
 import MachineKpiCards from '../../features/machines/ui/MachineKpiCards';
 import MachineFilterBar from '../../features/machines/ui/MachineFilterBar';
@@ -44,6 +45,27 @@ export default function MachineManagementPage({ user, onLogout }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [toast, setToast] = useState(null);
+
+  // Thông báo toast nổi đa năng (Success, Warning, Error)
+  const showToast = (payload, type = 'success') => {
+    if (typeof payload === 'string') {
+      setToast({
+        type,
+        title: type === 'warning' ? 'Đã chuyển bảo trì' : type === 'error' ? 'Lỗi' : 'Thành công',
+        message: payload
+      });
+    } else {
+      setToast(payload);
+    }
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Helper with safe try/catch/finally to re-fetch live machine fleet list & zones from MySQL CSDL
   const refreshMachineList = async (showLoading = true) => {
@@ -237,27 +259,45 @@ export default function MachineManagementPage({ user, onLogout }) {
     }
   };
 
-  const handleDeleteSelected = async () => {
-    if (selectedIds.length === 0) return;
-    if (window.confirm(`Xóa ${selectedIds.length} máy trạm đã chọn?`)) {
-      await executeBulkAction(
-        (computerId) => machineService.deleteMachine(computerId),
-        'Lỗi khi xóa máy trạm'
-      );
-    }
-  };
+  // Thao tác Bật/Tắt Trạng Thái Máy Trạm (Optimistic Update 0ms)
+  const handleToggleStatus = async (machine) => {
+    const isMaintenance = String(machine.status || '').toUpperCase() === ComputerStatus.MAINTENANCE;
+    const targetStatus = isMaintenance ? ComputerStatus.OFFLINE : ComputerStatus.MAINTENANCE;
+    const computerId = machine.computer_id || machine.id;
 
-  const handleDeleteSingle = async (machineId) => {
-    const comp = machines.find((m) => m.id === machineId);
-    const computerId = comp?.computer_id || machineId;
-    if (window.confirm(`Xóa máy trạm ${machineId}?`)) {
-      try {
-        await machineService.deleteMachine(computerId);
-        setSelectedIds((prev) => prev.filter((id) => id !== machineId));
-        await refreshMachineList(false);
-      } catch (error) {
-        alert(error.message || 'Lỗi khi xóa máy trạm');
+    try {
+      // Cập nhật giao diện lập tức (0ms)
+      setMachines((prev) =>
+        prev.map((m) =>
+          (m.id === machine.id || m.computer_id === computerId)
+            ? { ...m, status: targetStatus, cleanStatus: isMaintenance ? 'Tắt nguồn' : 'Bảo trì' }
+            : m
+        )
+      );
+
+      await machineService.changeStatus(computerId, targetStatus);
+      if (targetStatus === ComputerStatus.MAINTENANCE) {
+        showToast({
+          type: 'warning',
+          title: 'Đã chuyển sang bảo trì',
+          message: `Trạm máy "${machine.id}" đã được chuyển sang chế độ bảo trì.`
+        });
+      } else {
+        showToast({
+          type: 'success',
+          title: 'Đã kích hoạt máy trạm',
+          message: `Trạm máy "${machine.id}" đã sẵn sàng hoạt động.`
+        });
       }
+      await refreshMachineList(false);
+    } catch (err) {
+      console.error('Lỗi khi đổi trạng thái máy trạm:', err);
+      showToast({
+        type: 'error',
+        title: 'Lỗi cập nhật trạng thái',
+        message: err.message || 'Không thể thay đổi trạng thái máy trạm'
+      });
+      await refreshMachineList(false);
     }
   };
 
@@ -338,6 +378,9 @@ export default function MachineManagementPage({ user, onLogout }) {
       {/* Sidebar with activeNav set to 'hardware' */}
       <Sidebar activeNav="hardware" bootromStatus="ONLINE" role="ADMIN" />
 
+      {/* Floating Toast Notification (0ms Layout Shift) */}
+      <FloatingToast toast={toast} onClose={() => setToast(null)} />
+
       {/* Main Content */}
       <div className="pl-[240px]">
         <main className="relative pt-16 min-h-screen bg-slate-100 w-full px-6 py-6 pb-24 flex flex-col justify-between">
@@ -391,7 +434,6 @@ export default function MachineManagementPage({ user, onLogout }) {
               onReboot={handleRebootSelected}
               onMaintenance={handleMaintenanceSelected}
               onAssignZone={handleAssignZoneSelected}
-              onDelete={handleDeleteSelected}
               onClearSelection={() => setSelectedIds([])}
             />
 
@@ -409,7 +451,7 @@ export default function MachineManagementPage({ user, onLogout }) {
                   onToggleSelectAll={handleToggleSelectAll}
                   onLiveMirror={(id) => alert(`Đang kết nối Live Mirror xem màn hình máy ${id}...`)}
                   onEdit={(machineObj) => setEditingMachine(machineObj)}
-                  onDelete={handleDeleteSingle}
+                  onToggleStatus={handleToggleStatus}
                 />
                 {/* Dynamic Pagination liền mạch ở đáy bảng */}
                 <Pagination

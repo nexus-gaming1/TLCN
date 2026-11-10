@@ -4,6 +4,23 @@ const HardwareProfileDto = require('../dtos/hardwareProfileDto');
 const defaultValidator = require('../validators/hardwareSpecValidator');
 const TelemetryService = require('./telemetryService');
 
+async function executeWithDeadlockRetry(fn, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const isDeadlock = err?.parent?.code === 'ER_LOCK_DEADLOCK' ||
+                         err?.original?.code === 'ER_LOCK_DEADLOCK' ||
+                         (err?.message && err.message.includes('Deadlock'));
+      if (isDeadlock && attempt < maxRetries) {
+        await new Promise((resolve) => setTimeout(resolve, 50 * attempt));
+        continue;
+      }
+      throw err;
+    }
+  }
+}
+
 class HardwareProfileService {
   constructor(
     models = defaultDb,
@@ -22,6 +39,7 @@ class HardwareProfileService {
     try {
       const db = this.models;
       const profiles = db.HardwareProfile ? await db.HardwareProfile.findAll({
+        where: { is_deleted: false },
         include: [
           { model: db.ComputerZone },
           { model: db.Computer, attributes: ['computer_id', 'computer_name', 'status'] }
@@ -30,6 +48,7 @@ class HardwareProfileService {
       }) : [];
 
       const computers = await db.Computer.findAll({
+        where: { is_deleted: false },
         attributes: ['computer_id', 'computer_name', 'status', 'hardware_profile_id', 'zone_id'],
         include: [
           { model: db.ComputerZone, attributes: ['zone_id', 'zone_name'] },
@@ -157,23 +176,25 @@ class HardwareProfileService {
         }
       }
 
-      return await db.sequelize.transaction(async (t) => {
-        let profile = null;
-        if (db.HardwareProfile) {
-          profile = await db.HardwareProfile.create(
-            persistenceData,
-            { transaction: t }
+      return await executeWithDeadlockRetry(async () => {
+        return await db.sequelize.transaction(async (t) => {
+          let profile = null;
+          if (db.HardwareProfile) {
+            profile = await db.HardwareProfile.create(
+              persistenceData,
+              { transaction: t }
+            );
+          }
+
+          await this.syncAssignedComputers(
+            specData.assignedComputers,
+            profile ? profile.profile_id : null,
+            persistenceData.zone_id,
+            t
           );
-        }
 
-        await this.syncAssignedComputers(
-          specData.assignedComputers,
-          profile ? profile.profile_id : null,
-          persistenceData.zone_id,
-          t
-        );
-
-        return { status: 'success', message: 'Tạo mẫu cấu hình phần cứng thành công', profile };
+          return { status: 'success', message: 'Tạo mẫu cấu hình phần cứng thành công', profile };
+        });
       });
     } catch (error) {
       if (!error.statusCode) error.statusCode = 500;
@@ -274,9 +295,38 @@ class HardwareProfileService {
           { hardware_profile_id: null },
           { where: { hardware_profile_id: profile.profile_id }, transaction: t }
         );
-        await profile.destroy({ transaction: t });
+        // Xóa mềm cấu hình phần cứng (Soft Delete)
+        if (typeof profile.softDelete === 'function') {
+          await profile.softDelete();
+        } else {
+          profile.is_deleted = true;
+          profile.deleted_at = new Date();
+          profile.is_active = false;
+          await profile.save({ transaction: t });
+        }
         return true;
       });
+    } catch (error) {
+      if (!error.statusCode) error.statusCode = 500;
+      throw error;
+    }
+  }
+
+  /**
+   * Bật / Tắt trạng thái kích hoạt cấu hình máy (Toggle Switch)
+   */
+  async toggleHardwareSpec(specId, isActive) {
+    try {
+      const profile = await this.findProfileByIdOrName(specId);
+      if (!profile) {
+        const err = new Error(`Không tìm thấy mẫu cấu hình phần cứng: ${specId}`);
+        err.statusCode = 404;
+        throw err;
+      }
+
+      profile.is_active = isActive !== undefined ? Boolean(isActive) : !profile.is_active;
+      await profile.save();
+      return profile;
     } catch (error) {
       if (!error.statusCode) error.statusCode = 500;
       throw error;

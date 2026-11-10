@@ -15,7 +15,21 @@ class User extends Model {
   }
 
   isActive() {
-    return this.status === UserStatus.ACTIVE;
+    return this.status === UserStatus.ACTIVE && !this.is_deleted;
+  }
+
+  softDelete() {
+    this.is_deleted = true;
+    this.deleted_at = new Date();
+    this.status = UserStatus.LOCKED;
+    return this.save();
+  }
+
+  restore() {
+    this.is_deleted = false;
+    this.deleted_at = null;
+    this.status = UserStatus.ACTIVE;
+    return this.save();
   }
 }
 
@@ -27,7 +41,9 @@ module.exports = (sequelize) => {
     password_hash: { type: DataTypes.STRING(255), allowNull: false },
     full_name: { type: DataTypes.STRING(100), allowNull: false },
     role: { type: DataTypes.ENUM(...Object.values(UserRole)), allowNull: false },
-    status: { type: DataTypes.ENUM(...Object.values(UserStatus)), defaultValue: UserStatus.ACTIVE }
+    status: { type: DataTypes.ENUM(...Object.values(UserStatus)), defaultValue: UserStatus.ACTIVE },
+    is_deleted: { type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false },
+    deleted_at: { type: DataTypes.DATE, allowNull: true, defaultValue: null }
   }, {
     sequelize,
     modelName: 'User',

@@ -1,6 +1,20 @@
 const { Model, DataTypes } = require('sequelize');
 
-class HardwareProfile extends Model {}
+class HardwareProfile extends Model {
+  softDelete() {
+    this.is_deleted = true;
+    this.deleted_at = new Date();
+    this.is_active = false;
+    return this.save();
+  }
+
+  restore() {
+    this.is_deleted = false;
+    this.deleted_at = null;
+    this.is_active = true;
+    return this.save();
+  }
+}
 
 module.exports = (sequelize) => {
   HardwareProfile.init({
@@ -13,7 +27,10 @@ module.exports = (sequelize) => {
     storage_type: { type: DataTypes.STRING(255), allowNull: true },
     monitor: { type: DataTypes.STRING(255), allowNull: true },
     gear: { type: DataTypes.STRING(255), allowNull: true },
-    zone_id: { type: DataTypes.INTEGER, allowNull: true }
+    zone_id: { type: DataTypes.INTEGER, allowNull: true },
+    is_active: { type: DataTypes.BOOLEAN, defaultValue: true, allowNull: false },
+    is_deleted: { type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false },
+    deleted_at: { type: DataTypes.DATE, allowNull: true, defaultValue: null }
   }, {
     sequelize,
     modelName: 'HardwareProfile',

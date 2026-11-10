@@ -13,6 +13,7 @@ class MemberService {
           {
             model: db.User,
             as: 'userInfo',
+            where: { is_deleted: false },
             attributes: ['user_id', 'username', 'full_name', 'role', 'status']
           },
           {
@@ -75,6 +76,7 @@ class MemberService {
           {
             model: db.User,
             as: 'userInfo',
+            where: { is_deleted: false },
             attributes: ['user_id', 'username', 'full_name', 'role', 'status']
           },
           {
@@ -229,6 +231,21 @@ class MemberService {
       };
     } catch (error) {
       console.error('Lỗi khi tạo tài khoản hội viên:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Xóa mềm tài khoản hội viên (Soft Delete)
+   */
+  async deleteMember(memberId) {
+    try {
+      const user = await db.User.findByPk(memberId);
+      if (!user) return false;
+      await user.softDelete();
+      return true;
+    } catch (error) {
+      console.error('Lỗi khi xóa hội viên:', error);
       throw error;
     }
   }

@@ -95,6 +95,25 @@ class MemberController {
       next(error);
     }
   }
+
+  async deleteMember(req, res, next) {
+    try {
+      const { id } = req.params;
+      const deleted = await memberService.deleteMember(id);
+      if (!deleted) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'Không tìm thấy hội viên để xóa'
+        });
+      }
+      return res.json({
+        status: 'success',
+        message: 'Xóa hội viên thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new MemberController();

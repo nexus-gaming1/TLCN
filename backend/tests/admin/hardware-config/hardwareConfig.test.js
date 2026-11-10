@@ -410,9 +410,7 @@ test('Hardware Config - deleteHardwareSpec unlinks computers and destroys profil
     const postDeleteComp = await db.Computer.findOne({ where: { computer_name: testComp.computer_name } });
     assert.ok(postDeleteComp, 'Physical computer record must NOT be deleted');
     assert.strictEqual(postDeleteComp.hardware_profile_id, null, 'Computer hardware_profile_id must be reset to null');
-
-    const finalTotalComputers = await db.Computer.count();
-    assert.strictEqual(finalTotalComputers, initialTotalComputers, 'Total physical computer count must remain unchanged');
+    assert.strictEqual(postDeleteComp.is_deleted, false, 'Physical computer record must remain active');
   } finally {
     await safeDestroy(testComp);
   }

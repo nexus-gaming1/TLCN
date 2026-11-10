@@ -5,8 +5,7 @@ import {
   Gamepad2,
   HardDrive,
   Activity,
-  Edit,
-  Trash2
+  Edit
 } from 'lucide-react';
 import Pagination from '../../../shared/ui/Pagination';
 
@@ -19,7 +18,7 @@ export default function HardwareSpecsTable({
   onResetFilters,
   onOpenTelemetry,
   onEdit,
-  onDelete
+  onToggleActive
 }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -97,13 +96,14 @@ export default function HardwareSpecsTable({
               <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[200px]">Bộ Nhớ RAM</th>
               <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[240px]">Card Đồ Họa (GPU)</th>
               <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[220px]">Lưu Trữ / BootROM</th>
+              <th className="py-3 px-4 font-extrabold text-slate-800 text-center min-w-[150px] whitespace-nowrap">Trạng Thái</th>
               <th className="py-3 px-4 font-extrabold text-slate-800 text-right pr-6 min-w-[120px]">Thao Tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs font-medium text-slate-800">
             {paginatedSpecs.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-12 text-center text-slate-500">
+                <td colSpan={8} className="py-12 text-center text-slate-500">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <HardDrive className="w-8 h-8 text-slate-300" />
                     <p className="font-semibold text-sm text-slate-700">
@@ -246,13 +246,42 @@ export default function HardwareSpecsTable({
                       </div>
                     </td>
 
+                    {/* Trạng Thái (với direct Toggle Switch 1-click) */}
+                    <td className="py-3.5 px-4 text-center min-w-[150px] whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onToggleActive && onToggleActive(item)}
+                          role="switch"
+                          aria-checked={item.is_active !== false}
+                          className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500/20 ${
+                            item.is_active !== false ? 'bg-emerald-500' : 'bg-slate-300'
+                          }`}
+                          title={item.is_active !== false ? 'Đang áp dụng - Click để tạm ngưng' : 'Tạm ngưng - Click để kích hoạt'}
+                        >
+                          <span
+                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                              item.is_active !== false ? 'translate-x-5' : 'translate-x-0'
+                            }`}
+                          />
+                        </button>
+                        <span
+                          className={`text-[11px] font-bold select-none ${
+                            item.is_active !== false ? 'text-emerald-700' : 'text-slate-400'
+                          }`}
+                        >
+                          {item.is_active !== false ? 'Đang mở' : 'Tạm tắt'}
+                        </span>
+                      </div>
+                    </td>
+
                   {/* Actions */}
                   <td className="py-3.5 px-4 text-right pr-6 whitespace-nowrap">
                     <div className="flex items-center justify-end gap-1">
                       <button
                         type="button"
                         onClick={() => onOpenTelemetry && onOpenTelemetry(item)}
-                        className="w-8 h-8 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 flex items-center justify-center transition-colors"
+                        className="w-8 h-8 rounded-lg text-slate-500 hover:text-sky-600 hover:bg-sky-50 flex items-center justify-center transition-colors cursor-pointer"
                         title="Xem Telemetry Nhiệt độ & Băng thông"
                       >
                         <Activity className="w-4 h-4" />
@@ -261,19 +290,10 @@ export default function HardwareSpecsTable({
                       <button
                         type="button"
                         onClick={() => onEdit && onEdit(item)}
-                        className="w-8 h-8 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center transition-colors"
+                        className="w-8 h-8 rounded-lg text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center transition-colors cursor-pointer"
                         title="Chỉnh sửa cấu hình"
                       >
                         <Edit className="w-4 h-4" />
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => onDelete && onDelete(item.id)}
-                        className="w-8 h-8 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors"
-                        title="Xóa cấu hình"
-                      >
-                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </td>
