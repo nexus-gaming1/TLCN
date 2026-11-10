@@ -7,7 +7,7 @@ class OrderController {
 
 
   // ----------------------------------------------------
-  // 1. Nhóm API khách hàng  (C# NetClient tại máy trạm)
+  // 1. Nhóm API gọi món, đơn cá nhân ( khách hàng)
  
   async getAvailableMenu(req, res, next) {
     try {
@@ -24,8 +24,10 @@ class OrderController {
 
   async createOrder(req, res, next) {
     try {
-      const memberId = req.user.user_id;
-      const order = await this.orderService.createOrder(memberId, req.body);
+      // Nếu Staff/Admin tạo đơn hộ: cho phép truyền target_member_id trong body
+      const isStaffOrAdmin = req.user.role === 'EMPLOYEE' || req.user.role === 'ADMIN';
+      const memberId = (isStaffOrAdmin && req.body.target_member_id) ? req.body.target_member_id : req.user.user_id;
+      const order = await this.orderService.createOrder(memberId, req.body, req.user);
 
       return res.status(201).json({
         status: 'success',
@@ -70,7 +72,7 @@ class OrderController {
 
 
   // ------------------------------------------------------------------------
-  // 2. Nhóm API của nhân viên (C# NetStaff tại quầy)
+  // 2. Nhóm API của nhân viên 
 
   async getStaffPendingOrders(req, res, next) {
     try {
@@ -112,7 +114,7 @@ class OrderController {
       return res.json({
         status: 'success',
         data: result,
-        message: 'Xác nhận thu tiền mặt và chuyển đơn vào bếp thành công'
+        message: 'Xác nhận thu tiền mặt thành công'
       });
     } catch (error) {
       next(error);
@@ -135,10 +137,27 @@ class OrderController {
       next(error);
     }
   }
+
+  //Hoàn tiền sự cố sau khi giao
+  async refundCompletedOrder(req, res, next) {
+    try {
+      const orderId = req.params.id;
+      const staffId = req.user.user_id;
+      const { amount, reason } = req.body;
+      const result = await this.orderService.refundCompletedOrder(orderId, staffId, { amount, reason });
+      return res.json({
+        status: 'success',
+        data: result,
+        message: result.message
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
   
   
   // ------------------------------------------------------------------------
-  // 3. NNhóm API của admin (Web Admin Console)
+  // 3. NNhóm API quản trị và chi tiết ( admin)
 
   async getOrderHistory(req, res, next) {
     try {

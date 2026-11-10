@@ -8,17 +8,17 @@ const { UserRole } = require('../constants/enums');
 router.use(authenticateToken);
 
 // ----------------------------------------------------------------------------
-// 1. Route của khách hàng (NetClient C#) - Quyền: MEMBER
+// 1. Nhóm Route Đặt món và Xem thực đơn - Quyền: Khách hàng và Nhân viên, Admin
 
 router.get(
   '/menu',
-  authorizeRoles(UserRole.MEMBER),
+  authorizeRoles(UserRole.MEMBER, UserRole.EMPLOYEE, UserRole.ADMIN),
   orderController.getAvailableMenu.bind(orderController)
 );
 
 router.post(
   '/',
-  authorizeRoles(UserRole.MEMBER),
+  authorizeRoles(UserRole.MEMBER,UserRole.EMPLOYEE, UserRole.ADMIN),
   orderController.createOrder.bind(orderController)
 );
 
@@ -36,8 +36,7 @@ router.post(
 
 
 // ----------------------------------------------------------------------------
-// 2. Route của nhân viên (NetStaff C#) - Quyền: EMPLOYEE, ADMIN
-
+// 2. Route của nhân viên - Quyền: nhân viên và admin
 router.get(
   '/staff/pending',
   authorizeRoles(UserRole.EMPLOYEE, UserRole.ADMIN),
@@ -62,8 +61,15 @@ router.post(
   orderController.staffCancelOrder.bind(orderController)
 );
 
+// Hoàn tiền sự cố cho đơn đã hoàn tất (COMPLETED)
+router.post(
+  '/staff/:id/refund',
+  authorizeRoles(UserRole.EMPLOYEE, UserRole.ADMIN),
+  orderController.refundCompletedOrder.bind(orderController)
+);
+
 // ----------------------------------------------------------------------------
-// 3. Route của admin (Web Admin Console) - Quyền: ADMIN
+// 3. Route của admin (Web Admin Console) - Quyền: Admin
 
 router.get(
   '/admin/history',
