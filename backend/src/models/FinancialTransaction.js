@@ -20,12 +20,14 @@ class FinancialTransaction extends Model {
 module.exports = (sequelize) => {
   FinancialTransaction.init({
     transaction_id: { type: DataTypes.BIGINT, primaryKey: true, autoIncrement: true },
+    txn_code: { type: DataTypes.STRING(50), allowNull: true },
     type: { type: DataTypes.ENUM(...Object.values(TransactionType)), allowNull: false },
     category: { type: DataTypes.ENUM(...Object.values(TransactionCategory)), allowNull: false },
     amount: { type: DataTypes.DECIMAL(15, 2), allowNull: false },
     payment_method: { type: DataTypes.ENUM(...Object.values(PaymentMethodEnum)), defaultValue: PaymentMethodEnum.CASH },
     status: { type: DataTypes.ENUM(...Object.values(TransactionStatusEnum)), defaultValue: TransactionStatusEnum.COMPLETED },
     description: { type: DataTypes.TEXT },
+    notes: { type: DataTypes.TEXT, allowNull: true },
     used_by: { type: DataTypes.INTEGER, allowNull: false },
     processed_by: { type: DataTypes.INTEGER },
     order_id: { type: DataTypes.INTEGER, allowNull: true }

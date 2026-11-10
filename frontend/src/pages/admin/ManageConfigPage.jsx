@@ -341,7 +341,7 @@ export default function ManageConfigPage({ user, onLogout }) {
 
       {/* Main Content Area */}
       <div className="lg:pl-[240px] w-full min-h-screen overflow-x-hidden">
-        <main className="relative pt-16 min-h-screen bg-slate-50 w-full px-4 sm:px-6 py-4 sm:py-6 pb-20 flex flex-col justify-between">
+        <main className="relative pt-20 sm:pt-[88px] min-h-screen bg-slate-50 w-full px-4 sm:px-6 pb-20 flex flex-col justify-between">
           <div className="flex flex-col w-full max-w-7xl mx-auto gap-5 sm:gap-6">
             {isOffline && (
               <div className="flex items-center justify-between gap-3 p-3.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-xl text-xs font-semibold shadow-xs">

@@ -3,7 +3,6 @@ import { apiClient } from './client';
 /**
  * TransactionService (Frontend API Client)
  * Connects frontend features STRICTLY to /api/transactions backend endpoint.
- * Zero mock data on frontend. All data must come from MySQL Database.
  */
 class TransactionService {
   /**
@@ -13,9 +12,7 @@ class TransactionService {
     try {
       const response = await apiClient.get('/transactions', { params });
       if (response && response.status === 'success') {
-        const transactionsList = Array.isArray(response.data)
-          ? response.data
-          : [];
+        const transactionsList = Array.isArray(response.data) ? response.data : [];
         return {
           transactions: transactionsList,
           total: response.total || 0,
@@ -27,7 +24,7 @@ class TransactionService {
       return { transactions: [], metrics: null, total: 0, page: 1, totalPages: 1 };
     } catch (error) {
       console.error('Lỗi khi tải giao dịch từ backend API /api/transactions:', error);
-      return { transactions: [], metrics: null };
+      throw error;
     }
   }
 
@@ -40,6 +37,19 @@ class TransactionService {
       return response.data;
     } catch (error) {
       console.error('Lỗi khi tạo giao dịch nạp tiền tại quầy:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Rút tiền tại quầy cho hội viên
+   */
+  async createWithdraw(data) {
+    try {
+      const response = await apiClient.post('/transactions/withdraw', data);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi tạo giao dịch rút tiền tại quầy:', error);
       throw error;
     }
   }

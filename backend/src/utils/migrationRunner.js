@@ -111,8 +111,10 @@ const runMigrations = async () => {
     await ensureColumn('financial_transaction', 'member_id', 'used_by', 'INT NOT NULL DEFAULT 1');
     await ensureColumn('financial_transaction', null, 'processed_by', 'INT NULL');
 
-    // Thêm cột order_id để liên kết với đơn F&B
+    // Thêm cột order_id, txn_code, notes cho financial_transaction
     await ensureColumn('financial_transaction', null, 'order_id', 'INT NULL');
+    await ensureColumn('financial_transaction', null, 'txn_code', 'VARCHAR(50) NULL');
+    await ensureColumn('financial_transaction', null, 'notes', 'TEXT NULL');
     // Ép MySQL cập nhật lại ENUM của cột payment_method
     try {
       //// Dọn rác dữ liệu cũ trước khi ép kiểu ENUM mới để tránh lỗi "Data truncated"

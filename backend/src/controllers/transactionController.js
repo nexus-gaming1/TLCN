@@ -1,11 +1,16 @@
 const transactionService = require('../services/transactionService');
 
+function buildCounterPayload(req) {
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  return {
+    ...body,
+    processed_by: req.user ? req.user.user_id : body.processed_by
+  };
+}
+
 /**
  * TransactionController
  * Quản lý HTTP RESTful endpoints cho Sổ Cái & Tra Cứu Giao Dịch (Internal Web/App)
- * Tuân thủ Single Responsibility Principle (SRP):
- * - Chỉ phục vụ các thao tác của nhân viên thu ngân / quản trị viên nội bộ.
- * - Toàn bộ thao tác Webhook bên thứ 3 đã được tách riêng sang WebhookController.
  */
 class TransactionController {
   async getTransactions(req, res, next) {
@@ -27,11 +32,7 @@ class TransactionController {
 
   async createTopUp(req, res, next) {
     try {
-      const payload = {
-        ...req.body,
-        processed_by: req.user ? req.user.user_id : req.body.processed_by
-      };
-      const newTxn = await transactionService.createTopUpTransaction(payload);
+      const newTxn = await transactionService.createTopUpTransaction(buildCounterPayload(req));
       return res.status(201).json({
         status: 'success',
         data: newTxn,
@@ -43,26 +44,22 @@ class TransactionController {
   }
 
   async createWithdraw(req, res, next) {
-      try {
-        const payload = {
-          ...req.body,
-          processed_by: req.user ? req.user.user_id : req.body.processed_by
-        };
-        const newTxn = await transactionService.createWithdrawTransaction(payload);
-        return res.status(201).json({
-          status: 'success',
-          data: newTxn,
-          message: 'Rút tiền tại quầy thành công'
-        });
-      } catch (error) {
-        next(error);
+    try {
+      const newTxn = await transactionService.createWithdrawTransaction(buildCounterPayload(req));
+      return res.status(201).json({
+        status: 'success',
+        data: newTxn,
+        message: 'Rút tiền tại quầy thành công'
+      });
+    } catch (error) {
+      next(error);
     }
   }
 
   async refundTransaction(req, res, next) {
     try {
       const { id } = req.params;
-      const { reason } = req.body;
+      const { reason } = req.body || {};
       const updated = await transactionService.refundTransaction(id, reason);
       if (!updated) {
         return res.status(404).json({
