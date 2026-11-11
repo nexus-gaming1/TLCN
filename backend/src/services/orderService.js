@@ -770,6 +770,60 @@ class OrderService {
     const offset = (Math.max(1, parseInt(page, 10)) - 1) * parseInt(limit, 10);
     return await this.getOrderHistory({ memberId }, { limit, offset });
   }
+
+  // Kiểm tra phiên chơi phòng máy của khách hàng
+  async checkCustomerSession(memberId) {
+    const parsedMemberId = parseInt(memberId, 10);
+    if (!parsedMemberId || isNaN(parsedMemberId)) {
+      return {
+        can_order: false,
+        reason: 'INVALID_MEMBER',
+        message: 'Mã hội viên không hợp lệ.',
+        computer_name: null,
+        is_remote: false
+      };
+    }
+
+    const activeSession = await this.orderRepo.models.RentalSession.findOne({
+      where: {
+        member_id: parsedMemberId,
+        status: this.orderRepo.models.RentalSession.Status.ACTIVE
+      },
+      include: [{
+        model: this.orderRepo.models.Computer,
+        as: 'computer'
+      }]
+    });
+
+    if (!activeSession) {
+      return {
+        can_order: false,
+        reason: 'NO_ACTIVE_SESSION',
+        message: 'Bạn cần có phiên chơi đang hoạt động tại phòng máy để đặt dịch vụ F&B.',
+        computer_name: null,
+        is_remote: false
+      };
+    }
+
+    const isRemote = activeSession.computer?.status === ComputerStatus.REMOTE;
+    if (isRemote) {
+      return {
+        can_order: false,
+        reason: 'REMOTE_SESSION',
+        message: 'Dịch vụ F&B chỉ phục vụ khách chơi trực tiếp tại phòng máy. Tài khoản của bạn đang trong phiên chơi từ xa (Remote).',
+        computer_name: activeSession.computer?.computer_name || null,
+        is_remote: true
+      };
+    }
+
+    return {
+      can_order: true,
+      reason: null,
+      message: 'Phiên chơi hợp lệ tại phòng máy.',
+      computer_name: activeSession.computer?.computer_name || null,
+      is_remote: false
+    };
+  }
 }
 
 module.exports = new OrderService();

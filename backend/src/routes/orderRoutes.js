@@ -28,6 +28,18 @@ router.get(
   orderController.getMyOrders.bind(orderController)
 );
 
+router.get(
+  '/session-status',
+  authorizeRoles(UserRole.MEMBER, UserRole.EMPLOYEE, UserRole.ADMIN),
+  orderController.checkSessionStatus.bind(orderController)
+);
+
+router.get(
+  '/session-check',
+  authorizeRoles(UserRole.MEMBER, UserRole.EMPLOYEE, UserRole.ADMIN),
+  orderController.checkSessionStatus.bind(orderController)
+);
+
 router.post(
   '/:id/cancel',
   authorizeRoles(UserRole.MEMBER),

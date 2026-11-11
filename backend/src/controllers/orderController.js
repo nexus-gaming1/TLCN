@@ -70,6 +70,20 @@ class OrderController {
     }
   }
 
+  async checkSessionStatus(req, res, next) {
+    try {
+      const memberId = req.user.user_id;
+      const data = await this.orderService.checkCustomerSession(memberId);
+      return res.json({
+        status: 'success',
+        data,
+        message: 'Kiểm tra phiên chơi thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
 
   // ------------------------------------------------------------------------
   // 2. Nhóm API của nhân viên 
