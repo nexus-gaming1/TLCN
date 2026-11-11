@@ -136,7 +136,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
     setActionLoadingId(orderId);
     try {
       await orderService.confirmCashPayment(orderId);
-      setToast({ type: 'success', title: 'Đã thu tiền mặt', message: `Đơn #${orderId} đã chuyển sang bếp chế biến!` });
+      setToast({ type: 'success', title: 'Đã thu tiền mặt', message: `Đơn #${orderId} đã được xác nhận!` });
       fetchOrders(true);
     } catch (error) {
       setToast({ type: 'error', title: 'Thao tác thất bại', message: error.message });

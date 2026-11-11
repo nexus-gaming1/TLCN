@@ -14,6 +14,7 @@ import StaffDashboardPage from './pages/staff/StaffDashboardPage';
 import CustomerDashboardPage from './pages/customer/CustomerDashboardPage';
 import CustomerProfilePage from './pages/customer/CustomerProfilePage';
 import CustomerComboPage from './pages/customer/CustomerComboPage';
+import CustomerFoodPage from './pages/customer/CustomerFoodPage';
 import ServiceCatalogPage from './pages/admin/ServiceCatalogPage';
 import RevenueReportPage from './pages/admin/RevenueReportPage';
 import GameManagementPage from './pages/admin/GameManagementPage';
@@ -134,6 +135,11 @@ const CustomerProfileWrapper = () => {
 const CustomerComboWrapper = () => {
   const { currentUser, logout } = useAuth();
   return <CustomerComboPage user={currentUser} onLogout={logout} />;
+};
+
+const CustomerFoodWrapper = () => {
+  const { currentUser, logout } = useAuth();
+  return <CustomerFoodPage user={currentUser} onLogout={logout} />;
 };
 
 const ServiceCatalogWrapper = () => {
@@ -272,6 +278,24 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CUSTOMER', 'MEMBER']}>
                 <CustomerComboWrapper />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/customer/orders"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'MEMBER']}>
+                <CustomerFoodWrapper />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/customer/food"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'MEMBER']}>
+                <CustomerFoodWrapper />
               </ProtectedRoute>
             }
           />
