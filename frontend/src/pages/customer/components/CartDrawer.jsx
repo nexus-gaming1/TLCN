@@ -1,4 +1,4 @@
-import { Trash2, Plus, Minus, CreditCard, Banknote, AlertTriangle, ShoppingCart, ArrowRight } from 'lucide-react';
+import { Trash2, Plus, Minus, AlertTriangle, ShoppingCart, ArrowRight } from 'lucide-react';
 
 export default function CartDrawer({
   cartItems = [],
@@ -22,7 +22,7 @@ export default function CartDrawer({
   const canSubmit = sessionInfo?.can_order && cartItems.length > 0 && !isWalletInsufficient && !isSubmitting;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 flex flex-col justify-between h-full space-y-4">
+    <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col justify-between space-y-3">
       {/* 1. Header Giỏ Hàng */}
       <div>
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -68,7 +68,7 @@ export default function CartDrawer({
         )}
 
         {/* 3. Danh sách các món trong giỏ */}
-        <div className="mt-3 divide-y divide-slate-100 max-h-[260px] overflow-y-auto pr-1">
+        <div className="mt-3 divide-y divide-slate-100 max-h-[0px] overflow-y-auto pr-1">
           {cartItems.length === 0 ? (
             <div className="py-10 text-center text-slate-400 text-xs font-medium">
               🛒 Giỏ hàng đang trống. Hãy chọn món bên thực đơn!
@@ -125,45 +125,49 @@ export default function CartDrawer({
 
       {/* 4. Chọn Phương Thức Thanh Toán & Xác Nhận */}
       <div className="pt-3 border-t border-slate-100 space-y-3">
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-1.5">
-            Phương Thức Thanh Toán:
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => onPaymentMethodChange('WALLET')}
-              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 ${
-                isWallet
-                  ? 'bg-cyan-50/70 border-cyan-500 text-cyan-900 ring-1 ring-cyan-400'
-                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <CreditCard className={`w-4 h-4 ${isWallet ? 'text-cyan-600' : 'text-slate-400'}`} />
-              <div className="min-w-0">
-                <span className="text-xs font-extrabold block">Ví Tài Khoản</span>
-                <span className="text-[10px] font-mono text-slate-500 truncate block">
-                  Dư: {walletBalance.toLocaleString('vi-VN')} đ
-                </span>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => onPaymentMethodChange('CASH')}
-              className={`p-2.5 rounded-xl border text-left transition flex items-center gap-2 ${
-                paymentMethod === 'CASH'
-                  ? 'bg-amber-50/70 border-amber-500 text-amber-900 ring-1 ring-amber-400'
-                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-              }`}
-            >
-              <Banknote className={`w-4 h-4 ${paymentMethod === 'CASH' ? 'text-amber-600' : 'text-slate-400'}`} />
-              <div className="min-w-0">
-                <span className="text-xs font-extrabold block">Tiền Mặt</span>
-                <span className="text-[10px] text-slate-500 block">Thu tại máy</span>
-              </div>
-            </button>
+        <div className="pt-2.5 border-t border-slate-100 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-bold text-slate-700">Thanh toán:</span>
+            <div className="flex p-0.5 bg-slate-100 rounded-lg text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => onPaymentMethodChange('WALLET')}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  isWallet ? 'bg-white text-cyan-800 shadow-2xs font-extrabold' : 'text-slate-500'
+                }`}
+              >
+                Ví ({walletBalance.toLocaleString('vi-VN')}đ)
+              </button>
+              <button
+                type="button"
+                onClick={() => onPaymentMethodChange('CASH')}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  paymentMethod === 'CASH' ? 'bg-white text-amber-800 shadow-2xs font-extrabold' : 'text-slate-500'
+                }`}
+              >
+                Tiền Mặt
+              </button>
+            </div>
           </div>
+          {/* Tổng tiền và Nút đặt món nằm sát ngay dưới */}
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-xs font-bold text-slate-400 uppercase font-mono">Tổng:</span>
+            <span className="text-base font-black font-mono text-slate-900">
+              {totalAmount.toLocaleString('vi-VN')} đ
+            </span>
+          </div>
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={onSubmitOrder}
+            className={`w-full py-2.5 rounded-xl font-extrabold text-xs shadow-xs transition flex items-center justify-center gap-1.5 ${
+              canSubmit
+                ? 'bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-700 text-white cursor-pointer'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+            }`}
+          >
+            {isSubmitting ? 'Đang gửi đơn...' : 'XÁC NHẬN ĐẶT MÓN'}
+          </button>
         </div>
 
         {/* Cảnh báo số dư ví không đủ */}

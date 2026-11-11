@@ -61,7 +61,7 @@ export default function ActiveOrderTracker({
         <div className="flex items-center gap-2">
           <Clock className="w-5 h-5 text-cyan-600" />
           <h3 className="font-extrabold text-sm text-slate-800">
-            Theo Dõi Đơn Hàng Của Bạn (Realtime)
+            Theo Dõi Đơn Hàng Của Bạn
           </h3>
         </div>
 
