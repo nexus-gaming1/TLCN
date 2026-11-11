@@ -24,11 +24,28 @@ class OrderController {
 
   async createOrder(req, res, next) {
     try {
-      // Nếu Staff/Admin tạo đơn hộ: cho phép truyền target_member_id trong body
       const isStaffOrAdmin = req.user.role === 'EMPLOYEE' || req.user.role === 'ADMIN';
-      const memberId = (isStaffOrAdmin && req.body.target_member_id) ? req.body.target_member_id : req.user.user_id;
+      let memberId = req.user.user_id;
+      // Nếu nhân viên tạo đơn hộ: hỗ trợ truyền cả username hoặc member_id
+      if (isStaffOrAdmin && req.body.target_member_id) {
+        const rawTarget = req.body.target_member_id;
+        if (typeof rawTarget === 'string' && isNaN(Number(rawTarget))) {
+          const userObj = await this.orderService.orderRepo.models.User.findOne({
+            where: { username: rawTarget.trim() },
+            include: [{ model: this.orderService.orderRepo.models.Member, as: 'memberProfile' }]
+          });
+          if (!userObj || !userObj.memberProfile) {
+            return res.status(404).json({
+              status: 'error',
+              message: `Không tìm thấy tài khoản hội viên có tên '${rawTarget}'`
+            });
+          }
+          memberId = userObj.memberProfile.member_id;
+        } else {
+          memberId = Number(rawTarget);
+        }
+      }
       const order = await this.orderService.createOrder(memberId, req.body, req.user);
-
       return res.status(201).json({
         status: 'success',
         data: order,
