@@ -834,6 +834,26 @@ const seedData = async (db) => {
       }
     }
 
+    // Seed 1 phiên chơi đang hoạt động tại máy VIP-01 cho tài khoản demo 'user' (member_id = 2)
+    if (db.RentalSession) {
+      const activeSession = await db.RentalSession.findOne({
+        where: { member_id: 2, status: 'ACTIVE' }
+      });
+      if (!activeSession) {
+        await db.RentalSession.create({
+          member_id: 2,
+          computer_id: 9, // Máy VIP-01
+          session_type: 'LOCAL',
+          status: 'ACTIVE',
+          pricing_plan_id: 1,
+          hourly_rate: 10000.00,
+          billing_mode: 'POSTPAID',
+          started_at: new Date()
+        });
+        console.log('✅ Seeded 1 Active RentalSession for user (member_id: 2) on computer VIP-01.');
+      }
+    }
+
     console.log('✅ Database Seeding Completed Successfully.');
   } catch (error) {
     console.error('❌ Database Seeding Error:', error);

@@ -45,10 +45,20 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+    // Cho phép request không có origin (như cURL, Mobile App, Postman)
+    if (!origin) return callback(null, true);
+
+    // Cho phép localhost, domain chính trong FRONTEND_URL hoặc bất kỳ domain Vercel nào của nhóm
+    const isAllowed = allowedOrigins.includes(origin) ||
+                      origin.startsWith('http://localhost:') ||
+                      origin.startsWith('http://127.0.0.1:') ||
+                      origin.endsWith('.vercel.app');
+
+    if (isAllowed) {
       return callback(null, true);
     }
-    return callback(null, true);
+
+    return callback(new Error('Chặn bởi chính sách CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
