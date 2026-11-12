@@ -31,6 +31,7 @@ const orderRoutes = require('./src/routes/orderRoutes');
 
 const errorHandler = require('./src/middleware/errorHandler');
 const computerSocketService = require('./src/services/computerSocketService');
+const orderSocketService = require('./src/services/orderSocketService');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -99,12 +100,26 @@ const io = initSocket(server)
 io.on('connection', (socket) => {
   console.log(`🔌 Client connected: ${socket.id}`);
 
+  // 1. Staff tham gia Room nhận đơn hàng F&B
+  socket.on('staff:join', () => {
+    socket.join('staff:orders');
+    console.log(`[Socket.IO] Socket ${socket.id} đã tham gia Room staff:orders`);
+  });
+  // 2. Khách hàng tham gia Room cá nhân để theo dõi tiến độ đơn hàng
+  socket.on('customer:join', (memberId) => {
+    if (memberId) {
+      socket.join(`customer:${memberId}`);
+      console.log(`[Socket.IO] Socket ${socket.id} đã tham gia Room customer:${memberId}`);
+    }
+  });
+
   // Client ngắt kết nối
   socket.on('disconnect', () => {
     console.log(`🔌 Client disconnected: ${socket.id}`);
   });
 });
 computerSocketService.init(io);
+orderSocketService.init(io);
 // CHẠY MIGRATIONS, ĐỒNG BỘ DATABASE & BẬT SERVER
 async function startServer() {
   try {

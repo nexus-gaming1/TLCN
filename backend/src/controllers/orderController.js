@@ -7,7 +7,7 @@ class OrderController {
 
 
   // ----------------------------------------------------
-  // 1. Nhóm API khách hàng  (C# NetClient tại máy trạm)
+  // 1. Nhóm API gọi món, đơn cá nhân ( khách hàng)
  
   async getAvailableMenu(req, res, next) {
     try {
@@ -24,9 +24,28 @@ class OrderController {
 
   async createOrder(req, res, next) {
     try {
-      const memberId = req.user.user_id;
-      const order = await this.orderService.createOrder(memberId, req.body);
-
+      const isStaffOrAdmin = req.user.role === 'EMPLOYEE' || req.user.role === 'ADMIN';
+      let memberId = req.user.user_id;
+      // Nếu nhân viên tạo đơn hộ: hỗ trợ truyền cả username hoặc member_id
+      if (isStaffOrAdmin && req.body.target_member_id) {
+        const rawTarget = req.body.target_member_id;
+        if (typeof rawTarget === 'string' && isNaN(Number(rawTarget))) {
+          const userObj = await this.orderService.orderRepo.models.User.findOne({
+            where: { username: rawTarget.trim() },
+            include: [{ model: this.orderService.orderRepo.models.Member, as: 'memberProfile' }]
+          });
+          if (!userObj || !userObj.memberProfile) {
+            return res.status(404).json({
+              status: 'error',
+              message: `Không tìm thấy tài khoản hội viên có tên '${rawTarget}'`
+            });
+          }
+          memberId = userObj.memberProfile.member_id;
+        } else {
+          memberId = Number(rawTarget);
+        }
+      }
+      const order = await this.orderService.createOrder(memberId, req.body, req.user);
       return res.status(201).json({
         status: 'success',
         data: order,
@@ -68,9 +87,23 @@ class OrderController {
     }
   }
 
+  async checkSessionStatus(req, res, next) {
+    try {
+      const memberId = req.user.user_id;
+      const data = await this.orderService.checkCustomerSession(memberId);
+      return res.json({
+        status: 'success',
+        data,
+        message: 'Kiểm tra phiên chơi thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
 
   // ------------------------------------------------------------------------
-  // 2. Nhóm API của nhân viên (C# NetStaff tại quầy)
+  // 2. Nhóm API của nhân viên 
 
   async getStaffPendingOrders(req, res, next) {
     try {
@@ -112,7 +145,7 @@ class OrderController {
       return res.json({
         status: 'success',
         data: result,
-        message: 'Xác nhận thu tiền mặt và chuyển đơn vào bếp thành công'
+        message: 'Xác nhận thu tiền mặt thành công'
       });
     } catch (error) {
       next(error);
@@ -135,10 +168,27 @@ class OrderController {
       next(error);
     }
   }
+
+  //Hoàn tiền sự cố sau khi giao
+  async refundCompletedOrder(req, res, next) {
+    try {
+      const orderId = req.params.id;
+      const staffId = req.user.user_id;
+      const { amount, reason } = req.body;
+      const result = await this.orderService.refundCompletedOrder(orderId, staffId, { amount, reason });
+      return res.json({
+        status: 'success',
+        data: result,
+        message: result.message
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
   
   
   // ------------------------------------------------------------------------
-  // 3. NNhóm API của admin (Web Admin Console)
+  // 3. NNhóm API quản trị và chi tiết ( admin)
 
   async getOrderHistory(req, res, next) {
     try {

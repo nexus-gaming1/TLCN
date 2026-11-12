@@ -6,6 +6,9 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
+    "simulate:in-shop": "node tests/simulate-session.js in-shop",
+    "simulate:remote": "node tests/simulate-session.js remote",
+    "simulate:logout": "node tests/simulate-session.js logout",
     "db:migrate": "sequelize-cli db:migrate",
     "db:migrate:undo": "sequelize-cli db:migrate:undo",
     "db:seed": "node src/utils/seeder.js",
