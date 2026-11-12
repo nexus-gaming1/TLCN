@@ -133,11 +133,8 @@ orderSocketService.init(io);
 // CHẠY MIGRATIONS, ĐỒNG BỘ DATABASE & BẬT SERVER
 async function startServer() {
   try {
-    // 1. Chạy Sequelize CLI Migrations tự động trước
-    await runMigrations();
-
-    // 2. Kết nối và đồng bộ ORM
-    await db.sequelize.sync();
+    await db.sequelize.sync(); // 1. Tạo toàn bộ bảng gốc theo đúng thứ tự khóa ngoại trước
+    await runMigrations();     // 2. Chạy các migration bổ sung/cập nhật sau
     console.log('✅ Kết nối & Đồng bộ CSDL MySQL thành công!');
 
     // 3. Chạy seeder nạp dữ liệu mẫu
