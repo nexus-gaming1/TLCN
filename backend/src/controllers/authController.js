@@ -104,7 +104,14 @@ class AuthController {
             await authService.logout({ refreshToken, userId });
 
             // Xóa Cookie HttpOnly
+            const isProd = process.env.NODE_ENV === 'production';
             res.clearCookie('nexus_refresh_token', { path: '/' });
+            res.clearCookie('nexus_refresh_token', { 
+                path: '/',
+                httpOnly: true,
+                secure: isProd,
+                sameSite: isProd ? 'none' : 'lax'
+            });
 
             return res.status(200).json({
                 status: 'success',
