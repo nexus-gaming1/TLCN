@@ -53,6 +53,7 @@ app.use(cors({
                       origin.startsWith('http://localhost:') ||
                       origin.startsWith('http://127.0.0.1:') ||
                       origin.endsWith('.vercel.app');
+                      origin.endsWith('.onrender.com');
 
     if (isAllowed) {
       return callback(null, true);
