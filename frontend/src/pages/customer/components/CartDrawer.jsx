@@ -148,26 +148,7 @@ export default function CartDrawer({
                 Tiền Mặt
               </button>
             </div>
-          </div>
-          {/* Tổng tiền và Nút đặt món nằm sát ngay dưới */}
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-xs font-bold text-slate-400 uppercase font-mono">Tổng:</span>
-            <span className="text-base font-black font-mono text-slate-900">
-              {totalAmount.toLocaleString('vi-VN')} đ
-            </span>
-          </div>
-          <button
-            type="button"
-            disabled={!canSubmit}
-            onClick={onSubmitOrder}
-            className={`w-full py-2.5 rounded-xl font-extrabold text-xs shadow-xs transition flex items-center justify-center gap-1.5 ${
-              canSubmit
-                ? 'bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-700 text-white cursor-pointer'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            }`}
-          >
-            {isSubmitting ? 'Đang gửi đơn...' : 'XÁC NHẬN ĐẶT MÓN'}
-          </button>
+          </div> 
         </div>
 
         {/* Cảnh báo số dư ví không đủ */}
