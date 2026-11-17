@@ -45,6 +45,9 @@ export default function CustomerFoodPage({ user, onLogout }) {
   // Feedback Toast
   const [toast, setToast] = useState(null);
 
+  // kiểm tra phiên
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
   // Âm thanh báo khi trạng thái đơn thay đổi
   const playNotifySound = useCallback(() => {
     try {
@@ -90,6 +93,7 @@ export default function CustomerFoodPage({ user, onLogout }) {
       });
     } finally {
       setLoadingMenu(false);
+      setIsCheckingSession(false); // Đã kiểm tra xong phiên chơi
     }
   }, [memberId]);
 

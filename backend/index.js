@@ -45,10 +45,21 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+    // Cho phép request không có origin (như cURL, Mobile App, Postman)
+    if (!origin) return callback(null, true);
+
+    // Cho phép localhost, domain chính trong FRONTEND_URL hoặc bất kỳ domain Vercel nào của nhóm
+    const isAllowed = allowedOrigins.includes(origin) ||
+                      origin.startsWith('http://localhost:') ||
+                      origin.startsWith('http://127.0.0.1:') ||
+                      origin.endsWith('.vercel.app')||
+                      origin.endsWith('.onrender.com');
+
+    if (isAllowed) {
       return callback(null, true);
     }
-    return callback(null, true);
+
+    return callback(new Error('Chặn bởi chính sách CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -123,11 +134,8 @@ orderSocketService.init(io);
 // CHẠY MIGRATIONS, ĐỒNG BỘ DATABASE & BẬT SERVER
 async function startServer() {
   try {
-    // 1. Chạy Sequelize CLI Migrations tự động trước
-    await runMigrations();
-
-    // 2. Kết nối và đồng bộ ORM
-    await db.sequelize.sync();
+    await db.sequelize.sync(); // 1. Tạo toàn bộ bảng gốc theo đúng thứ tự khóa ngoại trước
+    await runMigrations();     // 2. Chạy các migration bổ sung/cập nhật sau
     console.log('✅ Kết nối & Đồng bộ CSDL MySQL thành công!');
 
     // 3. Chạy seeder nạp dữ liệu mẫu
