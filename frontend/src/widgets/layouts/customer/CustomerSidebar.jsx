@@ -16,6 +16,7 @@ export default function CustomerSidebar({ activeTab, onTabChange }) {
     { id: 'combos', label: 'Gói Combo Time', icon: Clock, path: '/customer/combos' },
     { id: 'security', label: 'Bảo mật', icon: Shield, path: '/customer/security' },
     { id: 'transactions', label: 'Lịch sử giao dịch', icon: Receipt, path: '/customer/transactions' },
+    { id: 'remote-rental', label: 'Thuê máy từ xa', icon: Radio, path: '/customer/remote-rental' },
     { id: 'rewards', label: 'Điểm thưởng', icon: Award, path: '/customer/rewards' }
   ];
 

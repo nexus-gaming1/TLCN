@@ -570,6 +570,31 @@ class ComputerController {
       next(error);
     }
   }
+  async getRemoteComputers(req, res, next) {
+    try {
+      const remoteComputers = await computerService.getRemoteComputers();
+      return res.json({
+        status: 'success',
+        data: remoteComputers,
+        message: 'Lấy danh sách máy trạm từ xa thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+  async pairRemoteComputer(req, res, next) {
+    try {
+      const { computer_id, pin } = req.body;
+      const result = await computerSocketService.sendCommand(computer_id, REMOTE_PAIR, { pin });
+      return res.json({
+        status: 'success',
+        data: result,
+        message: 'Pairing máy trạm từ xa thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new ComputerController();

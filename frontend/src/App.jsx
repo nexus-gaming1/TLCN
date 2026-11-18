@@ -17,7 +17,7 @@ import CustomerComboPage from './pages/customer/CustomerComboPage';
 import ServiceCatalogPage from './pages/admin/ServiceCatalogPage';
 import RevenueReportPage from './pages/admin/RevenueReportPage';
 import GameManagementPage from './pages/admin/GameManagementPage';
-
+import CustomerRemoteRentalPage from './pages/customer/CustomerRemoteRentalPage';
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { currentUser, role, loading } = useAuth();
@@ -134,6 +134,11 @@ const CustomerProfileWrapper = () => {
 const CustomerComboWrapper = () => {
   const { currentUser, logout } = useAuth();
   return <CustomerComboPage user={currentUser} onLogout={logout} />;
+};
+
+const CustomerRemoteRentalWrapper = () => {
+  const { currentUser, logout } = useAuth();
+  return <CustomerRemoteRentalPage user={currentUser} onLogout={logout} />;
 };
 
 const ServiceCatalogWrapper = () => {
@@ -284,6 +289,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/customer/remote-rental"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'MEMBER']}>
+                <CustomerRemoteRentalWrapper />
+              </ProtectedRoute>
+            }
+          />  
 
           {/* Root & Catch-all Redirect */}
           <Route path="/" element={<RoleRedirect />} />

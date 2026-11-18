@@ -1,7 +1,8 @@
-using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using NetClient.Shared.Models;
-
+using System.Diagnostics;
+using System.Text.Json;
+using NetClient.Service;
 namespace NetClient.Service.Services;
 
 public class CommandService
@@ -9,7 +10,7 @@ public class CommandService
     private readonly ILogger<CommandService> _logger;
     private readonly SessionService _sessionService;
     private readonly IpcServerService _ipcServerService;
-
+    private readonly SunshineService _sunshineService;
     // Strict whitelist of supported commands
     private static readonly HashSet<string> Whitelist = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -18,17 +19,20 @@ public class CommandService
         "SHOW_NOTIFICATION",
         "GET_STATUS",
         "LOGIN",
-        "LOGOUT"
+        "LOGOUT",
+        "REMOTE_PAIR",
     };
 
     public CommandService(
         ILogger<CommandService> logger,
         SessionService sessionService,
-        IpcServerService ipcServerService)
+        IpcServerService ipcServerService,
+        SunshineService sunshineService)
     {
         _logger = logger;
         _sessionService = sessionService;
         _ipcServerService = ipcServerService;
+        _sunshineService = sunshineService;
     }
 
     public async Task<CommandAck> ExecuteCommandAsync(CommandPayload payload)
@@ -89,7 +93,9 @@ public class CommandService
                     await _ipcServerService.SetStatusAsync(MachineStatus.ONLINE.ToString());
                     await _ipcServerService.ShowOverlayAsync();
                     return new CommandAck { Command = cmd, Success = true, MachineId = machineId };
-
+                case "REMOTE_PAIR":
+                    await HandleRemotePair(payload.Message);
+                    return new CommandAck { Command = cmd, Success = true, MachineId = machineId };
                 default:
                     return new CommandAck
                     {
@@ -113,6 +119,24 @@ public class CommandService
         }
     }
 
+private async Task HandleRemotePair(string? message)
+    {
+    
+        // Parse JSON
+        using var document = JsonDocument.Parse(message);
+
+        // Lấy PIN
+        var pin = document.RootElement
+            .GetProperty("pin")
+            .GetString();
+
+        if (string.IsNullOrWhiteSpace(pin))
+            throw new ArgumentException("PIN không hợp lệ");
+
+        // Thực hiện pairing với Sunshine
+        await _sunshineService.PairAsync(pin);
+    }
+    
     private CommandAck HandleShutdown(string machineId)
     {
         _logger.LogWarning("Executing system SHUTDOWN...");

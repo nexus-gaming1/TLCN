@@ -9,6 +9,8 @@ router.post(
     computerController.broadcastCommand
 );
 
+router.get('/remote', computerController.getRemoteComputers);
+router.post('/remote/pair', computerController.pairRemoteComputer);
 router.get('/grid', computerController.getRoomLayoutGrid);
 router.get('/zones', computerController.getZones);
 router.get('/bootrom-logs', computerController.getBootromLogs);

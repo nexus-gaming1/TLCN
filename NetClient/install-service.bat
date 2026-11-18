@@ -136,7 +136,24 @@ if errorlevel 1 (
         echo [OK] Da cap nhat Windows Service.
     )
 )
+:: ===================================================
+:: CONFIG SUNSHINE CREDENTIALS
+:: ===================================================
+echo.
+echo [4.5/7] Dang kiem tra Sunshine credentials...
 
+"%SERVICE_EXE%" --configure-sunshine-if-missing
+
+if errorlevel 1 (
+    echo.
+    echo [ERROR] Khong the cau hinh Sunshine credentials!
+    echo [INFO] Windows Service se khong duoc khoi dong.
+    echo.
+    pause
+    goto :END
+)
+
+echo [OK] Sunshine credentials da duoc cau hinh.
 echo.
 
 :: ===================================================

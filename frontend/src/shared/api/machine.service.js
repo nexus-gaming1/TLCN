@@ -116,6 +116,22 @@ class MachineService {
     }
     return [];
   }
+    async getRemoteMachines() {
+    try {
+      const response = await apiClient.get('/computers/remote');
+      // Extract computers array from response.data (or response.data.data)
+      const rawData = Array.isArray(response?.data)
+        ? response.data
+        : (Array.isArray(response?.data?.data) ? response.data.data : []);
+
+      if (Array.isArray(rawData) && rawData.length > 0) {
+        return rawData;
+      }
+    } catch (error) {
+      console.warn('Lỗi khi lấy danh sách trạm máy từ CSDL:', error.message);
+    }
+    return [];
+  }
 
   /**
    * Create a new computer station in CSDL
@@ -139,6 +155,15 @@ class MachineService {
    */
   async updateMachine(computerId, updateData) {
     const response = await apiClient.put(`/computers/${computerId}`, updateData);
+    return response.data;
+  }
+
+ async pairMachine(computerId, pin) {
+    const response = await apiClient.post('/remote/pair', {
+      computer_id: computerId,
+      pin: pin.trim(),
+    });
+
     return response.data;
   }
 

@@ -390,6 +390,65 @@ class ComputerService {
     }
   }
 
+  async getRemoteComputers() {
+    try {
+      const db = this.models;
+      const remoteComputers = await db.Computer.findAll({
+        where: {
+          is_remote_enabled: true
+        },
+        attributes: [
+          'computer_id',
+          'computer_name',
+          'status'
+        ],
+        include: [
+          {
+            model: db.ComputerZone,
+            attributes: [
+              'zone_id',
+              'zone_name'
+            ],
+            include: [
+              {
+                model: db.PricingPlan,
+                required: false,
+                attributes: [
+                  'pricing_plan_id',
+                  'name',
+                  'price_per_hour',
+                  'plan_type',
+                  'is_active'
+                ]
+              }
+            ]
+          }
+        ],
+        order: [['computer_id', 'ASC']]
+      });
+      return remoteComputers;
+    } catch (error) {
+      if (!error.statusCode) error.statusCode = 500;
+      throw error;
+    }
+  }
+  async pairRemoteComputer(computerId, pairingCode) {
+    try {
+      const db = this.models;
+      const computer = await db.Computer.findByPk(computerId);
+      if (!computer) {
+        const error = new Error('Computer not found');
+        error.statusCode = 404;
+        throw error;
+      }
+    
+
+    } catch (error) {
+      if (!error.statusCode) error.statusCode = 500;
+      throw error;
+    }
+  }
+      
   // =========================================================================
   // Delegated Hardware Profile Methods (Single Responsibility Principle)
   // Maintains 100% backward compatibility for existing controllers and tests
@@ -410,6 +469,7 @@ class ComputerService {
   async deleteHardwareSpec(specId) {
     return await this.hardwareProfileService.deleteHardwareSpec(specId);
   }
+
 }
 
 const computerServiceInstance = new ComputerService();
