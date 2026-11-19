@@ -24,6 +24,8 @@ public class SocketService : BackgroundService
     private bool _isRegistered;
     private DateTimeOffset? _disconnectedAt;
     private bool _sessionClearedForDisconnect;
+    private int _consecutiveHeartbeatFailures;
+    private const int MaxConsecutiveHeartbeatFailures = 3;
     private readonly string _serverUrl;
     private readonly int _heartbeatIntervalSeconds;
     private readonly int _connectTimeoutSeconds;
@@ -205,6 +207,7 @@ public class SocketService : BackgroundService
         {
             _disconnectedAt = null;
             _sessionClearedForDisconnect = false;
+            _consecutiveHeartbeatFailures = 0;
             _logger.LogInformation("Connected to Socket.IO backend successfully.");
         };
 
@@ -212,6 +215,7 @@ public class SocketService : BackgroundService
         {
             _logger.LogWarning("Disconnected from Socket.IO backend. Reason: {Reason}", reason);
             _isRegistered = false;
+            _consecutiveHeartbeatFailures = 0;
             _disconnectedAt ??= DateTimeOffset.UtcNow;
             _pairingManager.StopDetection();
         };
@@ -525,11 +529,33 @@ public class SocketService : BackgroundService
             };
 
             await _client.EmitAsync("heartbeat", [payload]);
+            _consecutiveHeartbeatFailures = 0;
             _logger.LogDebug("Heartbeat emitted: CPU={Cpu}%, RAM={Ram}%", perf.CpuUsage, perf.RamUsage);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to emit heartbeat to server");
+            _consecutiveHeartbeatFailures++;
+            _logger.LogWarning(ex, "Failed to emit heartbeat to server (attempt {Count}/{Max})", _consecutiveHeartbeatFailures, MaxConsecutiveHeartbeatFailures);
+
+            // Nếu thất bại liên tiếp (VD: half-open TCP, socket bị treo hoặc rớt kết nối ngầm), chủ động ngắt kết nối để vòng lặp ExecuteAsync tự động reconnect
+            if (_consecutiveHeartbeatFailures >= MaxConsecutiveHeartbeatFailures)
+            {
+                _logger.LogError("Consecutive heartbeat failures reached threshold ({Count}). Triggering socket reconnect...", _consecutiveHeartbeatFailures);
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        if (_client != null)
+                        {
+                            await _client.DisconnectAsync();
+                        }
+                    }
+                    catch (Exception discEx)
+                    {
+                        _logger.LogDebug(discEx, "Error while forcing disconnect after heartbeat failures");
+                    }
+                });
+            }
         }
     }
 
