@@ -590,12 +590,7 @@ class ComputerController {
   async startPairingIntent(req, res, next) {
     try {
       const computerId = req.body.computer_id || req.body.computerId;
-      let memberId = req.user?.member_id;
-
-      if (!memberId && req.user?.user_id) {
-        const member = await db.Member.findOne({ where: { user_id: req.user.user_id } });
-        memberId = member?.member_id;
-      }
+      let memberId = req.user?.member_id || req.user?.user_id;
 
       if (!memberId) {
         return res.status(401).json({
@@ -627,12 +622,7 @@ class ComputerController {
   async getPairingStatus(req, res, next) {
     try {
       const intentId = req.params.intentId;
-      let memberId = req.user?.member_id;
-
-      if (!memberId && req.user?.user_id) {
-        const member = await db.Member.findOne({ where: { user_id: req.user.user_id } });
-        memberId = member?.member_id;
-      }
+      let memberId = req.user?.member_id || req.user?.user_id;
 
       const result = await pairingManagementService.getPairingStatus({
         intentId,
@@ -657,12 +647,7 @@ class ComputerController {
     try {
       const intentId = req.body.intent_id || req.body.intentId;
       const pin = req.body.pin;
-      let memberId = req.user?.member_id;
-
-      if (!memberId && req.user?.user_id) {
-        const member = await db.Member.findOne({ where: { user_id: req.user.user_id } });
-        memberId = member?.member_id;
-      }
+      let memberId = req.user?.member_id || req.user?.user_id;
 
       const result = await pairingManagementService.confirmPairing({
         intentId,
@@ -687,12 +672,7 @@ class ComputerController {
   async cancelPairing(req, res, next) {
     try {
       const intentId = req.body.intent_id || req.body.intentId;
-      let memberId = req.user?.member_id;
-
-      if (!memberId && req.user?.user_id) {
-        const member = await db.Member.findOne({ where: { user_id: req.user.user_id } });
-        memberId = member?.member_id;
-      }
+      let memberId = req.user?.member_id || req.user?.user_id;
 
       const result = await pairingManagementService.cancelPairingIntent({
         intentId,
@@ -716,12 +696,7 @@ class ComputerController {
   async pairRemoteComputer(req, res, next) {
     try {
       const { computer_id, pin, intent_id } = req.body;
-      let memberId = req.user?.member_id;
-
-      if (!memberId && req.user?.user_id) {
-        const member = await db.Member.findOne({ where: { user_id: req.user.user_id } });
-        memberId = member?.member_id;
-      }
+      let memberId = req.user?.member_id || req.user?.user_id;
 
       // If intent_id provided, confirm it directly
       if (intent_id) {

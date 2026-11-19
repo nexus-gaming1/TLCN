@@ -109,7 +109,7 @@ class PairingManagementService {
         const authorization = await billingService.authorizeLogin({
           username,
           computerId: computer.computer_id
-        });
+        }, transaction);
 
         if (!authorization.allowed) {
           const err = new Error(authorization.message || 'Không đủ điều kiện thuê máy.');
@@ -121,7 +121,7 @@ class PairingManagementService {
           memberId: member.member_id,
           computerId: computer.computer_id,
           combo: authorization.combo
-        });
+        }, transaction);
 
         // Update computer status to IN_USE
         computer.status = ComputerStatus.IN_USE;

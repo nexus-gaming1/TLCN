@@ -46,8 +46,9 @@ class BillingService {
     return combos.find((combo) => !combo.allowed_tier || tier <= Number(combo.allowed_tier)) || null;
   }
 
-  async authorizeLogin({ username, computerId }) {
-    const transaction = await db.sequelize.transaction();
+  async authorizeLogin({ username, computerId }, externalTransaction = null) {
+    const transaction = externalTransaction || await db.sequelize.transaction();
+    const shouldManageTransaction = !externalTransaction;
     try {
       const computer = await db.Computer.findByPk(computerId, {
         include: [{ model: db.ComputerZone }],
@@ -55,11 +56,11 @@ class BillingService {
         lock: transaction.LOCK.UPDATE
       });
       if (!computer) {
-        await transaction.rollback();
+        if (shouldManageTransaction) await transaction.rollback();
         return { allowed: false, code: 'MACHINE_NOT_FOUND', message: 'Không tìm thấy máy trạm.' };
       }
       // if ([ComputerStatus.IN_USE, ComputerStatus.MAINTENANCE].includes(computer.status)) {
-      //   await transaction.rollback();
+      //   if (shouldManageTransaction) await transaction.rollback();
       //   return { allowed: false, code: 'MACHINE_UNAVAILABLE', message: 'Máy trạm hiện không khả dụng.' };
       // }
 
@@ -71,7 +72,7 @@ class BillingService {
       });
       const member = user?.memberProfile;
       if (!member) {
-        await transaction.rollback();
+        if (shouldManageTransaction) await transaction.rollback();
         return { allowed: false, code: 'MEMBER_REQUIRED', message: 'Tài khoản chưa có hồ sơ hội viên.' };
       }
       const existingSession = await RentalSession.findOne({
@@ -81,7 +82,7 @@ class BillingService {
       });
       if (existingSession) {
         if (existingSession.computer_id === computerId) {
-          await transaction.commit();
+          if (shouldManageTransaction) await transaction.commit();
           return {
             allowed: true,
             memberId: member.member_id,
@@ -90,24 +91,24 @@ class BillingService {
             resumedSession: existingSession
           };
         }
-        await transaction.rollback();
+        if (shouldManageTransaction) await transaction.rollback();
         return { allowed: false, code: 'MEMBER_ALREADY_IN_USE', message: 'Hội viên đang có một phiên sử dụng máy khác.' };
       }
 
       const combo = await this.getActiveCombo(member.member_id, computer, transaction);
       if (combo) {
-        await transaction.commit();
+        if (shouldManageTransaction) await transaction.commit();
         return { allowed: true, memberId: member.member_id, combo, computer };
       }
 
       const plan = await this.findPricingPlan(computer);
       if (!plan) {
-        await transaction.rollback();
+        if (shouldManageTransaction) await transaction.rollback();
         return { allowed: false, code: 'PRICING_PLAN_NOT_FOUND', message: 'Không tìm thấy bảng giá áp dụng.' };
       }
       const minutePrice = money(Number(plan.price_per_hour) / 60);
       const balance = Number(member.bonus_balance || 0) + Number(member.real_balance || 0);
-      await transaction.commit();
+      if (shouldManageTransaction) await transaction.commit();
       if (balance < minutePrice) {
         return {
           allowed: false,
@@ -117,14 +118,15 @@ class BillingService {
       }
       return { allowed: true, memberId: member.member_id, combo: null, computer, plan };
     } catch (error) {
-      await transaction.rollback();
+      if (shouldManageTransaction) await transaction.rollback();
       throw error;
     }
   }
 
-  async startSession({ memberId, computerId, combo = null, startedAt = new Date() }) {
+  async startSession({ memberId, computerId, combo = null, startedAt = new Date() }, transaction = null) {
     const existing = await RentalSession.findOne({
-      where: { computer_id: computerId, status: Status.ACTIVE }
+      where: { computer_id: computerId, status: Status.ACTIVE },
+      transaction
     });
     if (existing) return existing;
     return RentalSession.create({
@@ -135,7 +137,7 @@ class BillingService {
       status: Status.ACTIVE,
       started_at: startedAt,
       last_billed_at: startedAt
-    });
+    }, { transaction });
   }
 
   async endSession(session, status = Status.ENDED, endedAt = new Date(), transaction = null) {

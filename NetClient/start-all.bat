@@ -14,3 +14,4 @@ start "NetClient UI" dotnet run --project "%~dp0NetClient.UI\NetClient.UI.csproj
 
 echo Đã khởi động cả hai tiến trình!
 
+    
