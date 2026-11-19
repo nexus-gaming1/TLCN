@@ -119,19 +119,28 @@ public class CommandService
         }
     }
 
-private async Task HandleRemotePair(string? message)
+    private async Task HandleRemotePair(string? message)
     {
-    
-        // Parse JSON
-        using var document = JsonDocument.Parse(message);
+        if (string.IsNullOrWhiteSpace(message))
+            throw new ArgumentException("Dữ liệu pairing không được để trống");
 
-        // Lấy PIN
-        var pin = document.RootElement
-            .GetProperty("pin")
-            .GetString();
+        string? pin = null;
+        var trimmed = message.Trim();
+        if (trimmed.StartsWith("{") && trimmed.EndsWith("}"))
+        {
+            using var document = JsonDocument.Parse(trimmed);
+            if (document.RootElement.TryGetProperty("pin", out var pinElem))
+            {
+                pin = pinElem.GetString();
+            }
+        }
+        else
+        {
+            pin = trimmed;
+        }
 
         if (string.IsNullOrWhiteSpace(pin))
-            throw new ArgumentException("PIN không hợp lệ");
+            throw new ArgumentException("Mã PIN không hợp lệ");
 
         // Thực hiện pairing với Sunshine
         await _sunshineService.PairAsync(pin);

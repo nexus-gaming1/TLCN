@@ -82,6 +82,15 @@ const ComboTimeStatus = Object.freeze({
   CANCELLED: 'CANCELLED',
 });
 
+const RemotePairingStatus = Object.freeze({
+  PENDING: 'PENDING',
+  CONFIRMING: 'CONFIRMING',
+  PAIRED: 'PAIRED',
+  EXPIRED: 'EXPIRED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED',
+});
+
 module.exports = {
   UserRole,
   UserStatus,
@@ -92,6 +101,7 @@ module.exports = {
   TransactionCategory,
   SessionType,
   ComboTimeStatus,
+  RemotePairingStatus,
   PaymentMethodEnum,
   TransactionStatusEnum,
 };

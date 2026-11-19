@@ -158,12 +158,57 @@ class MachineService {
     return response.data;
   }
 
- async pairMachine(computerId, pin) {
-    const response = await apiClient.post('/remote/pair', {
+  /**
+   * Bắt đầu yêu cầu ghép nối Sunshine với máy trạm
+   */
+  async startPairingIntent(computerId, timeoutSeconds = 300) {
+    const response = await apiClient.post('/computers/remote/pairing/intent', {
       computer_id: computerId,
-      pin: pin.trim(),
+      timeout_seconds: timeoutSeconds
     });
+    return response.data;
+  }
 
+  /**
+   * Lấy trạng thái ghép nối hiện tại của intent
+   */
+  async getPairingStatus(intentId) {
+    const response = await apiClient.get(`/computers/remote/pairing/status/${intentId}`);
+    return response.data;
+  }
+
+  /**
+   * Xác nhận mã PIN Moonlight với Sunshine
+   */
+  async confirmPairingPin(intentId, pin) {
+    const response = await apiClient.post('/computers/remote/pairing/confirm', {
+      intent_id: intentId,
+      pin: String(pin).trim()
+    });
+    return response.data;
+  }
+
+  /**
+   * Hủy yêu cầu ghép nối
+   */
+  async cancelPairingIntent(intentId) {
+    const response = await apiClient.post('/computers/remote/pairing/cancel', {
+      intent_id: intentId
+    });
+    return response.data;
+  }
+
+  /**
+   * Cập nhật máy trạm từ xa (Legacy pair API)
+   */
+  async pairMachine(computerId, pin, intentId = null) {
+    const payload = {
+      computer_id: computerId,
+      pin: String(pin).trim()
+    };
+    if (intentId) payload.intent_id = intentId;
+
+    const response = await apiClient.post('/computers/remote/pair', payload);
     return response.data;
   }
 

@@ -16,6 +16,7 @@ public class SocketService : BackgroundService
     private readonly PerformanceMonitor _performanceMonitor;
     private readonly IpcServerService _ipcServerService;
     private readonly AuthApiService _authApiService;
+    private readonly SunshinePairingManager _pairingManager;
 
     private SocketIO? _client;
     private System.Threading.Timer? _heartbeatTimer;
@@ -34,7 +35,8 @@ public class SocketService : BackgroundService
         CommandService commandService,
         PerformanceMonitor performanceMonitor,
         IpcServerService ipcServerService,
-        AuthApiService authApiService)
+        AuthApiService authApiService,
+        SunshinePairingManager pairingManager)
     {
         _logger = logger;
         _configuration = configuration;
@@ -43,6 +45,7 @@ public class SocketService : BackgroundService
         _performanceMonitor = performanceMonitor;
         _ipcServerService = ipcServerService;
         _authApiService = authApiService;
+        _pairingManager = pairingManager;
 
         _serverUrl = _configuration["Server:Url"] ?? "http://127.0.0.1:3000";
         if (!int.TryParse(_configuration["Client:HeartbeatIntervalSeconds"], out _heartbeatIntervalSeconds) || _heartbeatIntervalSeconds <= 0)
@@ -210,6 +213,7 @@ public class SocketService : BackgroundService
             _logger.LogWarning("Disconnected from Socket.IO backend. Reason: {Reason}", reason);
             _isRegistered = false;
             _disconnectedAt ??= DateTimeOffset.UtcNow;
+            _pairingManager.StopDetection();
         };
 
         _client.OnError += (sender, error) =>
@@ -350,6 +354,108 @@ public class SocketService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error handling 'notification' event");
+            }
+        });
+
+        // 5. Remote Sunshine Pairing Events
+        _client.On("remote:pairing:start_detection", async ctx =>
+        {
+            try
+            {
+                var payload = ctx.GetValue<PairingStartDetectionPayload>(0);
+                if (payload == null || string.IsNullOrWhiteSpace(payload.IntentId))
+                {
+                    _logger.LogWarning("Invalid 'remote:pairing:start_detection' payload");
+                    return;
+                }
+
+                _pairingManager.StartDetection(
+                    payload.IntentId,
+                    payload.ComputerId,
+                    payload.TimeoutSeconds,
+                    async pairing =>
+                    {
+                        if (_client != null && _client.Connected)
+                        {
+                            await _client.EmitAsync("remote:pairing:detected", [new PairingDetectedPayload
+                            {
+                                MachineId = _sessionService.MachineId,
+                                ComputerId = payload.ComputerId,
+                                IntentId = payload.IntentId,
+                                PairingId = pairing.Id,
+                                DeviceName = pairing.Name,
+                                DeviceAddress = pairing.Address
+                            }]);
+                        }
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling 'remote:pairing:start_detection' event");
+            }
+            await Task.CompletedTask;
+        });
+
+        _client.On("remote:pairing:stop_detection", async ctx =>
+        {
+            try
+            {
+                var payload = ctx.GetValue<PairingStopDetectionPayload>(0);
+                _pairingManager.StopDetection(payload?.IntentId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling 'remote:pairing:stop_detection' event");
+            }
+            await Task.CompletedTask;
+        });
+
+        _client.On("remote:pairing:confirm", async ctx =>
+        {
+            try
+            {
+                var payload = ctx.GetValue<PairingConfirmPayload>(0);
+                if (payload == null || string.IsNullOrWhiteSpace(payload.IntentId) || string.IsNullOrWhiteSpace(payload.PairingId))
+                {
+                    _logger.LogWarning("Invalid 'remote:pairing:confirm' payload");
+                    return;
+                }
+
+                _logger.LogInformation(
+                    "Received 'remote:pairing:confirm' for Intent {IntentId}, PairingId {PairingId}",
+                    payload.IntentId, payload.PairingId);
+
+                try
+                {
+                    bool success = await _pairingManager.ConfirmPairingAsync(
+                        payload.IntentId,
+                        payload.PairingId,
+                        payload.Pin,
+                        payload.DeviceName);
+
+                    await _client.EmitAsync("remote:pairing:ack", [new PairingAck
+                    {
+                        IntentId = payload.IntentId,
+                        MachineId = _sessionService.MachineId,
+                        Success = success,
+                        Error = success ? null : "Sunshine xác nhận mã PIN thất bại."
+                    }]);
+                }
+                catch (Exception confirmEx)
+                {
+                    _logger.LogError(confirmEx, "Failed to confirm Sunshine pairing for Intent {IntentId}", payload.IntentId);
+                    await _client.EmitAsync("remote:pairing:ack", [new PairingAck
+                    {
+                        IntentId = payload.IntentId,
+                        MachineId = _sessionService.MachineId,
+                        Success = false,
+                        Error = confirmEx.Message
+                    }]);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling 'remote:pairing:confirm' event");
             }
         });
 

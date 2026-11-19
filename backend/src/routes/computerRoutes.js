@@ -10,7 +10,11 @@ router.post(
 );
 
 router.get('/remote', computerController.getRemoteComputers);
-router.post('/remote/pair', computerController.pairRemoteComputer);
+router.post('/remote/pair', authenticateToken, computerController.pairRemoteComputer);
+router.post('/remote/pairing/intent', authenticateToken, computerController.startPairingIntent);
+router.get('/remote/pairing/status/:intentId', authenticateToken, computerController.getPairingStatus);
+router.post('/remote/pairing/confirm', authenticateToken, computerController.confirmPairing);
+router.post('/remote/pairing/cancel', authenticateToken, computerController.cancelPairing);
 router.get('/grid', computerController.getRoomLayoutGrid);
 router.get('/zones', computerController.getZones);
 router.get('/bootrom-logs', computerController.getBootromLogs);

@@ -75,18 +75,22 @@ public class Program
 
                 services.AddHttpClient("Sunshine", client =>
                 {
-                    client.BaseAddress = new Uri("https://127.0.0.1:47990/");
-                    client.Timeout = TimeSpan.FromSeconds(90);
+                    var host = hostContext.Configuration["Sunshine:Host"] ?? "127.0.0.1";
+                    var port = hostContext.Configuration["Sunshine:Port"] ?? "47990";
+                    client.BaseAddress = new Uri($"https://{host}:{port}/");
+                    client.Timeout = TimeSpan.FromSeconds(hostContext.Configuration.GetValue<int>("Sunshine:TimeoutSeconds", 15));
                 })
                 .ConfigurePrimaryHttpMessageHandler(() =>
                     new HttpClientHandler
                     {
-                        // Sunshine sử dụng certificate tự ký trên localhost.
-                        ServerCertificateCustomValidationCallback =
-                            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                        // Sunshine sử dụng certificate tự ký trên localhost. Cho phép cấu hình qua appsettings
+                        ServerCertificateCustomValidationCallback = hostContext.Configuration.GetValue<bool>("Sunshine:AllowSelfSignedCertificate", true)
+                            ? HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                            : null
                     });
 
                 services.AddSingleton<SunshineService>();
+                services.AddSingleton<SunshinePairingManager>();
                 // IPC Server
                 services.AddSingleton<IpcServerService>();
                 services.AddHostedService(

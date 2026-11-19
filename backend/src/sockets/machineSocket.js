@@ -510,6 +510,36 @@ function registerMachineSocket(io) {
             );
         });
 
+        // ========================================
+        // 6.5. Remote Sunshine Pairing Events
+        // ========================================
+
+        socket.on('remote:pairing:detected', async (data) => {
+            if (!data) return;
+            try {
+                const pairingManagementService = require('../services/pairingManagementService');
+                await pairingManagementService.handlePairingDetected({
+                    machineId: data.machineId || machineStore.socketMap.get(socket.id),
+                    computerId: data.computerId,
+                    pairingId: data.pairingId,
+                    deviceName: data.deviceName,
+                    deviceAddress: data.deviceAddress
+                });
+            } catch (err) {
+                console.error('[Socket.IO] Error handling remote:pairing:detected:', err);
+            }
+        });
+
+        socket.on('remote:pairing:ack', (data) => {
+            if (!data) return;
+            try {
+                const computerSocketService = require('../services/computerSocketService');
+                computerSocketService.handlePairingAck(data);
+            } catch (err) {
+                console.error('[Socket.IO] Error handling remote:pairing:ack:', err);
+            }
+        });
+
 
         // ========================================
         // 7. Disconnect

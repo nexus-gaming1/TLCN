@@ -4,6 +4,7 @@ const db = require('../models');
 class ComputerSocketService {
     constructor() {
         this.io = null;
+        this.pendingPairingConfirmations = new Map();
     }
 
     /**
@@ -252,6 +253,77 @@ class ComputerSocketService {
             command,
             message
         });
+    }
+
+    /**
+     * Bắt đầu theo dõi pairing Sunshine trên PC Agent
+     */
+    startPairingDetection(machineId, data) {
+        this.ensureInitialized();
+        this.io
+            .to(`machine:${machineId}`)
+            .emit('remote:pairing:start_detection', data);
+    }
+
+    /**
+     * Dừng theo dõi pairing Sunshine trên PC Agent
+     */
+    stopPairingDetection(machineId, data) {
+        this.ensureInitialized();
+        this.io
+            .to(`machine:${machineId}`)
+            .emit('remote:pairing:stop_detection', data);
+    }
+
+    /**
+     * Gửi yêu cầu xác nhận PIN đến Sunshine thông qua PC Agent và chờ kết quả ACK
+     */
+    confirmSunshinePairing(machineId, data, timeoutMs = 15000) {
+        this.ensureInitialized();
+
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                this.pendingPairingConfirmations.delete(data.intentId);
+                reject(new Error('Hết thời gian chờ phản hồi xác nhận ghép nối từ máy trạm (Timeout).'));
+            }, timeoutMs);
+
+            this.pendingPairingConfirmations.set(data.intentId, {
+                resolve,
+                reject,
+                timer
+            });
+
+            this.io
+                .to(`machine:${machineId}`)
+                .emit('remote:pairing:confirm', {
+                    intentId: data.intentId,
+                    pairingId: data.pairingId,
+                    pin: data.pin,
+                    deviceName: data.deviceName
+                });
+        });
+    }
+
+    /**
+     * Xử lý ACK từ PC Agent khi xác nhận pairing hoàn tất
+     */
+    handlePairingAck(data) {
+        if (!data || !data.intentId) return;
+
+        const pending = this.pendingPairingConfirmations.get(data.intentId);
+        if (pending) {
+            clearTimeout(pending.timer);
+            this.pendingPairingConfirmations.delete(data.intentId);
+            pending.resolve(data);
+        }
+    }
+
+    /**
+     * Phát sự kiện pairing đồng bộ đến client web và các listener
+     */
+    broadcastPairingEvent(eventName, payload) {
+        if (!this.io) return;
+        this.io.emit(eventName, payload);
     }
 }
 
