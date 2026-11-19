@@ -302,6 +302,54 @@ public class SunshineService
         }
     }
 
+    /// <summary>
+    /// Xóa toàn bộ paired clients trên Sunshine (POST /api/clients/unpair-all)
+    /// </summary>
+    public async Task<bool> UnpairAllAsync(CancellationToken cancellationToken = default)
+    {
+        HttpClient client;
+        try
+        {
+            client = _httpClientFactory.CreateClient("Sunshine");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create Sunshine HTTP client for unpair-all");
+            return false;
+        }
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, "api/clients/unpair-all");
+        try
+        {
+            request.Headers.Authorization = CreateBasicAuthHeader();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Cannot create auth header for Sunshine unpair-all (credentials missing or invalid)");
+            return false;
+        }
+
+        try
+        {
+            _logger.LogInformation("Sending request to Sunshine: POST api/clients/unpair-all");
+            using var response = await client.SendAsync(request, cancellationToken);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Successfully unpaired all clients on Sunshine.");
+                return true;
+            }
+
+            _logger.LogWarning("Sunshine POST api/clients/unpair-all returned non-success status: {StatusCode}", response.StatusCode);
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error calling Sunshine POST api/clients/unpair-all (Sunshine might be offline)");
+            return false;
+        }
+    }
+
     private class PairingRequest
     {
         [JsonPropertyName("pairing_id")]

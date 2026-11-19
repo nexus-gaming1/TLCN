@@ -64,12 +64,11 @@ export default function RentalModal({
       setStep('INITIALIZING');
 
       try {
-        const response = await MachineService.startPairingIntent(station.computer_id, 300);
+        const data = await MachineService.startPairingIntent(station.computer_id, 300);
         if (!isMounted) return;
 
-        const newIntent = response?.data?.intent;
-        if (newIntent?.id) {
-          setIntentId(newIntent.id);
+        if (data?.intent?.id) {
+          setIntentId(data.intent.id);
           setStep('WAITING_MOONLIGHT');
         } else {
           setStep('FAILED');
@@ -198,11 +197,13 @@ export default function RentalModal({
     setIsLoading(true);
 
     try {
-      const response = await MachineService.startPairingIntent(station.computer_id, 300);
-      const newIntent = response?.data?.intent;
-      if (newIntent?.id) {
-        setIntentId(newIntent.id);
+      const data = await MachineService.startPairingIntent(station.computer_id, 300);
+      if (data?.intent?.id) {
+        setIntentId(data.intent.id);
         setStep('WAITING_MOONLIGHT');
+      } else {
+        setStep('FAILED');
+        setError('Không nhận được mã yêu cầu ghép nối từ hệ thống.');
       }
     } catch (err) {
       setStep('FAILED');

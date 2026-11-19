@@ -17,6 +17,7 @@ public class SocketService : BackgroundService
     private readonly IpcServerService _ipcServerService;
     private readonly AuthApiService _authApiService;
     private readonly SunshinePairingManager _pairingManager;
+    private readonly SunshineService _sunshineService;
 
     private SocketIO? _client;
     private System.Threading.Timer? _heartbeatTimer;
@@ -38,7 +39,8 @@ public class SocketService : BackgroundService
         PerformanceMonitor performanceMonitor,
         IpcServerService ipcServerService,
         AuthApiService authApiService,
-        SunshinePairingManager pairingManager)
+        SunshinePairingManager pairingManager,
+        SunshineService sunshineService)
     {
         _logger = logger;
         _configuration = configuration;
@@ -48,6 +50,7 @@ public class SocketService : BackgroundService
         _ipcServerService = ipcServerService;
         _authApiService = authApiService;
         _pairingManager = pairingManager;
+        _sunshineService = sunshineService;
 
         _serverUrl = _configuration["Server:Url"] ?? "http://127.0.0.1:3000";
         if (!int.TryParse(_configuration["Client:HeartbeatIntervalSeconds"], out _heartbeatIntervalSeconds) || _heartbeatIntervalSeconds <= 0)
@@ -218,6 +221,19 @@ public class SocketService : BackgroundService
             _consecutiveHeartbeatFailures = 0;
             _disconnectedAt ??= DateTimeOffset.UtcNow;
             _pairingManager.StopDetection();
+
+            // Tự động unpair toàn bộ Moonlight clients khi ngắt kết nối với server
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _sunshineService.UnpairAllAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to unpair-all on socket disconnect");
+                }
+            });
         };
 
         _client.OnError += (sender, error) =>
@@ -330,6 +346,19 @@ public class SocketService : BackgroundService
                 await _ipcServerService.SetUsernameAsync(string.Empty);
                 await _ipcServerService.SetStatusAsync(MachineStatus.ONLINE.ToString());
                 await _ipcServerService.ShowOverlayAsync();
+
+                // Unpair toàn bộ Sunshine clients khi kết thúc phiên thuê / đăng xuất
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _sunshineService.UnpairAllAsync();
+                    }
+                    catch (Exception unpairEx)
+                    {
+                        _logger.LogWarning(unpairEx, "Failed to unpair Sunshine clients on session:logout");
+                    }
+                });
 
                 await _client.EmitAsync("logout:ack", [new LogoutAck
                 {
@@ -509,6 +538,19 @@ public class SocketService : BackgroundService
         await _ipcServerService.SetUsernameAsync(string.Empty);
         await _ipcServerService.SetStatusAsync(MachineStatus.ONLINE.ToString());
         await _ipcServerService.ShowOverlayAsync();
+
+        // Tự động unpair toàn bộ Sunshine clients khi mất kết nối backend kéo dài
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _sunshineService.UnpairAllAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to unpair-all on connection loss");
+            }
+        });
     }
 
     private async Task SendHeartbeatAsync()
@@ -661,6 +703,19 @@ public class SocketService : BackgroundService
             await _ipcServerService.SetUsernameAsync(string.Empty);
             await _ipcServerService.SetStatusAsync(MachineStatus.ONLINE.ToString());
             await _ipcServerService.ShowOverlayAsync();
+
+            // Tự động unpair toàn bộ Sunshine clients khi logout cục bộ
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _sunshineService.UnpairAllAsync();
+                }
+                catch (Exception unpairEx)
+                {
+                    _logger.LogWarning(unpairEx, "Failed to unpair Sunshine clients on local logout");
+                }
+            });
 
             // 3. Emit logout events to backend Socket.IO
             if (_client != null && _client.Connected)
