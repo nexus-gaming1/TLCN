@@ -1,4 +1,5 @@
 ﻿using AntdUI;
+using NexusControl.Enums;
 using NexusControl.Forms;
 using NexusControl.Models;
 using NexusControl.Services;
@@ -157,9 +158,13 @@ namespace NexusControl.UserControls
             }
 
             if (tb_Computer.DataSource is List<ComputerGridRow> rows &&
-                UpdateRow(rows, machine))
+                TryUpdateRow(rows, machine, out var sessionChanged))
             {
                 tb_Computer.Refresh();
+                if (sessionChanged)
+                {
+                    _ = ReloadAsync();
+                }
             }
         }
 
@@ -167,6 +172,15 @@ namespace NexusControl.UserControls
             List<ComputerGridRow> rows,
             MachineSocketDto machine)
         {
+            return TryUpdateRow(rows, machine, out _);
+        }
+
+        private static bool TryUpdateRow(
+            List<ComputerGridRow> rows,
+            MachineSocketDto machine,
+            out bool sessionChanged)
+        {
+            sessionChanged = false;
             var row = rows.Find(item =>
                 IsSameNetworkAddress(item.IpAddress, machine.LocalIp) ||
                 IsSameMacAddress(item.MacAddress, machine.MacAddress));
@@ -176,8 +190,15 @@ namespace NexusControl.UserControls
                 return false;
             }
 
+            sessionChanged =
+                row.Status != ComputerGridRow.ToFriendlyStatus(machine.Status) ||
+                row.CurrentUsername != ComputerGridRow.ValueOrPlaceholder(machine.CurrentUser) ||
+                row.MemberId != machine.MemberId;
             row.Status = ComputerGridRow.ToFriendlyStatus(machine.Status);
             row.CurrentUsername = ComputerGridRow.ValueOrPlaceholder(machine.CurrentUser);
+            row.MemberId = machine.MemberId;
+            row.SessionStartedAt = machine.SessionStartedAt?.ToLocalTime()
+                .ToString("dd/MM/yyyy HH:mm:ss") ?? "--";
             return true;
         }
 
@@ -233,6 +254,7 @@ namespace NexusControl.UserControls
                 new AntdUI.Column("MacAddress", "MAC"),
                 new AntdUI.Column("CurrentUsername", "Người sử dụng"),
                 new AntdUI.Column("SessionStartedAt", "Thời gian bắt đầu"),
+                new AntdUI.Column("RemainingTime", "Thời gian còn lại"),
                 new AntdUI.Column("ZoneName", "Khu vực"),
                 new AntdUI.Column("HourlyRate", "Đơn giá/giờ"),
                 new AntdUI.Column("HasActiveCombo", "Đang sử dụng Combo")
@@ -252,13 +274,14 @@ namespace NexusControl.UserControls
 
         private sealed class ComputerGridRow
         {
-            public int? MemberId { get; init; }
+            public int? MemberId { get; set; }
             public string ComputerName { get; init; } = "--";
             public string? IpAddress { get; init; }
             public string? MacAddress { get; init; }
             public string Status { get; set; } = "--";
             public string CurrentUsername { get; set; } = "--";
-            public string SessionStartedAt { get; init; } = "--";
+            public string SessionStartedAt { get; set; } = "--";
+            public string RemainingTime { get; init; } = "--";
             public string ZoneName { get; init; } = "--";
             public string HourlyRate { get; init; } = "--";
             public string HasActiveCombo { get; init; } = "Không";
@@ -275,6 +298,7 @@ namespace NexusControl.UserControls
                     CurrentUsername = ValueOrPlaceholder(dto.CurrentUsername),
                     SessionStartedAt = dto.SessionStartedAt?.ToLocalTime()
                         .ToString("dd/MM/yyyy HH:mm:ss") ?? "--",
+                    RemainingTime = FormatRemainingTime(dto.RemainingMinutes),
                     ZoneName = ValueOrPlaceholder(dto.ZoneName),
                     HourlyRate = dto.HourlyRate.HasValue
                         ? $"{dto.HourlyRate.Value:N0} VNĐ"
@@ -286,6 +310,18 @@ namespace NexusControl.UserControls
             public static string ValueOrPlaceholder(string? value)
             {
                 return string.IsNullOrWhiteSpace(value) ? "--" : value;
+            }
+
+            private static string FormatRemainingTime(int? minutes)
+            {
+                if (!minutes.HasValue) return "--";
+                if (minutes.Value <= 0) return "Hết thời gian";
+
+                var hours = minutes.Value / 60;
+                var remainingMinutes = minutes.Value % 60;
+                return hours > 0
+                    ? $"{hours} giờ {remainingMinutes} phút"
+                    : $"{remainingMinutes} phút";
             }
 
             public static string ToFriendlyStatus(string? status)
@@ -336,6 +372,14 @@ namespace NexusControl.UserControls
                     {
                         ID = "withdraw"
                     },
+                    new AntdUI.ContextMenuStripItem("Tặng tiền miễn phí")
+                    {
+                        ID = "free_topup"
+                    },
+                    new AntdUI.ContextMenuStripItem("Trừ tiền miễn phí")
+                    {
+                        ID = "free_withdraw"
+                    },
                     new AntdUI.ContextMenuStripItem("combo")
                     {
                         ID = "combo"
@@ -362,10 +406,16 @@ namespace NexusControl.UserControls
                         SendMessageToComputer();
                         break;
                     case "recharge":
-                        _ = RechargeComputerAsync();
+                        _ = ExecuteBalanceActionAsync(BalanceAction.TopUp);
                         break;
                     case "withdraw":
-                        _ = WithdrawFromComputerAsync();
+                        _ = ExecuteBalanceActionAsync(BalanceAction.Withdraw);
+                        break;
+                    case "free_topup":
+                        _ = ExecuteBalanceActionAsync(BalanceAction.BonusAdd);
+                        break;
+                    case "free_withdraw":
+                        _ = ExecuteBalanceActionAsync(BalanceAction.BonusDeduct);
                         break;
                     case "combo":
                         ShowCombo();
@@ -389,33 +439,69 @@ namespace NexusControl.UserControls
             await ExecuteActionAsync(() => _computerApiService.SendCommandAsync(ipAddress, macAddress, command), command);
         }
 
-        private async Task RechargeComputerAsync()
-        {
-            await ExecuteBalanceActionAsync(true);
-        }
         private void SendMessageToComputer()
         {
             // Implement the logic to send a message to the computer
         }
-        private async Task WithdrawFromComputerAsync()
-        {
-            await ExecuteBalanceActionAsync(false);
-        }
 
-        private async Task ExecuteBalanceActionAsync(bool topUp)
+        private async Task ExecuteBalanceActionAsync(BalanceAction action)
         {
             if (_selectedComputer?.MemberId is not int memberId)
             {
-                MessageBox.Show("Máy hiện chưa có hội viên đang đăng nhập.", "Không thể thực hiện", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Máy hiện chưa có hội viên đang đăng nhập.", "Không thể thực hiện",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            if (!TryGetAmount(out var amount)) return;
-            var response = topUp
-                ? await _computerApiService.TopUpAsync(memberId, amount)
-                : await _computerApiService.WithdrawAsync(memberId, amount);
-            ShowActionResult(response, topUp ? "Nạp tiền" : "Rút tiền");
+            var balanceResponse = await _computerApiService.GetMemberBalanceAsync(memberId);
+            if (!balanceResponse.IsSuccess || balanceResponse.Data == null)
+            {
+                MessageBox.Show(balanceResponse.Message ?? "Không thể tải số dư hội viên.",
+                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            using var dialog = new AmountInputForm(
+                action,
+                _selectedComputer.ComputerName,
+                _selectedComputer.CurrentUsername,
+                balanceResponse.Data.RealBalance,
+                balanceResponse.Data.BonusBalance);
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+            {
+                return;
+            }
+
+            var description =
+                $"Máy {_selectedComputer.ComputerName} - nhân viên {_userSessionService.FullName ?? _userSessionService.Username ?? "--"}";
+            ApiResponse<object> response = action switch
+            {
+                BalanceAction.TopUp => await _computerApiService.TopUpAsync(memberId, dialog.Amount),
+                BalanceAction.Withdraw => await _computerApiService.WithdrawAsync(memberId, dialog.Amount),
+                BalanceAction.BonusAdd => await _computerApiService.AddFreeBalanceAsync(memberId, dialog.Amount, description),
+                BalanceAction.BonusDeduct => await _computerApiService.DeductFreeBalanceAsync(memberId, dialog.Amount, description),
+                _ => throw new ArgumentOutOfRangeException(nameof(action), action, "Loại giao dịch không hợp lệ.")
+            };
+
+            ShowActionResult(response, GetBalanceActionName(action));
+            if (response.IsSuccess)
+            {
+                await ReloadAsync();
+            }
         }
+
+        private static string GetBalanceActionName(BalanceAction action)
+        {
+            return action switch
+            {
+                BalanceAction.TopUp => "Nạp tiền",
+                BalanceAction.Withdraw => "Rút tiền",
+                BalanceAction.BonusAdd => "Tặng tiền miễn phí",
+                BalanceAction.BonusDeduct => "Trừ tiền miễn phí",
+                _ => "Giao dịch số dư"
+            };
+        }
+
         private void ShowCombo()
         {
             // Implement the logic to show combo 
@@ -465,10 +551,6 @@ namespace NexusControl.UserControls
                 }
         }
 
-        private bool TryGetAmount(out decimal amount)
-        {
-            return AmountInputForm.TryShow(this, "Nhập số tiền", out amount);
-        }
     }
 
 }

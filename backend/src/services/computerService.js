@@ -108,7 +108,7 @@ class ComputerService {
               {
                 model: db.Member,
                 as: 'member',
-                attributes: ['member_id'],
+                attributes: ['member_id', 'real_balance', 'bonus_balance'],
                 required: false,
                 include: [{
                   model: db.User,
@@ -142,6 +142,19 @@ class ComputerService {
           .slice()
           .sort((left, right) => (right.priority || 0) - (left.priority || 0))[0];
         const user = session?.member?.userInfo;
+        const comboEndTime = session?.comboTime?.end_time
+          ? new Date(session.comboTime.end_time)
+          : null;
+        const balance = Number(session?.member?.real_balance || 0)
+          + Number(session?.member?.bonus_balance || 0);
+        const hourlyRate = pricingPlan?.price_per_hour != null
+          ? Number(pricingPlan.price_per_hour)
+          : null;
+        const remainingMinutes = comboEndTime
+          ? Math.max(0, Math.ceil((comboEndTime.getTime() - now.getTime()) / 60000))
+          : hourlyRate && hourlyRate > 0
+            ? Math.max(0, Math.floor(balance / hourlyRate * 60))
+            : null;
 
         return {
           computerId: computer.computer_id,
@@ -153,9 +166,10 @@ class ComputerService {
           currentUsername: user?.username || null,
           sessionStartedAt: session?.started_at || null,
           zoneName: zone?.zone_name || null,
-          hourlyRate: pricingPlan?.price_per_hour != null
-            ? Number(pricingPlan.price_per_hour)
-            : null,
+          hourlyRate,
+          remainingMinutes,
+          realBalance: Number(session?.member?.real_balance || 0),
+          bonusBalance: Number(session?.member?.bonus_balance || 0),
           hasActiveCombo: Boolean(session?.comboTime)
         };
       });
@@ -545,6 +559,65 @@ class ComputerService {
     }
   }
 
+  async getRemoteComputers() {
+    try {
+      const db = this.models;
+      const remoteComputers = await db.Computer.findAll({
+        where: {
+          is_remote_enabled: true
+        },
+        attributes: [
+          'computer_id',
+          'computer_name',
+          'status'
+        ],
+        include: [
+          {
+            model: db.ComputerZone,
+            attributes: [
+              'zone_id',
+              'zone_name'
+            ],
+            include: [
+              {
+                model: db.PricingPlan,
+                required: false,
+                attributes: [
+                  'pricing_plan_id',
+                  'name',
+                  'price_per_hour',
+                  'plan_type',
+                  'is_active'
+                ]
+              }
+            ]
+          }
+        ],
+        order: [['computer_id', 'ASC']]
+      });
+      return remoteComputers;
+    } catch (error) {
+      if (!error.statusCode) error.statusCode = 500;
+      throw error;
+    }
+  }
+  async pairRemoteComputer(computerId, pairingCode) {
+    try {
+      const db = this.models;
+      const computer = await db.Computer.findByPk(computerId);
+      if (!computer) {
+        const error = new Error('Computer not found');
+        error.statusCode = 404;
+        throw error;
+      }
+    
+
+    } catch (error) {
+      if (!error.statusCode) error.statusCode = 500;
+      throw error;
+    }
+  }
+      
   // =========================================================================
   // Delegated Hardware Profile Methods (Single Responsibility Principle)
   // Maintains 100% backward compatibility for existing controllers and tests

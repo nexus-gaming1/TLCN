@@ -1,3 +1,4 @@
+using NetClient.Shared.Models;
 using System.Text.Json.Serialization;
 
 namespace NetClient.Shared.Ipc;
@@ -7,6 +8,7 @@ public enum IpcAction
     ShowOverlay,
     HideOverlay,
     SetStatus,
+    Notification,
     SetUsername,
     ShowNotification,
     Ping,
@@ -28,6 +30,9 @@ public class IpcMessage
 
     [JsonPropertyName("password")]
     public string? Password { get; set; }
+
+    [JsonPropertyName("notification")]
+    public NotificationItem? Notification { get; set; }
 
     [JsonPropertyName("status")]
     public string? Status { get; set; }

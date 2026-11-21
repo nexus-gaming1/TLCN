@@ -1,6 +1,10 @@
+const machineStore = require('../stores/machineStore');
+const db = require('../models');
+const crypto = require('node:crypto');
 class ComputerSocketService {
     constructor() {
         this.io = null;
+        this.pendingPairingConfirmations = new Map();
     }
 
     /**
@@ -16,6 +20,148 @@ class ComputerSocketService {
     ensureInitialized() {
         if (!this.io) {
             throw new Error('ComputerSocketService chưa được khởi tạo Socket.IO');
+        }
+    }
+
+    /**
+     * Đồng bộ và phát socket cập nhật thời gian chơi còn lại & số dư của hội viên
+     * Phục vụ cập nhật real-time trên Web Admin Dashboard và NexusControl sau khi nạp / rút tiền
+     * @param {number|string} memberId
+     */
+    async syncMemberSessionTime(memberId) {
+        if (!memberId) return null;
+        try {
+            const parsedMemberId = parseInt(memberId, 10);
+            if (isNaN(parsedMemberId)) return null;
+
+            const member = await db.Member.findByPk(parsedMemberId, {
+                include: [{
+                    model: db.User,
+                    as: 'userInfo',
+                    attributes: ['user_id', 'username', 'full_name']
+                }]
+            });
+            if (!member) return null;
+
+            const activeSessions = await db.RentalSession.findAll({
+                where: {
+                    member_id: parsedMemberId,
+                    status: db.RentalSession.Status.ACTIVE
+                },
+                include: [
+                    {
+                        model: db.Computer,
+                        as: 'computer',
+                        include: [{
+                            model: db.ComputerZone,
+                            include: [{
+                                model: db.PricingPlan,
+                                where: { is_active: true },
+                                required: false
+                            }]
+                        }]
+                    },
+                    {
+                        model: db.ComboTime,
+                        as: 'comboTime'
+                    }
+                ]
+            });
+
+            const updatedSessions = [];
+            const now = new Date();
+            const realBal = Number(member.real_balance || 0);
+            const bonusBal = Number(member.bonus_balance || 0);
+            const totalBal = realBal + bonusBal;
+
+            for (const session of activeSessions) {
+                const computer = session.computer;
+                if (!computer) continue;
+
+                const zone = computer.ComputerZone;
+                const pricingPlans = (zone?.PricingPlans || [])
+                    .slice()
+                    .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+                const pricingPlan = pricingPlans[0];
+                const hourlyRate = pricingPlan?.price_per_hour != null ? Number(pricingPlan.price_per_hour) : null;
+
+                const comboEndTime = session.comboTime?.end_time
+                    ? new Date(session.comboTime.end_time)
+                    : null;
+
+                const remainingMinutes = comboEndTime
+                    ? Math.max(0, Math.ceil((comboEndTime.getTime() - now.getTime()) / 60000))
+                    : hourlyRate && hourlyRate > 0
+                        ? Math.max(0, Math.floor((totalBal / hourlyRate) * 60))
+                        : null;
+
+                let machine = machineStore.get(computer.computer_name);
+                if (!machine) {
+                    for (const m of machineStore.machines.values()) {
+                        if (
+                            m.localIp === computer.ip_address ||
+                            m.macAddress === computer.mac_address ||
+                            m.machineId === computer.computer_name
+                        ) {
+                            machine = m;
+                            break;
+                        }
+                    }
+                }
+
+                const machineData = {
+                    machineId: machine?.machineId || computer.computer_name,
+                    computerId: computer.computer_id,
+                    computerName: computer.computer_name,
+                    localIp: machine?.localIp || computer.ip_address,
+                    macAddress: machine?.macAddress || computer.mac_address,
+                    status: computer.status || 'IN_USE',
+                    currentUser: member.userInfo?.username || machine?.currentUser,
+                    memberId: member.member_id,
+                    sessionStartedAt: session.started_at,
+                    remainingMinutes,
+                    hasActiveCombo: Boolean(session.comboTime),
+                    realBalance: realBal,
+                    bonusBalance: bonusBal,
+                    totalBalance: totalBal,
+                    hourlyRate
+                };
+
+                if (machine) {
+                    Object.assign(machine, machineData);
+                    machineStore.machines.set(machine.machineId, machine);
+                }
+
+                if (this.io) {
+                    this.io.emit('machine:updated', machineData);
+                    this.io.emit('session:time_updated', {
+                        computerId: computer.computer_id,
+                        machineId: computer.computer_name,
+                        memberId: member.member_id,
+                        remainingMinutes,
+                        realBalance: realBal,
+                        bonusBalance: bonusBal,
+                        totalBalance: totalBal,
+                        hasActiveCombo: Boolean(session.comboTime)
+                    });
+                }
+
+                updatedSessions.push(machineData);
+            }
+
+            if (this.io) {
+                this.io.emit('member:balance_updated', {
+                    memberId: member.member_id,
+                    realBalance: realBal,
+                    bonusBalance: bonusBal,
+                    totalBalance: totalBal
+                });
+            }
+
+            return updatedSessions;
+        } catch (error) {
+            console.error('[ComputerSocketService] Lỗi khi syncMemberSessionTime:', error);
+            return null;
         }
     }
 
@@ -63,40 +209,46 @@ class ComputerSocketService {
     /**
      * Gửi notification đến PC Agent
      */
-    sendNotification(
-        machineId,
-        title,
-        message,
-        durationSeconds = 5
-    ) {
+    sendNotification(machineId, notification) {
         this.ensureInitialized();
+
+        const payload = this.createNotification(notification);
 
         this.io
             .to(`machine:${machineId}`)
-            .emit('notification', {
-                title,
-                message,
-                durationSeconds
-            });
+            .emit('notification', payload);
     }
 
     /**
      * Gửi notification đến tất cả PC Agent
      */
-    broadcastNotification(
-        title,
-        message,
-        durationSeconds = 5
-    ) {
+    broadcastNotification(notification) {
         this.ensureInitialized();
 
-        this.io.emit('notification', {
-            title,
-            message,
-            durationSeconds
-        });
+        const payload = this.createNotification(notification);
+
+        this.io.emit('notification', payload);
     }
 
+    /**
+     * Chuẩn hóa notification payload
+     */
+    createNotification(notification) {
+        return {
+            id: crypto.randomUUID(),
+
+            groupType: notification.groupType,
+            groupTitle: notification.groupTitle,
+
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+
+            createdAt: new Date().toISOString(),
+
+            isGrouped: notification.isGrouped ?? true
+        };
+    }
     /**
      * Gửi command đến tất cả PC Agent
      */
@@ -107,6 +259,77 @@ class ComputerSocketService {
             command,
             message
         });
+    }
+
+    /**
+     * Bắt đầu theo dõi pairing Sunshine trên PC Agent
+     */
+    startPairingDetection(machineId, data) {
+        this.ensureInitialized();
+        this.io
+            .to(`machine:${machineId}`)
+            .emit('remote:pairing:start_detection', data);
+    }
+
+    /**
+     * Dừng theo dõi pairing Sunshine trên PC Agent
+     */
+    stopPairingDetection(machineId, data) {
+        this.ensureInitialized();
+        this.io
+            .to(`machine:${machineId}`)
+            .emit('remote:pairing:stop_detection', data);
+    }
+
+    /**
+     * Gửi yêu cầu xác nhận PIN đến Sunshine thông qua PC Agent và chờ kết quả ACK
+     */
+    confirmSunshinePairing(machineId, data, timeoutMs = 15000) {
+        this.ensureInitialized();
+
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                this.pendingPairingConfirmations.delete(data.intentId);
+                reject(new Error('Hết thời gian chờ phản hồi xác nhận ghép nối từ máy trạm (Timeout).'));
+            }, timeoutMs);
+
+            this.pendingPairingConfirmations.set(data.intentId, {
+                resolve,
+                reject,
+                timer
+            });
+
+            this.io
+                .to(`machine:${machineId}`)
+                .emit('remote:pairing:confirm', {
+                    intentId: data.intentId,
+                    pairingId: data.pairingId,
+                    pin: data.pin,
+                    deviceName: data.deviceName
+                });
+        });
+    }
+
+    /**
+     * Xử lý ACK từ PC Agent khi xác nhận pairing hoàn tất
+     */
+    handlePairingAck(data) {
+        if (!data || !data.intentId) return;
+
+        const pending = this.pendingPairingConfirmations.get(data.intentId);
+        if (pending) {
+            clearTimeout(pending.timer);
+            this.pendingPairingConfirmations.delete(data.intentId);
+            pending.resolve(data);
+        }
+    }
+
+    /**
+     * Phát sự kiện pairing đồng bộ đến client web và các listener
+     */
+    broadcastPairingEvent(eventName, payload) {
+        if (!this.io) return;
+        this.io.emit(eventName, payload);
     }
 }
 

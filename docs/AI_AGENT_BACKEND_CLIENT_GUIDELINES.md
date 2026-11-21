@@ -36,6 +36,7 @@ Khi thực hiện bất kỳ thay đổi nào liên quan đến Client và Backe
 
 ### ⚠️ NGUYÊN TẮC 2: BẢO VỆ SCHEMA & MODEL CSDL
 - **TUYỆT ĐỐI KHÔNG** tự ý sửa đổi cấu trúc bảng, migration hoặc thêm cột vào các Model Sequelize hiện có (`backend/src/models/`).
+- Hãy thông báo các models cần sửa và phục vụ cho yêu cầu nào của tôi để tôi tham khảo và xem xét nếu thật sự cần thiết. 
 - Tận dụng triệt để các bảng và trường đã có sẵn: `Computer`, `ComputerStatusLog`, `User`, `Member`, `ComboTime`.
 
 ### ⚠️ NGUYÊN TẮC 3: GHI NHẬN AUDIT LOG TRẠNG THÁI MÁY

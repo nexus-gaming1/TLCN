@@ -66,5 +66,38 @@ namespace NexusControl.Services
                 new { member_id = memberId, amount },
                 cancellationToken);
         }
+
+        public Task<ApiResponse<MemberBalanceDto>> GetMemberBalanceAsync(
+            int memberId,
+            CancellationToken cancellationToken = default)
+        {
+            return _apiClient.GetAsync<MemberBalanceDto>(
+                $"/members/{memberId}",
+                cancellationToken);
+        }
+
+        public Task<ApiResponse<object>> AddFreeBalanceAsync(
+            int memberId,
+            decimal amount,
+            string? description = null,
+            CancellationToken cancellationToken = default)
+        {
+            return _apiClient.PostAsync<object>(
+                "/transactions/bonus-topup",
+                new { member_id = memberId, amount, description },
+                cancellationToken);
+        }
+
+        public Task<ApiResponse<object>> DeductFreeBalanceAsync(
+            int memberId,
+            decimal amount,
+            string? description = null,
+            CancellationToken cancellationToken = default)
+        {
+            return _apiClient.PostAsync<object>(
+                "/transactions/bonus-withdraw",
+                new { member_id = memberId, amount, description },
+                cancellationToken);
+        }
     }
 }

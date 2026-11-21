@@ -220,6 +220,7 @@ partial class LockOverlay
         lblStatusBadge.TabIndex = 2;
         lblStatusBadge.Text = "CHƯA ĐĂNG NHẬP";
         lblStatusBadge.TextAlign = ContentAlignment.MiddleCenter;
+        lblStatusBadge.Click += lblStatusBadge_Click;
         // 
         // lblMachineName
         // 

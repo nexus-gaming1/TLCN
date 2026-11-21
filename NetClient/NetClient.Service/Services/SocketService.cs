@@ -16,12 +16,20 @@ public class SocketService : BackgroundService
     private readonly PerformanceMonitor _performanceMonitor;
     private readonly IpcServerService _ipcServerService;
     private readonly AuthApiService _authApiService;
+    private readonly SunshinePairingManager _pairingManager;
+    private readonly SunshineService _sunshineService;
 
     private SocketIO? _client;
     private System.Threading.Timer? _heartbeatTimer;
+    private readonly SemaphoreSlim _statusUpdateLock = new(1, 1);
     private bool _isRegistered;
+    private DateTimeOffset? _disconnectedAt;
+    private bool _sessionClearedForDisconnect;
+    private int _consecutiveHeartbeatFailures;
+    private const int MaxConsecutiveHeartbeatFailures = 3;
     private readonly string _serverUrl;
     private readonly int _heartbeatIntervalSeconds;
+    private readonly int _connectTimeoutSeconds;
 
     public SocketService(
         ILogger<SocketService> logger,
@@ -30,7 +38,9 @@ public class SocketService : BackgroundService
         CommandService commandService,
         PerformanceMonitor performanceMonitor,
         IpcServerService ipcServerService,
-        AuthApiService authApiService)
+        AuthApiService authApiService,
+        SunshinePairingManager pairingManager,
+        SunshineService sunshineService)
     {
         _logger = logger;
         _configuration = configuration;
@@ -39,11 +49,17 @@ public class SocketService : BackgroundService
         _performanceMonitor = performanceMonitor;
         _ipcServerService = ipcServerService;
         _authApiService = authApiService;
+        _pairingManager = pairingManager;
+        _sunshineService = sunshineService;
 
         _serverUrl = _configuration["Server:Url"] ?? "http://127.0.0.1:3000";
         if (!int.TryParse(_configuration["Client:HeartbeatIntervalSeconds"], out _heartbeatIntervalSeconds) || _heartbeatIntervalSeconds <= 0)
         {
             _heartbeatIntervalSeconds = 5;
+        }
+        if (!int.TryParse(_configuration["Client:ConnectTimeoutSeconds"], out _connectTimeoutSeconds) || _connectTimeoutSeconds <= 0)
+        {
+            _connectTimeoutSeconds = 10;
         }
 
         // Subscribe to local session state changes
@@ -79,10 +95,20 @@ public class SocketService : BackgroundService
                 if (!_client.Connected)
                 {
                     _isRegistered = false;
+                    _disconnectedAt ??= DateTimeOffset.UtcNow;
+                    if (_disconnectedAt.HasValue &&
+                        !_sessionClearedForDisconnect &&
+                        DateTimeOffset.UtcNow - _disconnectedAt.Value >= TimeSpan.FromSeconds(15))
+                    {
+                        await ClearSessionAfterConnectionLossAsync();
+                    }
                     try
                     {
-                        _logger.LogInformation("Connecting to Socket.IO backend at {Url}...", _serverUrl);
-                        await _client.ConnectAsync(stoppingToken);
+                        _logger.LogInformation(
+                            "Connecting to Socket.IO backend at {Url} (timeout: {TimeoutSeconds}s)...",
+                            _serverUrl,
+                            _connectTimeoutSeconds);
+                        await ConnectWithTimeoutAsync(stoppingToken);
                         nextRegistrationAttempt = DateTimeOffset.UtcNow;
                     }
                     catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -96,6 +122,7 @@ public class SocketService : BackgroundService
                             "Unable to connect to Socket.IO backend. Retrying in {RetrySeconds} seconds.",
                             retryDelay.TotalSeconds);
 
+                        await DisconnectAfterFailedConnectAsync();
                         await Task.Delay(retryDelay, stoppingToken);
                         continue;
                     }
@@ -112,6 +139,7 @@ public class SocketService : BackgroundService
                 await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
             }
         }
+
         catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
         {
             _logger.LogInformation("SocketService is stopping gracefully.");
@@ -136,12 +164,53 @@ public class SocketService : BackgroundService
         }
     }
 
+    private async Task ConnectWithTimeoutAsync(CancellationToken stoppingToken)
+    {
+        if (_client == null)
+        {
+            throw new InvalidOperationException("Socket.IO client has not been initialized.");
+        }
+
+        using var connectTimeout = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+        connectTimeout.CancelAfter(TimeSpan.FromSeconds(_connectTimeoutSeconds));
+
+        try
+        {
+            await _client.ConnectAsync(connectTimeout.Token);
+        }
+        catch (OperationCanceledException) when (!stoppingToken.IsCancellationRequested)
+        {
+            throw new TimeoutException(
+                $"Socket.IO connection to {_serverUrl} timed out after {_connectTimeoutSeconds} seconds.");
+        }
+    }
+
+    private async Task DisconnectAfterFailedConnectAsync()
+    {
+        if (_client == null || !_client.Connected)
+        {
+            return;
+        }
+
+        try
+        {
+            await _client.DisconnectAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Failed to reset Socket.IO client after a connection attempt.");
+        }
+    }
+
     private void RegisterSocketEvents()
     {
         if (_client == null) return;
 
         _client.OnConnected += (sender, e) =>
         {
+            _disconnectedAt = null;
+            _sessionClearedForDisconnect = false;
+            _consecutiveHeartbeatFailures = 0;
             _logger.LogInformation("Connected to Socket.IO backend successfully.");
         };
 
@@ -149,6 +218,22 @@ public class SocketService : BackgroundService
         {
             _logger.LogWarning("Disconnected from Socket.IO backend. Reason: {Reason}", reason);
             _isRegistered = false;
+            _consecutiveHeartbeatFailures = 0;
+            _disconnectedAt ??= DateTimeOffset.UtcNow;
+            _pairingManager.StopDetection();
+
+            // Tự động unpair toàn bộ Moonlight clients khi ngắt kết nối với server
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _sunshineService.UnpairAllAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Failed to unpair-all on socket disconnect");
+                }
+            });
         };
 
         _client.OnError += (sender, error) =>
@@ -262,6 +347,19 @@ public class SocketService : BackgroundService
                 await _ipcServerService.SetStatusAsync(MachineStatus.ONLINE.ToString());
                 await _ipcServerService.ShowOverlayAsync();
 
+                // Unpair toàn bộ Sunshine clients khi kết thúc phiên thuê / đăng xuất
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _sunshineService.UnpairAllAsync();
+                    }
+                    catch (Exception unpairEx)
+                    {
+                        _logger.LogWarning(unpairEx, "Failed to unpair Sunshine clients on session:logout");
+                    }
+                });
+
                 await _client.EmitAsync("logout:ack", [new LogoutAck
                 {
                     MachineId = _sessionService.MachineId,
@@ -279,16 +377,123 @@ public class SocketService : BackgroundService
         {
             try
             {
-                var notif = ctx.GetValue<NotificationPayload>(0);
-                if (notif != null && !string.IsNullOrWhiteSpace(notif.Message))
+                _logger.LogInformation("Received 'notification' event");
+
+                var notification = ctx.GetValue<NotificationItem>(0);
+
+                if (notification == null)
                 {
-                    _logger.LogInformation("Received notification from server: {Message}", notif.Message);
-                    await _ipcServerService.ShowNotificationAsync(notif.Message, notif.Title ?? "Thông báo phòng net");
+                    _logger.LogWarning("Received empty notification");
+                    return;
                 }
+
+                await _ipcServerService.SendNotificationAsync(notification);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error handling 'notification' event");
+            }
+        });
+
+        // 5. Remote Sunshine Pairing Events
+        _client.On("remote:pairing:start_detection", async ctx =>
+        {
+            try
+            {
+                var payload = ctx.GetValue<PairingStartDetectionPayload>(0);
+                if (payload == null || string.IsNullOrWhiteSpace(payload.IntentId))
+                {
+                    _logger.LogWarning("Invalid 'remote:pairing:start_detection' payload");
+                    return;
+                }
+
+                _pairingManager.StartDetection(
+                    payload.IntentId,
+                    payload.ComputerId,
+                    payload.TimeoutSeconds,
+                    async pairing =>
+                    {
+                        if (_client != null && _client.Connected)
+                        {
+                            await _client.EmitAsync("remote:pairing:detected", [new PairingDetectedPayload
+                            {
+                                MachineId = _sessionService.MachineId,
+                                ComputerId = payload.ComputerId,
+                                IntentId = payload.IntentId,
+                                PairingId = pairing.Id,
+                                DeviceName = pairing.Name,
+                                DeviceAddress = pairing.Address
+                            }]);
+                        }
+                    });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling 'remote:pairing:start_detection' event");
+            }
+            await Task.CompletedTask;
+        });
+
+        _client.On("remote:pairing:stop_detection", async ctx =>
+        {
+            try
+            {
+                var payload = ctx.GetValue<PairingStopDetectionPayload>(0);
+                _pairingManager.StopDetection(payload?.IntentId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling 'remote:pairing:stop_detection' event");
+            }
+            await Task.CompletedTask;
+        });
+
+        _client.On("remote:pairing:confirm", async ctx =>
+        {
+            try
+            {
+                var payload = ctx.GetValue<PairingConfirmPayload>(0);
+                if (payload == null || string.IsNullOrWhiteSpace(payload.IntentId) || string.IsNullOrWhiteSpace(payload.PairingId))
+                {
+                    _logger.LogWarning("Invalid 'remote:pairing:confirm' payload");
+                    return;
+                }
+
+                _logger.LogInformation(
+                    "Received 'remote:pairing:confirm' for Intent {IntentId}, PairingId {PairingId}",
+                    payload.IntentId, payload.PairingId);
+
+                try
+                {
+                    bool success = await _pairingManager.ConfirmPairingAsync(
+                        payload.IntentId,
+                        payload.PairingId,
+                        payload.Pin,
+                        payload.DeviceName);
+
+                    await _client.EmitAsync("remote:pairing:ack", [new PairingAck
+                    {
+                        IntentId = payload.IntentId,
+                        MachineId = _sessionService.MachineId,
+                        Success = success,
+                        Error = success ? null : "Sunshine xác nhận mã PIN thất bại."
+                    }]);
+                }
+                catch (Exception confirmEx)
+                {
+                    _logger.LogError(confirmEx, "Failed to confirm Sunshine pairing for Intent {IntentId}", payload.IntentId);
+                    await _client.EmitAsync("remote:pairing:ack", [new PairingAck
+                    {
+                        IntentId = payload.IntentId,
+                        MachineId = _sessionService.MachineId,
+                        Success = false,
+                        Error = confirmEx.Message
+                    }]);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling 'remote:pairing:confirm' event");
             }
         });
 
@@ -308,7 +513,10 @@ public class SocketService : BackgroundService
                 LocalIp = info.LocalIp,
                 MacAddress = info.MacAddress,
                 WindowsUser = info.WindowsUser,
-                Status = info.Status
+                Status = info.Status,
+                Username = _sessionService.CurrentUser,
+                MemberId = _sessionService.CurrentMemberId,
+                SessionStartedAt = _sessionService.CurrentSessionStartedAt
             };
 
             _logger.LogInformation("Registering machine with server: MachineId={Id}, IP={Ip}, Status={Status}",
@@ -323,6 +531,33 @@ public class SocketService : BackgroundService
         }
     }
 
+    private async Task ClearSessionAfterConnectionLossAsync()
+    {
+        _sessionClearedForDisconnect = true;
+        _logger.LogWarning(
+            "Backend unavailable for 15 seconds. Clearing local session and showing lock overlay.");
+        if (_sessionService.CurrentUser != null)
+        {
+            _sessionService.Logout();
+        }
+        await _ipcServerService.SetUsernameAsync(string.Empty);
+        await _ipcServerService.SetStatusAsync(MachineStatus.ONLINE.ToString());
+        await _ipcServerService.ShowOverlayAsync();
+
+        // Tự động unpair toàn bộ Sunshine clients khi mất kết nối backend kéo dài
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _sunshineService.UnpairAllAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Failed to unpair-all on connection loss");
+            }
+        });
+    }
+
     private async Task SendHeartbeatAsync()
     {
         if (_client == null || !_client.Connected || !_isRegistered) return;
@@ -335,16 +570,39 @@ public class SocketService : BackgroundService
                 MachineId = _sessionService.MachineId,
                 Status = _sessionService.CurrentStatus.ToString(),
                 Username = _sessionService.CurrentUser,
+                MemberId = _sessionService.CurrentMemberId,
                 Timestamp = DateTime.UtcNow.ToString("o"),
                 Performance = perf
             };
 
             await _client.EmitAsync("heartbeat", [payload]);
+            _consecutiveHeartbeatFailures = 0;
             _logger.LogDebug("Heartbeat emitted: CPU={Cpu}%, RAM={Ram}%", perf.CpuUsage, perf.RamUsage);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to emit heartbeat to server");
+            _consecutiveHeartbeatFailures++;
+            _logger.LogWarning(ex, "Failed to emit heartbeat to server (attempt {Count}/{Max})", _consecutiveHeartbeatFailures, MaxConsecutiveHeartbeatFailures);
+
+            // Nếu thất bại liên tiếp (VD: half-open TCP, socket bị treo hoặc rớt kết nối ngầm), chủ động ngắt kết nối để vòng lặp ExecuteAsync tự động reconnect
+            if (_consecutiveHeartbeatFailures >= MaxConsecutiveHeartbeatFailures)
+            {
+                _logger.LogError("Consecutive heartbeat failures reached threshold ({Count}). Triggering socket reconnect...", _consecutiveHeartbeatFailures);
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        if (_client != null)
+                        {
+                            await _client.DisconnectAsync();
+                        }
+                    }
+                    catch (Exception discEx)
+                    {
+                        _logger.LogDebug(discEx, "Error while forcing disconnect after heartbeat failures");
+                    }
+                });
+            }
         }
     }
 
@@ -354,8 +612,21 @@ public class SocketService : BackgroundService
 
         _ = Task.Run(async () =>
         {
+            await _statusUpdateLock.WaitAsync();
             try
             {
+                // A delayed event from before a newer login/logout must not
+                // overwrite the current session state on the backend.
+                if (_sessionService.CurrentStatus != newStatus)
+                {
+                    _logger.LogDebug(
+                        "Skipping stale status update {Old} -> {New}; current status is {Current}.",
+                        oldStatus,
+                        newStatus,
+                        _sessionService.CurrentStatus);
+                    return;
+                }
+
                 var payload = new StatusUpdatePayload
                 {
                     MachineId = _sessionService.MachineId,
@@ -371,6 +642,10 @@ public class SocketService : BackgroundService
             {
                 _logger.LogWarning(ex, "Failed to emit status:update");
             }
+            finally
+            {
+                _statusUpdateLock.Release();
+            }
         });
     }
 
@@ -385,7 +660,7 @@ public class SocketService : BackgroundService
                 return;
             }
 
-            if (!_sessionService.Login(result.Username))
+            if (!_sessionService.Login(result.Username, result.MemberId))
             {
                 await _ipcServerService.SendLoginResultAsync(false, "Không thể khởi tạo phiên làm việc.");
                 return;
@@ -433,6 +708,19 @@ public class SocketService : BackgroundService
             await _ipcServerService.SetUsernameAsync(string.Empty);
             await _ipcServerService.SetStatusAsync(MachineStatus.ONLINE.ToString());
             await _ipcServerService.ShowOverlayAsync();
+
+            // Tự động unpair toàn bộ Sunshine clients khi logout cục bộ
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _sunshineService.UnpairAllAsync();
+                }
+                catch (Exception unpairEx)
+                {
+                    _logger.LogWarning(unpairEx, "Failed to unpair Sunshine clients on local logout");
+                }
+            });
 
             // 3. Emit logout events to backend Socket.IO
             if (_client != null && _client.Connected)

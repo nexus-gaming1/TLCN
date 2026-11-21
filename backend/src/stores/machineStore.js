@@ -31,7 +31,9 @@ class MachineStore {
             macAddress: data.macAddress || existing.macAddress || null,
             windowsUser: data.windowsUser || existing.windowsUser || null,
             status: data.status || 'ONLINE',
-            currentUser: existing.currentUser || null,
+            currentUser: data.username || existing.currentUser || null,
+            memberId: data.memberId || existing.memberId || null,
+            sessionStartedAt: data.sessionStartedAt || existing.sessionStartedAt || null,
             performance: existing.performance || null,
             socketId,
             connectedAt:
@@ -63,13 +65,24 @@ class MachineStore {
             return null;
         }
 
-        machine.status =
-            data.status || machine.status;
+        const staleOnlineHeartbeat =
+            machine.status === 'IN_USE' &&
+            data.status === 'ONLINE';
 
-        machine.currentUser =
-            data.username !== undefined
-                ? (data.username || null)
-                : machine.currentUser;
+        if (!staleOnlineHeartbeat) {
+            machine.status =
+                data.status || machine.status;
+
+            machine.currentUser =
+                data.username !== undefined
+                    ? (data.username || null)
+                    : machine.currentUser;
+
+            machine.memberId =
+                data.memberId !== undefined
+                    ? (data.memberId || null)
+                    : machine.memberId;
+        }
 
         machine.performance =
             data.performance || machine.performance;

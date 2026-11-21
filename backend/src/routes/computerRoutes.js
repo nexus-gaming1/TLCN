@@ -12,6 +12,15 @@ router.post(
     computerController.broadcastCommand
 );
 
+// Remote computer
+router.get('/remote', authenticateToken, computerController.getRemoteComputers);
+router.post('/remote/pair', authenticateToken, computerController.pairRemoteComputer);
+router.post('/remote/pairing/intent', authenticateToken, computerController.startPairingIntent);
+router.get('/remote/pairing/status/:intentId', authenticateToken, computerController.getPairingStatus);
+router.post('/remote/pairing/confirm', authenticateToken, computerController.confirmPairing);
+router.post('/remote/pairing/cancel', authenticateToken, computerController.cancelPairing);
+
+// Computer management
 router.get('/grid', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getRoomLayoutGrid);
 router.get('/zones', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getZones);
 router.get('/bootrom-logs', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getBootromLogs);

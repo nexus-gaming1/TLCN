@@ -199,13 +199,13 @@ public partial class LockOverlay : Form
             txtUsername.Focus();
             return;
         }
-        else if(string.IsNullOrWhiteSpace(password))
+        else if (string.IsNullOrWhiteSpace(password))
         {
             lblLoginError.Text = "Vui lòng nhập mật khẩu!";
-            lblLoginError.Visible= true;
+            lblLoginError.Visible = true;
             txtPassword.Focus();
             return;
-        }    
+        }
 
         lblLoginError.Visible = false;
 
@@ -287,6 +287,11 @@ public partial class LockOverlay : Form
     private void label1_Click(object sender, EventArgs e)
     {
 
+    }
+
+    private void lblStatusBadge_Click(object sender, EventArgs e)
+    {
+        HideOverlay();
     }
 
     protected override CreateParams CreateParams
