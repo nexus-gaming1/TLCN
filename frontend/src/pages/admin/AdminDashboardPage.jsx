@@ -9,9 +9,10 @@ import StationListView from '../../widgets/station-grid/StationListView';
 import StationDrawer from '../../features/station-drawer/ui/StationDrawer';
 import BootromLogModal from '../../features/bootrom/BootromLogModal';
 import AmountInputModal from '../../features/transactions/ui/AmountInputModal';
+import SendNotificationModal from '../../features/notifications/SendNotificationModal';
 import dashboardService from '../../shared/api/dashboard.service';
 import machineService from '../../shared/api/machine.service';
-import { CheckCircle2, AlertCircle, RotateCw, Power, LogOut, Info, Lock, Unlock, ArrowRightLeft, Wallet, Coins, Gift, CreditCard } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RotateCw, Power, LogOut, Info, Lock, Unlock, ArrowRightLeft, Wallet, Coins, Gift, CreditCard, Bell } from 'lucide-react';
 import { useMachines } from '../../shared/hooks/useMachines';
 import { useMachineSocket } from '../../shared/hooks/useMachineSocket';
 export default function AdminDashboardPage({ user, onLogout }) {
@@ -24,6 +25,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
     const [allStationsList, setAllStationsList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isBootromModalOpen, setIsBootromModalOpen] = useState(false);
+    const [notificationModal, setNotificationModal] = useState({ isOpen: false, station: null });
     const [toastMessage, setToastMessage] = useState(null);
     const [contextMenu, setContextMenu] = useState(null);
     const [balanceModal, setBalanceModal] = useState({ isOpen: false, action: 'TOPUP', station: null });
@@ -232,6 +234,21 @@ export default function AdminDashboardPage({ user, onLogout }) {
         }
     };
 
+    const handleSendNotification = async ({ machineId, title, message, type }) => {
+        try {
+            if (machineId) {
+                await machineService.sendNotification(machineId, { title, message, type });
+                showGlobalToast(`Đã gửi thông báo tới máy ${machineId}.`);
+            } else {
+                await machineService.broadcastNotification({ title, message, type });
+                showGlobalToast('Đã phát thông báo tới tất cả máy trạm.');
+            }
+        } catch (error) {
+            showGlobalToast(error.message || 'Không thể gửi thông báo.', true);
+            throw error;
+        }
+    };
+
     const handleStationCommand = async (station, command) => {
         const ipAddress = station.ip || station.ip_address;
         if (!ipAddress) {
@@ -393,11 +410,10 @@ export default function AdminDashboardPage({ user, onLogout }) {
             {/* Global Toast Notification */}
             {toastMessage && (
                 <div
-                    className={`fixed top-20 right-6 z-50 p-4 rounded-xl border font-bold text-xs flex items-center gap-2.5 shadow-xl animate-in slide-in-from-right duration-200 ${
-                        toastMessage.isError
+                    className={`fixed top-20 right-6 z-50 p-4 rounded-xl border font-bold text-xs flex items-center gap-2.5 shadow-xl animate-in slide-in-from-right duration-200 ${toastMessage.isError
                             ? 'bg-rose-50 border-rose-200 text-rose-800'
                             : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                    }`}
+                        }`}
                 >
                     {toastMessage.isError ? (
                         <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
@@ -431,6 +447,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
                             setSortBy={setSortBy}
                             onOpenBootromLogs={() => setIsBootromModalOpen(true)}
                             onTriggerWakeOnLan={handleTriggerWakeOnLan}
+                            onOpenBroadcastModal={() => setNotificationModal({ isOpen: true, station: null })}
                         />
 
                         <KpiCards
@@ -501,6 +518,14 @@ export default function AdminDashboardPage({ user, onLogout }) {
                 onClose={() => setIsBootromModalOpen(false)}
             />
 
+            {/* SEND NOTIFICATION MODAL */}
+            <SendNotificationModal
+                isOpen={notificationModal.isOpen}
+                station={notificationModal.station}
+                onClose={() => setNotificationModal({ isOpen: false, station: null })}
+                onSend={handleSendNotification}
+            />
+
             {/* AMOUNT INPUT MODAL FOR CONTEXT MENU ACTIONS */}
             {balanceModal.isOpen && (
                 <AmountInputModal
@@ -524,6 +549,9 @@ export default function AdminDashboardPage({ user, onLogout }) {
                 >
                     <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100" onClick={() => { setSelectedStation(contextMenu.station); setContextMenu(null); }}>
                         <Info className="h-4 w-4" /> Thông tin máy
+                    </button>
+                    <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-sky-700 hover:bg-sky-50" onClick={() => { setNotificationModal({ isOpen: true, station: contextMenu.station }); setContextMenu(null); }}>
+                        <Bell className="h-4 w-4 text-sky-600" /> Gửi thông báo tới máy này
                     </button>
                     <button className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-100" onClick={() => handleCommand('LOGOUT')}>
                         <LogOut className="h-4 w-4" /> Đăng xuất máy

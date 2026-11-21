@@ -377,12 +377,17 @@ public class SocketService : BackgroundService
         {
             try
             {
-                var notif = ctx.GetValue<NotificationPayload>(0);
-                if (notif != null && !string.IsNullOrWhiteSpace(notif.Message))
+                _logger.LogInformation("Received 'notification' event");
+
+                var notification = ctx.GetValue<NotificationItem>(0);
+
+                if (notification == null)
                 {
-                    _logger.LogInformation("Received notification from server: {Message}", notif.Message);
-                    await _ipcServerService.ShowNotificationAsync(notif.Message, notif.Title ?? "Thông báo phòng net");
+                    _logger.LogWarning("Received empty notification");
+                    return;
                 }
+
+                await _ipcServerService.SendNotificationAsync(notification);
             }
             catch (Exception ex)
             {

@@ -1,6 +1,6 @@
 const machineStore = require('../stores/machineStore');
 const db = require('../models');
-
+const crypto = require('node:crypto');
 class ComputerSocketService {
     constructor() {
         this.io = null;
@@ -209,40 +209,46 @@ class ComputerSocketService {
     /**
      * Gửi notification đến PC Agent
      */
-    sendNotification(
-        machineId,
-        title,
-        message,
-        durationSeconds = 5
-    ) {
+    sendNotification(machineId, notification) {
         this.ensureInitialized();
+
+        const payload = this.createNotification(notification);
 
         this.io
             .to(`machine:${machineId}`)
-            .emit('notification', {
-                title,
-                message,
-                durationSeconds
-            });
+            .emit('notification', payload);
     }
 
     /**
      * Gửi notification đến tất cả PC Agent
      */
-    broadcastNotification(
-        title,
-        message,
-        durationSeconds = 5
-    ) {
+    broadcastNotification(notification) {
         this.ensureInitialized();
 
-        this.io.emit('notification', {
-            title,
-            message,
-            durationSeconds
-        });
+        const payload = this.createNotification(notification);
+
+        this.io.emit('notification', payload);
     }
 
+    /**
+     * Chuẩn hóa notification payload
+     */
+    createNotification(notification) {
+        return {
+            id: crypto.randomUUID(),
+
+            groupType: notification.groupType,
+            groupTitle: notification.groupTitle,
+
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+
+            createdAt: new Date().toISOString(),
+
+            isGrouped: notification.isGrouped ?? true
+        };
+    }
     /**
      * Gửi command đến tất cả PC Agent
      */

@@ -354,4 +354,13 @@ public class IpcServerService : BackgroundService
             Success = success,
             Message = message
         }, ct);
+
+    public async Task SendNotificationAsync(NotificationItem notification)
+    {
+        await SendMessageAsync(new IpcMessage
+        {
+            Action = IpcAction.Notification,
+            Notification = notification
+        });
+    }
 }

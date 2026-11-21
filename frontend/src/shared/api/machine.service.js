@@ -223,6 +223,34 @@ class MachineService {
     const response = await apiClient.get('/computers/machinestore');
     return response.data;
   }
+
+  /**
+   * Gửi thông báo đến một máy trạm cụ thể
+   */
+  async sendNotification(machineId, { title, message, type = 'SYSTEM', groupType = 'ADMIN_MESSAGE', groupTitle = 'Tin nhắn quản trị' }) {
+    const response = await apiClient.post(`/computers/${machineId}/notification`, {
+      title,
+      message,
+      type,
+      groupType,
+      groupTitle
+    });
+    return response.data;
+  }
+
+  /**
+   * Phát thông báo đến tất cả máy trạm
+   */
+  async broadcastNotification({ title, message, type = 'SYSTEM', groupType = 'BROADCAST_MESSAGE', groupTitle = 'Thông báo phòng máy' }) {
+    const response = await apiClient.post('/computers/notifications/broadcast', {
+      type,
+      title,
+      message,
+      groupType,
+      groupTitle
+    });
+    return response.data;
+  }
 }
 
 export default new MachineService();
