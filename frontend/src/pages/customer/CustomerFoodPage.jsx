@@ -18,6 +18,7 @@ import FloatingToast from '../../shared/ui/FloatingToast';
 import MenuCard from './components/MenuCard';
 import CartDrawer from './components/CartDrawer';
 import ActiveOrderTracker from './components/ActiveOrderTracker';
+import supportService from '../../shared/api/support.service';
 
 export default function CustomerFoodPage({ user, onLogout }) {
   const memberId = user?.member_id ?? user?.id ?? user?.user_id;
@@ -281,6 +282,34 @@ export default function CustomerFoodPage({ user, onLogout }) {
     }
   };
 
+    // Xử lý báo cáo sự cố đơn hàng F&B
+  const handleReportOrderIssue = async (order) => {
+    const reason = window.prompt(
+      `Báo cáo sự cố cho đơn hàng #${order.order_id}\nVui lòng nhập lý do (VD: Món nguội, giao thiếu Sting, nhầm món...):`
+    );
+    // Nếu khách bấm Cancel hoặc để trống thì hủy bỏ
+    if (!reason || !reason.trim()) return;
+    try {
+      await supportService.createRequest({
+        type: 'ORDER_DISPUTE',
+        order_id: order.order_id,
+        title: `[SỰ CỐ F&B] Đơn hàng #${order.order_id}`,
+        description: reason.trim()
+      });
+      setToast({
+        type: 'success',
+        title: 'Đã gửi khiếu nại thành công!',
+        message: 'Thu ngân sẽ kiểm tra và thực hiện hoàn tiền lại ví tài khoản cho bạn ngay.'
+      });
+    } catch (err) {
+      setToast({
+        type: 'error',
+        title: 'Gửi khiếu nại thất bại',
+        message: err.message || 'Không thể tạo yêu cầu khiếu nại'
+      });
+    }
+  };
+
   return (
     <CustomerLayout user={user} onLogout={onLogout} activeTab="orders">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -431,6 +460,7 @@ export default function CustomerFoodPage({ user, onLogout }) {
               loading={loadingOrders}
               cancellingOrderId={cancellingOrderId}
               onCancelOrder={handleCancelOrder}
+              onReportIssue={handleReportOrderIssue} 
               onRefresh={() => fetchMyOrders(false)}
             />
           </div>

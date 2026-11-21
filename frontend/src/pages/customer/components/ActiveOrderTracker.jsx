@@ -1,10 +1,11 @@
-import { Clock, ChefHat, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { Clock, ChefHat, CheckCircle2, XCircle, RefreshCw, AlertTriangle} from 'lucide-react';
 
 export default function ActiveOrderTracker({
   orders = [],
   loading = false,
   cancellingOrderId = null,
   onCancelOrder,
+  onReportIssue,
   onRefresh,
 }) {
   const getStatusBadge = (status, paymentStatus) => {
@@ -196,6 +197,20 @@ export default function ActiveOrderTracker({
                       <span>{isCancelling ? 'Đang hủy...' : 'Hủy đơn'}</span>
                     </button>
                   )}
+
+                  {/* Nút báo cáo sự cố đơn hàng*/}
+                  {order.status === 'COMPLETED' && onReportIssue && (
+                    <button
+                      type="button"
+                      onClick={() => onReportIssue(order)}
+                      className="px-2.5 py-1 rounded-lg border border-amber-200 hover:bg-amber-50 text-amber-700 font-bold text-[11px] transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                      title="Khiếu nại sự cố món ăn để được hoàn tiền"
+                    >
+                      <AlertTriangle className="w-3 h-3 text-amber-600" />
+                      <span>Báo sự cố</span>
+                    </button>
+                  )}
+
                 </div>
               </div>
             );

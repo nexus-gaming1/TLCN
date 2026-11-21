@@ -1,6 +1,7 @@
 import React from 'react';
 import CustomerSidebar from './CustomerSidebar';
 import CustomerHeader from './CustomerHeader';
+import AnnouncementBanner from './AnnouncementBanner';
 
 /**
  * CustomerLayout Widget
@@ -14,7 +15,8 @@ export default function CustomerLayout({ user, onLogout, activeTab = 'profile', 
       <CustomerHeader user={user} onLogout={onLogout} />
 
       <div className="pl-[17.5rem]">
-        <main className="w-full pt-16 min-h-screen px-8 py-8">
+        <main className="w-full pt-20 pb-8 px-8 min-h-screen">
+          <AnnouncementBanner />
           {children}
         </main>
       </div>
