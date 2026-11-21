@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { UserPlus, X, User, Phone, Lock, Award, DollarSign, ShieldCheck, Check } from 'lucide-react';
 
-export default function CreateMemberModal({ isOpen = false, onClose, onSubmit }) {
+export default function CreateMemberModal({ isOpen = false, onClose, onSubmit, ranks = [] }) {
   const [formData, setFormData] = useState({
     username: '',
     fullName: '',
     password: '123456',
     phone: '',
-    tier: 'normal',
+    rank_id: ranks[0]?.rank_id || 1,
     deposit: 50000
   });
 
@@ -142,15 +142,20 @@ export default function CreateMemberModal({ isOpen = false, onClose, onSubmit })
                 <Award className="w-3.5 h-3.5 text-amber-500" /> Hạng Thành Viên
               </label>
               <select
-                name="tier"
-                value={formData.tier}
+                name="rank_id"
+                value={formData.rank_id || (ranks[0]?.rank_id || 1)}
                 onChange={handleChange}
                 className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-800 focus:bg-white focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 outline-none transition cursor-pointer"
               >
-                <option value="normal">🥉 Đồng (Standard)</option>
-                <option value="silver">🥈 Bạc (+5% Bonus nạp)</option>
-                <option value="gold">⭐ VIP Vàng (+10% Bonus nạp)</option>
-                <option value="diamond">💎 VIP Kim Cương (+15% Bonus &amp; Ghế VIP)</option>
+                {ranks.length > 0 ? (
+                  ranks.map((r) => (
+                    <option key={r.rank_id} value={r.rank_id}>
+                      {r.name} {Number(r.discount_percent) > 0 ? `(+${r.discount_percent}% Bonus nạp)` : ''}
+                    </option>
+                  ))
+                ) : (
+                  <option value="1">Đồng</option>
+                )}
               </select>
             </div>
 

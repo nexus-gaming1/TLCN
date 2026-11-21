@@ -9,7 +9,6 @@ import FloatingToast from '../../shared/ui/FloatingToast';
 import memberService from '../../shared/api/member.service';
 import MemberKpiCards from '../../features/members/ui/MemberKpiCards';
 import MemberFilterBar from '../../features/members/ui/MemberFilterBar';
-import MemberBulkActionBar from '../../features/members/ui/MemberBulkActionBar';
 import MemberTable from '../../features/members/ui/MemberTable';
 import Pagination from '../../shared/ui/Pagination';
 import CreateMemberModal from '../../features/members/ui/CreateMemberModal';
@@ -25,12 +24,12 @@ import MemberPrintView from '../../features/members/ui/MemberPrintView';
  */
 export default function AccountManagementPage({ user, onLogout }) {
   const [members, setMembers] = useState([]);
+  const [ranks, setRanks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedIds, setSelectedIds] = useState([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
@@ -38,6 +37,7 @@ export default function AccountManagementPage({ user, onLogout }) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [toast, setToast] = useState(null);
+  const [printConfig, setPrintConfig] = useState(null);
 
   // Thông báo toast nổi đa năng (Success, Warning, Error)
   const showToast = (payload, type = 'success') => {
@@ -88,7 +88,7 @@ export default function AccountManagementPage({ user, onLogout }) {
     };
   }, [members]);
 
-  // Auto-fetch members from Backend Service on mount
+  // Auto-fetch members & ranks from Backend Service on mount
   const fetchMemberData = async () => {
     setLoading(true);
     setError(null);
@@ -105,8 +105,20 @@ export default function AccountManagementPage({ user, onLogout }) {
     }
   };
 
+  const fetchRanksData = async () => {
+    try {
+      const rankList = await memberService.getRanks();
+      if (Array.isArray(rankList) && rankList.length > 0) {
+        setRanks(rankList);
+      }
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách hạng từ CSDL:', err);
+    }
+  };
+
   useEffect(() => {
     fetchMemberData();
+    fetchRanksData();
   }, []);
   const { data: machines = {} } = useMachines();
   // Filtered members calculation
@@ -122,8 +134,12 @@ export default function AccountManagementPage({ user, onLogout }) {
         (m.phone && m.phone.includes(query)) ||
         (m.username && m.username.toLowerCase().includes(query));
 
-      // Tier match
-      const matchTier = tierFilter === 'all' || m.tier === tierFilter;
+      // Tier / Rank match dynamically from database
+      const matchTier =
+        tierFilter === 'all' ||
+        String(m.rankId) === tierFilter ||
+        (m.rankName && m.rankName.toLowerCase() === tierFilter.toLowerCase()) ||
+        (m.tier && m.tier.toLowerCase() === tierFilter.toLowerCase());
 
       // Status match strictly by UserStatus (ACTIVE, INACTIVE, LOCKED, BANNED)
       let matchStatus = true;
@@ -146,21 +162,6 @@ export default function AccountManagementPage({ user, onLogout }) {
     const startIndex = (currentPage - 1) * pageSize;
     return filteredMembers.slice(startIndex, startIndex + pageSize);
   }, [filteredMembers, currentPage, pageSize]);
-
-  // Handle Multi-Selection
-  const handleToggleSelect = (id) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const handleToggleSelectAll = () => {
-    if (selectedIds.length === filteredMembers.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(filteredMembers.map((m) => m.id));
-    }
-  };
 
   // Action: Xem chi tiết
   const handleViewDetail = (member) => {
@@ -233,32 +234,6 @@ export default function AccountManagementPage({ user, onLogout }) {
     }
   };
 
-  // Action: Đổi trạng thái tài khoản hàng loạt (ACTIVE / LOCKED)
-  const handleBulkChangeStatus = async (newStatus) => {
-    if (selectedIds.length === 0) return;
-    try {
-      setLoading(true);
-      await Promise.all(
-        selectedIds.map((id) => memberService.updateAccountStatus(id, newStatus))
-      );
-      showToast({
-        type: newStatus === 'ACTIVE' ? 'success' : 'warning',
-        title: newStatus === 'ACTIVE' ? 'Đã mở khóa hàng loạt' : 'Đã khóa hàng loạt',
-        message: `Đã cập nhật trạng thái cho ${selectedIds.length} hội viên.`
-      });
-      setSelectedIds([]);
-      await fetchMemberData();
-    } catch (err) {
-      showToast({
-        type: 'error',
-        title: 'Lỗi thao tác hàng loạt',
-        message: err.message || 'Có lỗi xảy ra khi cập nhật trạng thái hàng loạt'
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleCreateMember = async (newMemberData) => {
     try {
       setLoading(true);
@@ -273,7 +248,26 @@ export default function AccountManagementPage({ user, onLogout }) {
 
   // Action: In danh sách hội viên bằng hộp thoại in của trình duyệt (A4)
   const handlePrintList = () => {
-    window.print();
+    setPrintConfig({
+      members: filteredMembers,
+      reportType: 'detailed',
+      periodLabel: ''
+    });
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
+
+  // Action: Nhận yêu cầu xuất PDF chuyên biệt từ Modal Xuất Dữ Liệu
+  const handleExportPDF = ({ members: targetMembers, reportType, periodLabel }) => {
+    setPrintConfig({
+      members: targetMembers,
+      reportType,
+      periodLabel
+    });
+    setTimeout(() => {
+      window.print();
+    }, 150);
   };
 
   return (
@@ -320,6 +314,7 @@ export default function AccountManagementPage({ user, onLogout }) {
             {/* Action Bar & Advanced Filters */}
             <MemberFilterBar
               members={members}
+              ranks={ranks}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
               tierFilter={tierFilter}
@@ -329,13 +324,6 @@ export default function AccountManagementPage({ user, onLogout }) {
               onOpenCreateModal={() => setIsCreateModalOpen(true)}
               onOpenExportModal={() => setIsExportModalOpen(true)}
               onPrintList={handlePrintList}
-            />
-
-            {/* Bulk Action Bar: Khóa tạm thời & Mở khóa tất cả */}
-            <MemberBulkActionBar
-              selectedCount={selectedIds.length}
-              onLock={() => handleBulkChangeStatus('LOCKED')}
-              onUnlock={() => handleBulkChangeStatus('ACTIVE')}
             />
 
             {/* Data Table */}
@@ -348,9 +336,7 @@ export default function AccountManagementPage({ user, onLogout }) {
               <div className="flex flex-col">
                 <MemberTable
                   members={paginatedMembers}
-                  selectedIds={selectedIds}
-                  onToggleSelect={handleToggleSelect}
-                  onToggleSelectAll={handleToggleSelectAll}
+                  ranks={ranks}
                   onViewDetail={handleViewDetail}
                   onEditInfo={handleEditInfoClick}
                   onChangeStatus={handleChangeStatus}
@@ -364,7 +350,6 @@ export default function AccountManagementPage({ user, onLogout }) {
                   onPageChange={setCurrentPage}
                   onPageSizeChange={setPageSize}
                   itemLabel="hội viên"
-                  selectedCount={selectedIds.length}
                 />
               </div>
             )}
@@ -380,6 +365,7 @@ export default function AccountManagementPage({ user, onLogout }) {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSubmit={handleCreateMember}
+        ranks={ranks}
       />
 
       {/* Edit Member Profile Modal (Họ tên, SĐT, Email) */}
@@ -403,13 +389,15 @@ export default function AccountManagementPage({ user, onLogout }) {
         onClose={() => setIsExportModalOpen(false)}
         members={members}
         filteredMembers={filteredMembers}
-        selectedIds={selectedIds}
+        onExportPDF={handleExportPDF}
       />
 
       {/* Dedicated A4 Print View: Tự động kích hoạt khi bấm In Danh Sách hoặc In Trình duyệt */}
       <MemberPrintView
-        members={filteredMembers}
-        currentAdmin={user?.name || user?.username || 'Quản trị viên'}
+        members={printConfig?.members || filteredMembers}
+        reportType={printConfig?.reportType || 'detailed'}
+        periodLabel={printConfig?.periodLabel || ''}
+        currentUser={user}
         searchQuery={searchQuery}
         tierFilter={tierFilter}
         statusFilter={statusFilter}

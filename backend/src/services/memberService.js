@@ -14,11 +14,11 @@ class MemberService {
             model: db.User,
             as: 'userInfo',
             where: { is_deleted: false },
-            attributes: ['user_id', 'username', 'full_name', 'role', 'status']
+            attributes: ['user_id', 'username', 'full_name', 'role', 'status', 'last_login']
           },
           {
             model: db.MembershipRank,
-            attributes: ['rank_id', 'name', 'discount_percent']
+            attributes: ['rank_id', 'name', 'discount_percent', 'rank_level', 'required_point']
           },
           {
             model: db.ComputerStatusLog,
@@ -40,6 +40,16 @@ class MemberService {
         const latestLog = m.ComputerStatusLogs && m.ComputerStatusLogs[0];
         const comp = latestLog ? latestLog.Computer : null;
 
+        // Trích xuất thời điểm đăng nhập gần nhất:
+        // 1. Từ userInfo.last_login (nếu có bản ghi đăng nhập thực tế)
+        // 2. Hoặc từ latestLog.recorded_at / latestLog.start_time khi máy đang được sử dụng
+        // 3. Nếu đang ngồi máy (comp) mà chưa có timestamp, fallback thời điểm hiện tại
+        const resolvedLastLogin = (m.userInfo && m.userInfo.last_login)
+          ? m.userInfo.last_login
+          : (latestLog && (latestLog.recorded_at || latestLog.start_time || latestLog.createdAt))
+          ? (latestLog.recorded_at || latestLog.start_time || latestLog.createdAt)
+          : (comp ? new Date().toISOString() : null);
+
         return {
           id: m.member_id,
           uid: `#MB-${String(m.member_id).padStart(3, '0')}`,
@@ -51,13 +61,15 @@ class MemberService {
           status: (m.userInfo && m.userInfo.status) ? m.userInfo.status : 'ACTIVE',
           rank_id: m.rank_id,
           rank_name: m.MembershipRank ? m.MembershipRank.name : 'Đồng',
+          rank_level: m.MembershipRank ? m.MembershipRank.rank_level : 1,
+          discount_percent: m.MembershipRank ? parseFloat(m.MembershipRank.discount_percent || 0) : 0,
           real_balance: parseFloat(m.real_balance || 0),
           bonus_balance: parseFloat(m.bonus_balance || 0),
           points: m.point || 0,
           station_name: comp ? comp.computer_name : null,
           station_status: comp ? comp.status : null,
           created_at: m.created_at || new Date().toISOString(),
-          last_login: null
+          last_login: resolvedLastLogin
         };
       });
     } catch (error) {
@@ -77,7 +89,7 @@ class MemberService {
             model: db.User,
             as: 'userInfo',
             where: { is_deleted: false },
-            attributes: ['user_id', 'username', 'full_name', 'role', 'status']
+            attributes: ['user_id', 'username', 'full_name', 'role', 'status', 'last_login']
           },
           {
             model: db.MembershipRank
@@ -160,9 +172,23 @@ class MemberService {
   }
 
   /**
+   * Lấy danh sách tất cả các hạng thành viên từ database (membership_rank)
+   */
+  async getAllRanks() {
+    try {
+      return await db.MembershipRank.findAll({
+        order: [['rank_level', 'ASC']]
+      });
+    } catch (error) {
+      console.error('Lỗi khi lấy danh sách hạng hội viên:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Tạo tài khoản hội viên mới và lưu trực tiếp vào CSDL MySQL
    */
-  async createMember({ username, fullName, password, phone, tier, deposit }) {
+  async createMember({ username, fullName, password, phone, tier, deposit, rank_id, rankId }) {
     try {
       if (!username || !username.trim()) {
         throw new Error('Tên đăng nhập không được để trống');
@@ -190,15 +216,38 @@ class MemberService {
         status: UserStatus.ACTIVE
       });
 
-      const tierMap = {
-        diamond: { rank_id: 4, name: 'Kim Cương', bonusRate: 0.15 },
-        gold: { rank_id: 3, name: 'Vàng', bonusRate: 0.10 },
-        silver: { rank_id: 2, name: 'Bạc', bonusRate: 0.05 },
-        normal: { rank_id: 1, name: 'Đồng', bonusRate: 0.00 }
-      };
-      const tierConfig = tierMap[tier] || tierMap.normal;
+      // Tìm thông tin hạng trực tiếp từ database (hỗ trợ rank_id hoặc tên hạng)
+      let rank = null;
+      const targetRankId = rank_id || rankId;
+      if (targetRankId) {
+        rank = await db.MembershipRank.findByPk(targetRankId);
+      }
+      if (!rank && tier) {
+        const tierNameMap = {
+          diamond: 'Kim Cương',
+          gold: 'Vàng',
+          silver: 'Bạc',
+          normal: 'Đồng'
+        };
+        const searchName = tierNameMap[tier] || tier;
+        rank = await db.MembershipRank.findOne({
+          where: db.Sequelize.where(
+            db.Sequelize.fn('LOWER', db.Sequelize.col('name')),
+            searchName.toLowerCase()
+          )
+        });
+      }
+      if (!rank) {
+        rank = await db.MembershipRank.findOne({ order: [['rank_level', 'ASC']] }) || {
+          rank_id: 1,
+          name: 'Đồng',
+          discount_percent: 0.00
+        };
+      }
+
       const depositAmount = parseFloat(deposit) || 0;
-      const bonusAmount = Math.round(depositAmount * tierConfig.bonusRate);
+      const bonusRate = parseFloat(rank.discount_percent || 0) / 100;
+      const bonusAmount = Math.round(depositAmount * bonusRate);
       const points = Math.floor(depositAmount / 1000);
 
       const newMember = await db.Member.create({
@@ -207,7 +256,7 @@ class MemberService {
         real_balance: depositAmount,
         bonus_balance: bonusAmount,
         point: points,
-        rank_id: tierConfig.rank_id
+        rank_id: rank.rank_id
       });
 
       return {
@@ -220,7 +269,7 @@ class MemberService {
         phone: newMember.phone || 'Chưa cập nhật',
         status: newUser.status,
         rank_id: newMember.rank_id,
-        rank_name: tierConfig.name,
+        rank_name: rank.name,
         real_balance: parseFloat(newMember.real_balance || 0),
         bonus_balance: parseFloat(newMember.bonus_balance || 0),
         points: newMember.point || 0,

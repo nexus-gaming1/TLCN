@@ -14,13 +14,6 @@ class MemberService {
 
       return rawList.map((m) => {
         const rankName = m.rank_name || 'Đồng';
-        const tier = rankName.includes('Kim Cương')
-          ? 'diamond'
-          : rankName.includes('Vàng')
-          ? 'gold'
-          : rankName.includes('Bạc')
-          ? 'silver'
-          : 'normal';
 
         return {
           id: m.id,
@@ -29,8 +22,11 @@ class MemberService {
           username: m.username || 'user',
           phone: m.phone || 'Chưa cập nhật',
           email: m.email || 'Chưa cập nhật',
-          tier,
+          rankId: m.rank_id,
           rankName,
+          rankLevel: m.rank_level || 1,
+          discountPercent: Number(m.discount_percent || 0),
+          tier: rankName,
           status: m.status || 'ACTIVE',
           realBalance: Number(m.real_balance || 0),
           bonusBalance: Number(m.bonus_balance || 0),
@@ -48,11 +44,28 @@ class MemberService {
                 hour: '2-digit',
                 minute: '2-digit'
               })
-            : 'Chưa đăng nhập'
+            : (m.station_name ? 'Đang hoạt động' : 'Chưa đăng nhập')
         };
       });
     } catch (error) {
       console.error('Không thể tải từ backend API /api/members:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Lấy danh sách tất cả các hạng thành viên từ cơ sở dữ liệu (membership_rank)
+   */
+  async getRanks() {
+    try {
+      const response = await apiClient.get('/members/ranks');
+      return Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+    } catch (error) {
+      console.error('Lỗi khi tải danh sách hạng thành viên:', error.message);
       return [];
     }
   }

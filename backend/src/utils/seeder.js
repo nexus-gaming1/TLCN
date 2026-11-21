@@ -378,19 +378,19 @@ const seedData = async (db) => {
 
     // Seed Status Logs for active machines
     await safeSeed(db.ComputerStatusLog, [
-      { computer_id: 2, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 45 * 60 * 1000), notes: 'Valorant Ranked' },
-      { computer_id: 4, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 120 * 60 * 1000), notes: 'Counter-Strike 2' },
-      { computer_id: 6, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 35 * 60 * 1000), notes: 'League of Legends' },
-      { computer_id: 10, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 90 * 60 * 1000), notes: 'FC Online 4' },
-      { computer_id: 12, member_id: 7, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 50 * 60 * 1000), notes: 'Cyberpunk 2077 RT' },
-      { computer_id: 14, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 15 * 60 * 1000), notes: 'Dota 2 Ranked' },
-      { computer_id: 19, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 75 * 60 * 1000), notes: 'Grand Theft Auto V' },
-      { computer_id: 21, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 110 * 60 * 1000), notes: 'Apex Legends' },
-      { computer_id: 25, member_id: 7, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 40 * 60 * 1000), notes: 'PUBG Battlegrounds' },
-      { computer_id: 27, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 180 * 60 * 1000), notes: 'OBS 4K Stream • Cyberpunk 2077 RT' },
-      { computer_id: 29, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 65 * 60 * 1000), notes: 'VTuber Live Stream' },
-      { computer_id: 32, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 25 * 60 * 1000), notes: 'Cloud Stream WebRTC' },
-      { computer_id: 34, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 85 * 60 * 1000), notes: 'Elden Ring Shadow of Erdtree' }
+      { computer_id: 2, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 45 * 60 * 1000), recorded_at: new Date(Date.now() - 45 * 60 * 1000), notes: 'Valorant Ranked' },
+      { computer_id: 4, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 120 * 60 * 1000), recorded_at: new Date(Date.now() - 120 * 60 * 1000), notes: 'Counter-Strike 2' },
+      { computer_id: 6, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 35 * 60 * 1000), recorded_at: new Date(Date.now() - 35 * 60 * 1000), notes: 'League of Legends' },
+      { computer_id: 10, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 90 * 60 * 1000), recorded_at: new Date(Date.now() - 90 * 60 * 1000), notes: 'FC Online 4' },
+      { computer_id: 12, member_id: 7, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 50 * 60 * 1000), recorded_at: new Date(Date.now() - 50 * 60 * 1000), notes: 'Cyberpunk 2077 RT' },
+      { computer_id: 14, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 15 * 60 * 1000), recorded_at: new Date(Date.now() - 15 * 60 * 1000), notes: 'Dota 2 Ranked' },
+      { computer_id: 19, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 75 * 60 * 1000), recorded_at: new Date(Date.now() - 75 * 60 * 1000), notes: 'Grand Theft Auto V' },
+      { computer_id: 21, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 110 * 60 * 1000), recorded_at: new Date(Date.now() - 110 * 60 * 1000), notes: 'Apex Legends' },
+      { computer_id: 25, member_id: 7, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 40 * 60 * 1000), recorded_at: new Date(Date.now() - 40 * 60 * 1000), notes: 'PUBG Battlegrounds' },
+      { computer_id: 27, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 180 * 60 * 1000), recorded_at: new Date(Date.now() - 180 * 60 * 1000), notes: 'OBS 4K Stream • Cyberpunk 2077 RT' },
+      { computer_id: 29, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 65 * 60 * 1000), recorded_at: new Date(Date.now() - 65 * 60 * 1000), notes: 'VTuber Live Stream' },
+      { computer_id: 32, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 25 * 60 * 1000), recorded_at: new Date(Date.now() - 25 * 60 * 1000), notes: 'Cloud Stream WebRTC' },
+      { computer_id: 34, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 85 * 60 * 1000), recorded_at: new Date(Date.now() - 85 * 60 * 1000), notes: 'Elden Ring Shadow of Erdtree' }
     ]);
 
     // 6.5. Seed Game Categories

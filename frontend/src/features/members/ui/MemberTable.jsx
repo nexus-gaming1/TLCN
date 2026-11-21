@@ -1,30 +1,27 @@
 import { Eye, Edit, Award, Phone } from 'lucide-react';
 
-/**
- * Tier configurations mapping
- */
-const TIER_CONFIGS = Object.freeze({
-  diamond: { label: 'Kim Cương', badgeClass: 'bg-cyan-100 text-cyan-950 border-cyan-300', iconColor: 'text-cyan-700' },
-  gold: { label: 'Vàng', badgeClass: 'bg-amber-100 text-amber-950 border-amber-400', iconColor: 'text-amber-800' },
-  silver: { label: 'Bạc', badgeClass: 'bg-slate-200 text-slate-900 border-slate-300', iconColor: 'text-slate-700' },
-  normal: { label: 'Đồng', badgeClass: 'bg-orange-100 text-orange-950 border-orange-300', iconColor: 'text-orange-800' }
-});
+// Bảng màu trực quan cho từng cấp độ hạng thành viên (Level 1..4+) từ CSDL
+const LEVEL_BADGE_STYLES = {
+  1: { badgeClass: 'bg-amber-50 text-amber-900 border-amber-200', iconColor: 'text-amber-700' },
+  2: { badgeClass: 'bg-slate-100 text-slate-800 border-slate-300', iconColor: 'text-slate-600' },
+  3: { badgeClass: 'bg-amber-100 text-amber-950 border-amber-300', iconColor: 'text-amber-700' },
+  4: { badgeClass: 'bg-cyan-100 text-cyan-950 border-cyan-300', iconColor: 'text-cyan-700' },
+  default: { badgeClass: 'bg-purple-100 text-purple-950 border-purple-300', iconColor: 'text-purple-700' }
+};
 
 /**
- * Helper to render Member Tier Badge with High Contrast
+ * Component hiển thị Huy hiệu Hạng thành viên tải động từ CSDL (membership_rank)
  */
-function TierBadge({ rankName, tier }) {
-  const tierKey = tier || (
-    rankName?.includes('Kim Cương') ? 'diamond' :
-    rankName?.includes('Vàng') ? 'gold' :
-    rankName?.includes('Bạc') ? 'silver' : 'normal'
-  );
-  const config = TIER_CONFIGS[tierKey] || TIER_CONFIGS.normal;
+function TierBadge({ rankName, rankLevel, rankId, ranks = [] }) {
+  const rankInfo = ranks.find((r) => r.rank_id === rankId || r.name === rankName);
+  const displayName = rankInfo?.name || rankName || 'Đồng';
+  const level = rankInfo?.rank_level || rankLevel || (rankId ? Number(rankId) : 1);
+  const style = LEVEL_BADGE_STYLES[level] || LEVEL_BADGE_STYLES.default;
 
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border shadow-2xs text-xs font-extrabold tracking-wide ${config.badgeClass}`}>
-      <Award className={`w-3.5 h-3.5 ${config.iconColor}`} />
-      {rankName || config.label}
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border shadow-2xs text-xs font-extrabold tracking-wide ${style.badgeClass}`}>
+      <Award className={`w-3.5 h-3.5 ${style.iconColor}`} />
+      {displayName}
     </span>
   );
 }
@@ -34,14 +31,11 @@ function TierBadge({ rankName, tier }) {
  */
 export default function MemberTable({
   members = [],
-  selectedIds = [],
-  onToggleSelect,
-  onToggleSelectAll,
+  ranks = [],
   onViewDetail,
   onEditInfo,
   onChangeStatus
 }) {
-  const isAllSelected = members.length > 0 && selectedIds.length === members.length;
 
   if (members.length === 0) {
     return (
@@ -63,15 +57,6 @@ export default function MemberTable({
         <table className="w-full text-left border-collapse" id="memberFleetTable">
           <thead>
             <tr className="bg-slate-100/90 text-slate-800 text-[11px] uppercase tracking-wider border-b border-slate-200 font-extrabold select-none">
-              <th className="py-3.5 px-4 w-12 text-center">
-                <input
-                  type="checkbox"
-                  checked={isAllSelected}
-                  onChange={onToggleSelectAll}
-                  className="w-4 h-4 rounded accent-sky-600 cursor-pointer"
-                  id="check-all"
-                />
-              </th>
               <th className="py-3.5 px-4 font-extrabold text-slate-800 min-w-[220px]">Hội Viên &amp; UID</th>
               <th className="py-3.5 px-4 font-extrabold text-slate-800 min-w-[140px] whitespace-nowrap">Số Điện Thoại</th>
               <th className="py-3.5 px-4 font-extrabold text-slate-800 min-w-[130px] whitespace-nowrap">Hạng</th>
@@ -85,25 +70,15 @@ export default function MemberTable({
           </thead>
           <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-800">
             {members.map((m) => {
-              const isSelected = selectedIds.includes(m.id);
               const isLocked = m.status === 'LOCKED' || m.status === 'locked';
 
               return (
                 <tr
                   key={m.id}
                   className={`hover:bg-slate-50/80 transition-colors group ${
-                    isSelected ? 'bg-sky-50/70' : isLocked ? 'bg-rose-50/30 hover:bg-rose-50/50' : ''
+                    isLocked ? 'bg-rose-50/30 hover:bg-rose-50/50' : ''
                   }`}
                 >
-                  {/* Checkbox */}
-                  <td className="py-3.5 px-4 text-center">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => onToggleSelect && onToggleSelect(m.id)}
-                      className="w-4 h-4 rounded accent-sky-600 cursor-pointer"
-                    />
-                  </td>
 
                   {/* Member Name, Username & Merged UID */}
                   <td className="py-3.5 px-4">
@@ -140,7 +115,12 @@ export default function MemberTable({
 
                   {/* Rank */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
-                    <TierBadge rankName={m.rankName} tier={m.tier} />
+                    <TierBadge
+                      rankName={m.rankName}
+                      rankLevel={m.rankLevel}
+                      rankId={m.rankId}
+                      ranks={ranks}
+                    />
                   </td>
 
                   {/* Balance (Right Aligned) */}
