@@ -35,6 +35,8 @@ const orderSocketService = require('./src/services/orderSocketService');
 
 const announcementRoutes = require('./src/routes/announcementRoutes');
 const announcementSocketService = require('./src/services/announcementSocketService');
+const supportRoutes = require('./src/routes/supportRoutes');
+const supportSocketService = require('./src/services/supportSocketService');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -103,6 +105,7 @@ app.use('/api/webhooks', webhookRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/announcements', announcementRoutes);
+app.use('/api/support', supportRoutes);
 
 // Centralized Error Handler
 app.use(errorHandler);
@@ -136,6 +139,7 @@ io.on('connection', (socket) => {
 computerSocketService.init(io);
 orderSocketService.init(io);
 announcementSocketService.init(io);
+supportSocketService.init(io);
 
 // CHẠY MIGRATIONS, ĐỒNG BỘ DATABASE & BẬT SERVER
 async function startServer() {
