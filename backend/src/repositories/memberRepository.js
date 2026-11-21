@@ -63,6 +63,42 @@ class MemberRepository {
   }
 
   /**
+   * Resolve and lock a member by member_id, phone, or username
+   */
+  async findMemberByIdentifierWithLock(identifier, transaction = null) {
+    const trimmed = String(identifier || '').trim();
+    if (!trimmed) return null;
+
+    if (/^\d+$/.test(trimmed)) {
+      const byId = await this.findMemberWithLock(Number(trimmed), transaction);
+      if (byId) return byId;
+    }
+
+    const { Op } = require('sequelize');
+    const options = {
+      include: [
+        {
+          model: this.models.User,
+          as: 'userInfo',
+          attributes: ['user_id', 'username', 'avatar_url', 'full_name', 'role', 'status'],
+          required: false
+        }
+      ],
+      where: {
+        [Op.or]: [
+          { phone: trimmed },
+          { '$userInfo.username$': trimmed }
+        ]
+      }
+    };
+    if (transaction) {
+      options.transaction = transaction;
+      options.lock = transaction.LOCK ? transaction.LOCK.UPDATE : true;
+    }
+    return await this.models.Member.findOne(options);
+  }
+
+  /**
    * Save Member instance with optional transaction
    */
   async saveMember(memberInstance, transaction = null) {

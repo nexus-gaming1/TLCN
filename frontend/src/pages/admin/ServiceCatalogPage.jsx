@@ -145,7 +145,7 @@ export default function ServiceCatalogPage({ user, onLogout }) {
       <Sidebar activeNav="catalog" bootromStatus="ONLINE" role="ADMIN" />
 
       {/* Vùng nội dung chính */}
-      <div className="pl-[240px]">
+      <div className="lg:pl-[240px]">
         <main className="relative pt-16 pb-20 min-h-screen bg-background w-full px-6 py-6 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
             {/* Page Header Strip */}

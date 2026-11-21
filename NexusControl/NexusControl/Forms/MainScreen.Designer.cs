@@ -28,13 +28,15 @@
         /// </summary>
         private void InitializeComponent()
         {
+            AntdUI.MenuItem menuItem1 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem2 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem3 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem4 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem5 = new AntdUI.MenuItem();
+            AntdUI.MenuItem menuItem6 = new AntdUI.MenuItem();
             AntdUI.MenuItem menuItem7 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem8 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem9 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem10 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem11 = new AntdUI.MenuItem();
-            AntdUI.MenuItem menuItem12 = new AntdUI.MenuItem();
             panel1 = new AntdUI.Panel();
+            table1 = new AntdUI.Table();
             menu1 = new AntdUI.Menu();
             tableLayoutPanel1 = new TableLayoutPanel();
             lbl_Percent = new AntdUI.Label();
@@ -52,7 +54,6 @@
             ChangeAccount = new ToolStripMenuItem();
             ManageAccount = new ToolStripMenuItem();
             helpProvider1 = new HelpProvider();
-            table1 = new AntdUI.Table();
             panel1.SuspendLayout();
             tableLayoutPanel1.SuspendLayout();
             menuStrip1.SuspendLayout();
@@ -60,50 +61,62 @@
             // 
             // panel1
             // 
-            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             panel1.Controls.Add(table1);
-            panel1.Location = new Point(0, 84);
+            panel1.Location = new Point(0, 78);
             panel1.Name = "panel1";
-            panel1.Size = new Size(800, 342);
+            panel1.Size = new Size(1200, 672);
             panel1.TabIndex = 2;
             panel1.Text = "panel1";
             // 
+            // table1
+            // 
+            table1.Gap = 12;
+            table1.Location = new Point(503, 82);
+            table1.Name = "table1";
+            table1.Size = new Size(94, 29);
+            table1.TabIndex = 0;
+            table1.Text = "table1";
+            table1.CellClick += table1_CellClick;
+            // 
             // menu1
             // 
-            menu1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             menu1.AutoCollapse = true;
             menu1.BackActive = Color.AliceBlue;
             menu1.BackColor = SystemColors.ActiveCaption;
-            menuItem7.ID = "maytram";
-            menuItem7.Name = "maytram";
-            menuItem7.Text = "MÁY TRẠM";
-            menuItem8.ID = "taikhoan";
-            menuItem8.LocalizationText = "";
-            menuItem8.Name = "taikhoan";
-            menuItem8.Text = "TÀI KHOẢN";
-            menuItem9.ID = "systemlog";
-            menuItem9.Name = "systemlog";
-            menuItem9.Text = "NHẬT KÍ HỆ THỐNG";
-            menuItem10.ID = "translog";
-            menuItem10.Name = "translog";
-            menuItem10.Text = "NHẬT KÍ GIAO DỊCH";
-            menuItem11.ID = "nhommay";
-            menuItem11.Name = "nhommay";
-            menuItem11.Text = "NHÓM MÁY";
-            menuItem12.ID = "nhomnguoisudung";
-            menuItem12.Name = "nhomnguoisudung";
-            menuItem12.Text = "NHÓM NGƯỜI SỬ DỤNG";
+            menuItem1.ID = "maytram";
+            menuItem1.Name = "maytram";
+            menuItem1.Text = "MÁY TRẠM";
+            menuItem2.ID = "taikhoan";
+            menuItem2.LocalizationText = "";
+            menuItem2.Name = "taikhoan";
+            menuItem2.Text = "TÀI KHOẢN";
+            menuItem3.ID = "systemlog";
+            menuItem3.Name = "systemlog";
+            menuItem3.Text = "NHẬT KÍ HỆ THỐNG";
+            menuItem4.ID = "translog";
+            menuItem4.Name = "translog";
+            menuItem4.Text = "NHẬT KÍ GIAO DỊCH";
+            menuItem5.ID = "nhommay";
+            menuItem5.Name = "nhommay";
+            menuItem5.Text = "NHÓM MÁY";
+            menuItem6.ID = "nhomnguoisudung";
+            menuItem6.Name = "nhomnguoisudung";
+            menuItem6.Text = "NHÓM NGƯỜI SỬ DỤNG";
+            menuItem7.ID = "fnb_orders";
+            menuItem7.Name = "fnb_orders";
+            menuItem7.Text = "ĐƠN HÀNG F&B";
+            menu1.Items.Add(menuItem1);
+            menu1.Items.Add(menuItem2);
+            menu1.Items.Add(menuItem3);
+            menu1.Items.Add(menuItem4);
+            menu1.Items.Add(menuItem5);
+            menu1.Items.Add(menuItem6);
             menu1.Items.Add(menuItem7);
-            menu1.Items.Add(menuItem8);
-            menu1.Items.Add(menuItem9);
-            menu1.Items.Add(menuItem10);
-            menu1.Items.Add(menuItem11);
-            menu1.Items.Add(menuItem12);
             menu1.Location = new Point(0, 28);
             menu1.Mode = AntdUI.TMenuMode.Horizontal_Arrow;
             menu1.Name = "menu1";
             menu1.RightToLeft = RightToLeft.No;
-            menu1.Size = new Size(800, 50);
+            menu1.Size = new Size(1200, 50);
             menu1.TabIndex = 3;
             menu1.Text = "menu1";
             menu1.SelectChanged += menu1_SelectChanged;
@@ -125,11 +138,11 @@
             tableLayoutPanel1.Controls.Add(lbl_online, 1, 0);
             tableLayoutPanel1.Dock = DockStyle.Bottom;
             tableLayoutPanel1.Font = new Font("Segoe UI", 7.8F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            tableLayoutPanel1.Location = new Point(0, 432);
+            tableLayoutPanel1.Location = new Point(0, 708);
             tableLayoutPanel1.Name = "tableLayoutPanel1";
             tableLayoutPanel1.RowCount = 1;
             tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
-            tableLayoutPanel1.Size = new Size(800, 42);
+            tableLayoutPanel1.Size = new Size(1200, 42);
             tableLayoutPanel1.TabIndex = 5;
             // 
             // lbl_Percent
@@ -212,7 +225,7 @@
             menuStrip1.Items.AddRange(new ToolStripItem[] { ReportMenuItem, AccountMenuItem });
             menuStrip1.Location = new Point(0, 0);
             menuStrip1.Name = "menuStrip1";
-            menuStrip1.Size = new Size(800, 28);
+            menuStrip1.Size = new Size(1200, 28);
             menuStrip1.TabIndex = 4;
             menuStrip1.Text = "menuStrip1";
             // 
@@ -236,21 +249,11 @@
             ManageAccount.Size = new Size(214, 26);
             ManageAccount.Text = "Quản lý tài khoản";
             // 
-            // table1
-            // 
-            table1.Gap = 12;
-            table1.Location = new Point(503, 82);
-            table1.Name = "table1";
-            table1.Size = new Size(94, 29);
-            table1.TabIndex = 0;
-            table1.Text = "table1";
-            table1.CellClick += table1_CellClick;
-            // 
             // MainScreen
             // 
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(800, 474);
+            ClientSize = new Size(1200, 750);
             Controls.Add(tableLayoutPanel1);
             Controls.Add(menu1);
             Controls.Add(panel1);

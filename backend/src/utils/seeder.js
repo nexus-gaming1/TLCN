@@ -834,10 +834,55 @@ const seedData = async (db) => {
       }
     }
 
+    // Seed 1 phiên chơi đang hoạt động tại máy VIP-01 cho tài khoản demo 'user' (member_id = 2)
+    if (db.RentalSession) {
+      const activeSession = await db.RentalSession.findOne({
+        where: { member_id: 2, status: 'ACTIVE' }
+      });
+      if (!activeSession) {
+        const now = new Date();
+        await db.RentalSession.create({
+          member_id: 2,
+          computer_id: 9, // Máy VIP-01
+          billing_mode: 'PAY_AS_YOU_GO',
+          status: 'ACTIVE',
+          started_at: now,
+          last_billed_at: now, 
+          total_amount: 0.00
+        });
+
+        // Cập nhật trạng thái máy VIP-01 sang IN_USE (Đang có người chơi)
+        if (db.Computer) {
+          await db.Computer.update(
+            { status: ComputerStatus.IN_USE },
+            { where: { computer_id: 9 } }
+          );
+        }
+
+        console.log('✅ Seeded 1 Active RentalSession for user (member_id: 2) on computer VIP-01.');
+      }
+    }
+
     console.log('✅ Database Seeding Completed Successfully.');
   } catch (error) {
     console.error('❌ Database Seeding Error:', error);
+    throw error;
   }
 };
 
 module.exports = seedData;
+
+if (require.main === module) {
+  const db = require('../models');
+  (async () => {
+    try {
+      console.log('🌱 Bắt đầu nạp dữ liệu mẫu vào TiDB Cloud...');
+      await seedData(db);
+      console.log('🎉 Toàn bộ dữ liệu mẫu đã được nạp thành công lên TiDB Cloud!');
+      process.exit(0);
+    } catch (err) {
+      console.error('❌ Lỗi khi nạp dữ liệu:', err);
+      process.exit(1);
+    }
+  })();
+}

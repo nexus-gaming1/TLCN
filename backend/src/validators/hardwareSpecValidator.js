@@ -36,7 +36,10 @@ function createValidationError(message, statusCode = HTTP_BAD_REQUEST) {
 function isValidSpecId(specId) {
   if (specId === undefined || specId === null) return false;
   if (typeof specId === 'number') return Number.isInteger(specId) && specId >= 0;
-  if (typeof specId === 'string') return specId.trim().length > 0;
+  if (typeof specId === 'string') {
+    const trimmed = specId.trim();
+    return trimmed.length > 0 && !UNSAFE_CONTENT_REGEX.test(trimmed);
+  }
   return false;
 }
 
@@ -45,6 +48,9 @@ function isValidSpecId(specId) {
  */
 function checkComponentField(val, fieldName, maxLen = MAX_SPEC_FIELD_LENGTH) {
   if (val === undefined || val === null) return;
+  if (Array.isArray(val)) {
+    throw createValidationError(`${fieldName} phải là chuỗi ký tự hoặc đối tượng thông số hợp lệ`);
+  }
   const str = typeof val === 'object' ? (val.model || val.capacity || val.type || '') : String(val);
   if (str.length > maxLen) {
     throw createValidationError(`${fieldName} không được vượt quá ${maxLen} ký tự`);
@@ -61,12 +67,13 @@ function checkComponentField(val, fieldName, maxLen = MAX_SPEC_FIELD_LENGTH) {
  * @param {Object} [models] - Injected ORM models for zone relational validation
  */
 async function validateHardwareSpecInput(data, isCreate = true, models = null) {
-  if (!data || typeof data !== 'object') {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
     throw createValidationError('Dữ liệu cấu hình phần cứng không hợp lệ');
   }
 
   const rawName = data.profileName !== undefined ? data.profileName : (isCreate ? data.id : undefined);
-  if (isCreate && (!rawName || typeof rawName !== 'string' || !rawName.trim())) {
+  const hasNameField = isCreate || data.profileName !== undefined;
+  if (hasNameField && (!rawName || typeof rawName !== 'string' || !rawName.trim())) {
     throw createValidationError('Tên mẫu cấu hình phần cứng không được để trống');
   }
 
@@ -81,6 +88,9 @@ async function validateHardwareSpecInput(data, isCreate = true, models = null) {
   }
 
   if (data.zoneId !== undefined && data.zoneId !== null && data.zoneId !== '') {
+    if (typeof data.zoneId === 'boolean') {
+      throw createValidationError('Phân khu (zoneId) phải là số nguyên dương hợp lệ');
+    }
     const zoneNum = Number(data.zoneId);
     if (isNaN(zoneNum) || zoneNum <= 0 || !Number.isInteger(zoneNum)) {
       throw createValidationError('Phân khu (zoneId) phải là số nguyên dương hợp lệ');
@@ -111,8 +121,16 @@ async function validateHardwareSpecInput(data, isCreate = true, models = null) {
   checkComponentField(data.monitor, 'Màn hình');
   checkComponentField(data.gear, 'Phụ kiện / Gear', MAX_GEAR_FIELD_LENGTH);
 
-  if (data.description && typeof data.description === 'string' && data.description.length > MAX_DESCRIPTION_LENGTH) {
-    throw createValidationError(`Mô tả cấu hình không được vượt quá ${MAX_DESCRIPTION_LENGTH} ký tự`);
+  if (data.description !== undefined && data.description !== null) {
+    if (typeof data.description !== 'string') {
+      throw createValidationError('Mô tả cấu hình phải là chuỗi ký tự hợp lệ');
+    }
+    if (data.description.length > MAX_DESCRIPTION_LENGTH) {
+      throw createValidationError(`Mô tả cấu hình không được vượt quá ${MAX_DESCRIPTION_LENGTH} ký tự`);
+    }
+    if (UNSAFE_CONTENT_REGEX.test(data.description)) {
+      throw createValidationError('Mô tả cấu hình chứa nội dung không an toàn');
+    }
   }
 }
 

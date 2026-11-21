@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Monitor, X, Check, Cpu, Network, ShieldAlert } from 'lucide-react';
+import { Monitor, X, Check, Network, ShieldAlert } from 'lucide-react';
 import machineService from '../../../shared/api/machine.service';
 import { ComputerStatus, COMPUTER_STATUS_OPTIONS } from '../../../shared/constants/stationConstants';
+import MachineZoneSelect from './MachineZoneSelect';
 
 // Strict Format Validation Regexes
 const IPV4_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
@@ -232,44 +233,15 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
               </div>
             </div>
 
-            {/* Row 2: Dynamic Zone Selection */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] uppercase font-mono font-bold text-slate-600">
-                Phân Khu &amp; Cấu Hình Phần Cứng *
-              </label>
-
-              {loadingZones ? (
-                <div className="px-3 py-2 bg-slate-100 rounded-xl text-slate-500 font-mono text-xs flex items-center gap-2">
-                  <span className="animate-spin">⏳</span> Đang tải danh sách phân khu...
-                </div>
-              ) : (
-                <select
-                  name="zone_id"
-                  value={formData.zone_id}
-                  onChange={handleChange}
-                  className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-bold focus:bg-white focus:ring-2 focus:ring-indigo-500/30 focus:outline-none cursor-pointer"
-                >
-                  {zones.map((z) => (
-                    <option key={z.zone_id} value={z.zone_id}>
-                      {z.zone_name} (Tier #{z.tier_level})
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Hardware Description Card */}
-            {selectedZone && (
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
-                <Cpu className="w-5 h-5 text-indigo-600 shrink-0" />
-                <div className="flex flex-col text-[11px]">
-                  <span className="font-extrabold text-slate-900">{selectedZone.zone_name}</span>
-                  <span className="text-slate-600 font-medium leading-relaxed">
-                    {selectedZone.description || 'Cấu hình phần cứng khu vực.'}
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* Row 2: Dynamic Zone Selection & Hardware Preview */}
+            <MachineZoneSelect
+              zones={zones}
+              selectedZoneId={formData.zone_id}
+              loadingZones={loadingZones}
+              onChange={handleChange}
+              name="zone_id"
+              accentColor="indigo"
+            />
 
             {/* Row 3: IP & MAC Configuration */}
             <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl flex flex-col gap-3">

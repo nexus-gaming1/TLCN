@@ -141,26 +141,14 @@ test('[TC-02] [Ca dương & Lọc đa điều kiện] getAllTransactions - Phân
 // ------------------------------------------------------------------------------
 test('[TC-03] [Ca dương & Ca âm] createTopUpTransaction - Nạp tiền an toàn với ACID Transaction', async () => {
   // 1. [Ca âm]: Số tiền <= 0 hoặc không phải số
-  await assert.rejects(
-    async () => {
-      await transactionService.createTopUpTransaction({ member_id: 1, amount: 0 });
-    },
-    { message: 'Số tiền nạp không hợp lệ (phải lớn hơn 0)' }
-  );
-
-  await assert.rejects(
-    async () => {
-      await transactionService.createTopUpTransaction({ member_id: 1, amount: -50000 });
-    },
-    { message: 'Số tiền nạp không hợp lệ (phải lớn hơn 0)' }
-  );
-
-  await assert.rejects(
-    async () => {
-      await transactionService.createTopUpTransaction({ member_id: 1, amount: 'invalid_number' });
-    },
-    { message: 'Số tiền nạp không hợp lệ (phải lớn hơn 0)' }
-  );
+  for (const badAmount of [0, -50000, 'invalid_number']) {
+    await assert.rejects(
+      async () => {
+        await transactionService.createTopUpTransaction({ member_id: 1, amount: badAmount });
+      },
+      { message: 'Số tiền nạp không hợp lệ (phải lớn hơn 0)' }
+    );
+  }
 
   // 2. [Ca âm]: Thiếu thông tin nhân viên  processed_by (Anti-pattern test)
   await assert.rejects(

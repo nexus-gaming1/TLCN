@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 //ReportService-> kết nối và lấy dữ liệu báo cáo thống kê từ backend API /api/reports
 class ReportService {

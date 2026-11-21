@@ -45,6 +45,19 @@ class HardwareService {
   }
 
   /**
+   * Toggle active status of hardware profile via PATCH /api/computers/specs/:id/toggle
+   */
+  async toggleHardwareSpec(id, isActive) {
+    try {
+      const response = await apiClient.patch(`/computers/specs/${id}/toggle`, { is_active: isActive });
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi chuyển đổi trạng thái cấu hình phần cứng:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete hardware station spec via DELETE /api/computers/specs/:id
    */
   async deleteHardwareSpec(id) {

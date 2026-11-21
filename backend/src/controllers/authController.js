@@ -9,7 +9,7 @@ class AuthController {
         res.cookie('nexus_refresh_token', refreshToken, {
             httpOnly: true,
             secure: isProd,
-            sameSite: isProd ? 'strict' : 'lax',
+            sameSite: isProd ? 'none' : 'lax',// Production bắt buộc 'none' kèm secure: true để trình duyệt cho phép Cross-site Cookie
             maxAge: 2 * 24 * 60 * 60 * 1000, // 2 ngày (mili-giây)
             path: '/'
         });
@@ -81,11 +81,13 @@ class AuthController {
             });
         } catch (error) {
             // Xóa cookie cũ nếu refresh token không còn hợp lệ
+            const isProd = process.env.NODE_ENV === 'production';
             res.clearCookie('nexus_refresh_token', { path: '/' });
-            return res.status(401).json({
-                status: 'error',
-                data: null,
-                message: error.message || 'Phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.'
+            res.clearCookie('nexus_refresh_token', { 
+                path: '/',
+                httpOnly: true,
+                secure: isProd,
+                sameSite: isProd ? 'none' : 'lax'
             });
         }
     };
@@ -102,7 +104,14 @@ class AuthController {
             await authService.logout({ refreshToken, userId });
 
             // Xóa Cookie HttpOnly
+            const isProd = process.env.NODE_ENV === 'production';
             res.clearCookie('nexus_refresh_token', { path: '/' });
+            res.clearCookie('nexus_refresh_token', { 
+                path: '/',
+                httpOnly: true,
+                secure: isProd,
+                sameSite: isProd ? 'none' : 'lax'
+            });
 
             return res.status(200).json({
                 status: 'success',
