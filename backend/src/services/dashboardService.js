@@ -5,8 +5,9 @@ class DashboardService {
    * Lấy toàn bộ dữ liệu Dashboard điều hành từ Database Models
    */
   async getOverviewData() {
-    // Fetch all zones with pricing plans and computers
+    // Fetch all active zones with pricing plans and computers
     const zones = await db.ComputerZone.findAll({
+      where: { is_deleted: false },
       include: [
         {
           model: db.PricingPlan,
@@ -87,10 +88,20 @@ class DashboardService {
           id: `zone-${z.zone_id}`,
           zone_id: z.zone_id,
           name: z.zone_name.toUpperCase(),
+          zone_name: z.zone_name,
           description: z.description,
           pricingPlan: plan ? plan.name : 'Tiêu chuẩn',
           pricePerHour: plan ? parseFloat(plan.price_per_hour) : 10000,
+          PricingPlans: pricingPlans,
           totalCount: z.Computers ? z.Computers.length : 20,
+          maxCapacity: z.max_capacity ?? null,
+          max_capacity: z.max_capacity ?? null,
+          codePrefix: z.code_prefix || 'PC-',
+          code_prefix: z.code_prefix || 'PC-',
+          colorCode: z.color_code || '#0284c7',
+          color_code: z.color_code || '#0284c7',
+          tierLevel: z.tier_level || 1,
+          tier_level: z.tier_level || 1,
           stations: z.Computers ? z.Computers.map((c) => {
             const latestLog = c.ComputerStatusLogs && c.ComputerStatusLogs.length > 0 ? c.ComputerStatusLogs[0] : null;
             const memberUser = latestLog && latestLog.Member && latestLog.Member.userInfo ? latestLog.Member.userInfo : null;

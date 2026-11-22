@@ -4,6 +4,7 @@ const { ComputerStatus } = require('../constants/enums');
 
 const HardwareProfileService = require('./hardwareProfileService');
 const TelemetryService = require('./telemetryService');
+const { ComputerZoneService } = require('./computerZoneService');
 const { SessionType } = require('../constants/enums');
 const { Op } = require('sequelize');
 
@@ -14,11 +15,13 @@ class ComputerService {
   constructor(
     models = defaultDb,
     hardwareProfileService = new HardwareProfileService(models),
-    telemetryService = new TelemetryService(models)
+    telemetryService = new TelemetryService(models),
+    computerZoneService = new ComputerZoneService(models)
   ) {
     this.models = models;
     this.hardwareProfileService = hardwareProfileService;
     this.telemetryService = telemetryService;
+    this.computerZoneService = computerZoneService;
   }
 
   /**
@@ -204,14 +207,9 @@ class ComputerService {
         throw err;
       }
 
-      // Validate zone exists if provided
+      // Validate zone exists and capacity limit via dedicated computerZoneService
       if (zone_id) {
-        const zoneExists = await db.ComputerZone.findByPk(Number(zone_id));
-        if (!zoneExists) {
-          const err = new Error('Phân khu máy trạm không tồn tại');
-          err.statusCode = 400;
-          throw err;
-        }
+        await this.computerZoneService.validateCapacity(Number(zone_id));
       }
 
       // Check duplicate computer_name
@@ -276,7 +274,6 @@ class ComputerService {
           }, { transaction: t });
 
           const nextId = newComputer.computer_id;
-          const hexId = (nextId * 3).toString(16).padStart(2, '0').toUpperCase();
 
           let updated = false;
           if (!computer_name) {
@@ -290,8 +287,9 @@ class ComputerService {
             updated = true;
           }
           if (!mac_address) {
-            const octet4 = String(nextId % 100).padStart(2, '0');
-            newComputer.mac_address = `F4:D4:88:5A:${octet4}:${hexId}`;
+            const octet5 = String(Math.floor(nextId / 100) % 100).padStart(2, '0');
+            const octet6 = String(nextId % 100).padStart(2, '0');
+            newComputer.mac_address = `F4:D4:88:5A:${octet5}:${octet6}`;
             updated = true;
           }
 
@@ -332,14 +330,9 @@ class ComputerService {
       const computer = await db.Computer.findByPk(computerId);
       if (!computer) return null;
 
-      // Validate zone if changing
-      if (updateData.zone_id) {
-        const zoneExists = await db.ComputerZone.findByPk(Number(updateData.zone_id));
-        if (!zoneExists) {
-          const err = new Error('Phân khu máy trạm không tồn tại');
-          err.statusCode = 400;
-          throw err;
-        }
+      // Validate zone and check capacity via dedicated computerZoneService if changing zone
+      if (updateData.zone_id && Number(updateData.zone_id) !== computer.zone_id) {
+        await this.computerZoneService.validateCapacity(Number(updateData.zone_id));
         computer.zone_id = Number(updateData.zone_id);
       }
 
@@ -471,18 +464,25 @@ class ComputerService {
     }
   }
 
-  /**
-   * Fetch all zones with pricing plans
-   */
+  // =========================================================================
+  // Delegated Computer Zone Methods (Single Responsibility Principle)
+  // Maintains 100% backward compatibility for existing callers & controllers
+  // =========================================================================
+
   async getAllZones() {
-    try {
-      return await this.models.ComputerZone.findAll({
-        include: [{ model: this.models.PricingPlan, required: false, attributes: ['pricing_plan_id', 'name', 'price_per_hour', 'plan_type', 'is_active'] }]
-      });
-    } catch (error) {
-      if (!error.statusCode) error.statusCode = 500;
-      throw error;
-    }
+    return await this.computerZoneService.getAllZones();
+  }
+
+  async createZone(zoneData) {
+    return await this.computerZoneService.createZone(zoneData);
+  }
+
+  async updateZone(zoneId, updateData) {
+    return await this.computerZoneService.updateZone(zoneId, updateData);
+  }
+
+  async deleteZone(zoneId) {
+    return await this.computerZoneService.deleteZone(zoneId);
   }
 
   /**
@@ -494,6 +494,7 @@ class ComputerService {
       const db = this.models;
       const [zones, computers] = await Promise.all([
         db.ComputerZone.findAll({
+          where: { is_deleted: false },
           include: [{ model: db.PricingPlan, required: false, attributes: ['pricing_plan_id', 'name', 'price_per_hour', 'plan_type', 'is_active'] }],
           order: [['zone_id', 'ASC']]
         }),
@@ -528,6 +529,11 @@ class ComputerService {
         return {
           zone_id: zone.zone_id,
           zone_name: zone.zone_name,
+          description: zone.description || '',
+          max_capacity: zone.max_capacity ?? null,
+          code_prefix: zone.code_prefix || 'PC-',
+          color_code: zone.color_code || '#0284c7',
+          tier_level: zone.tier_level || 1,
           price_per_hour: activePlan.price_per_hour ? Number(activePlan.price_per_hour) : 0,
           total_stations: zoneStations.length,
           stations: zoneStations

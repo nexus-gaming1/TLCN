@@ -8,6 +8,7 @@ import ZoneSection from '../../widgets/station-grid/ZoneSection';
 import StationListView from '../../widgets/station-grid/StationListView';
 import StationDrawer from '../../features/station-drawer/ui/StationDrawer';
 import BootromLogModal from '../../features/bootrom/BootromLogModal';
+import ZoneManagementModal from '../../features/machines/ui/ZoneManagementModal';
 import dashboardService from '../../shared/api/dashboard.service';
 import machineService from '../../shared/api/machine.service';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
@@ -23,6 +24,9 @@ export default function AdminDashboardPage({ user, onLogout }) {
     const [allStationsList, setAllStationsList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isBootromModalOpen, setIsBootromModalOpen] = useState(false);
+    const [isZoneModalOpen, setIsZoneModalOpen] = useState(false);
+    const [zoneModalMode, setZoneModalMode] = useState('list');
+    const [selectedZoneForEdit, setSelectedZoneForEdit] = useState(null);
     const [toastMessage, setToastMessage] = useState(null);
 
     const showGlobalToast = (text, isError = false) => {
@@ -237,6 +241,16 @@ const {
                             setSortBy={setSortBy}
                             onOpenBootromLogs={() => setIsBootromModalOpen(true)}
                             onTriggerWakeOnLan={handleTriggerWakeOnLan}
+                            onOpenCreateZone={() => {
+                                setZoneModalMode('create');
+                                setSelectedZoneForEdit(null);
+                                setIsZoneModalOpen(true);
+                            }}
+                            onOpenZoneManagement={() => {
+                                setZoneModalMode('list');
+                                setSelectedZoneForEdit(null);
+                                setIsZoneModalOpen(true);
+                            }}
                         />
 
                         <KpiCards
@@ -270,6 +284,11 @@ const {
                                         filter={filter}
                                         searchQuery={searchQuery}
                                         onSelectStation={(st) => setSelectedStation(st)}
+                                        onEditZone={(z) => {
+                                            setZoneModalMode('edit');
+                                            setSelectedZoneForEdit(z);
+                                            setIsZoneModalOpen(true);
+                                        }}
                                     />
                                 );
                             })
@@ -296,6 +315,22 @@ const {
             <BootromLogModal
                 isOpen={isBootromModalOpen}
                 onClose={() => setIsBootromModalOpen(false)}
+            />
+
+            {/* ZONE & CAPACITY MANAGEMENT MODAL */}
+            <ZoneManagementModal
+                isOpen={isZoneModalOpen}
+                onClose={() => {
+                    setIsZoneModalOpen(false);
+                    setSelectedZoneForEdit(null);
+                    setZoneModalMode('list');
+                }}
+                initialMode={zoneModalMode}
+                initialEditZone={selectedZoneForEdit}
+                onSuccess={() => {
+                    loadDashboardData(false);
+                    showGlobalToast('Đã cập nhật danh sách phân khu & sức chứa phòng máy!');
+                }}
             />
         </div>
     );

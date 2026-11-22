@@ -12,6 +12,7 @@ import MachineTable from '../../features/machines/ui/MachineTable';
 import Pagination from '../../shared/ui/Pagination';
 import CreateMachineModal from '../../features/machines/ui/CreateMachineModal';
 import EditMachineModal from '../../features/machines/ui/EditMachineModal';
+import ZoneManagementModal from '../../features/machines/ui/ZoneManagementModal';
 import { ComputerStatus } from '../../shared/constants/stationConstants';
 import StationCard from '../../entities/station/ui/StationCard';
 
@@ -42,6 +43,9 @@ export default function MachineManagementPage({ user, onLogout }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
+  const [isZoneModalOpen, setIsZoneModalOpen] = useState(false);
+  const [zoneModalMode, setZoneModalMode] = useState('list');
+  const [selectedZoneForEdit, setSelectedZoneForEdit] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -425,6 +429,16 @@ export default function MachineManagementPage({ user, onLogout }) {
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               onOpenCreateModal={() => setIsModalOpen(true)}
+              onOpenCreateZone={() => {
+                setZoneModalMode('create');
+                setSelectedZoneForEdit(null);
+                setIsZoneModalOpen(true);
+              }}
+              onOpenZoneManagement={() => {
+                setZoneModalMode('list');
+                setSelectedZoneForEdit(null);
+                setIsZoneModalOpen(true);
+              }}
               onExportReport={handleExportReport}
             />
 
@@ -531,6 +545,16 @@ export default function MachineManagementPage({ user, onLogout }) {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateMachine}
+        onOpenCreateZone={() => {
+          setZoneModalMode('create');
+          setSelectedZoneForEdit(null);
+          setIsZoneModalOpen(true);
+        }}
+        onOpenZoneManagement={(z) => {
+          setZoneModalMode('edit');
+          setSelectedZoneForEdit(z);
+          setIsZoneModalOpen(true);
+        }}
       />
 
       {/* Edit Machine Modal */}
@@ -539,6 +563,22 @@ export default function MachineManagementPage({ user, onLogout }) {
         machine={editingMachine}
         onClose={() => setEditingMachine(null)}
         onSubmit={handleUpdateMachine}
+      />
+
+      {/* Zone Management Modal */}
+      <ZoneManagementModal
+        isOpen={isZoneModalOpen}
+        onClose={() => {
+          setIsZoneModalOpen(false);
+          setSelectedZoneForEdit(null);
+          setZoneModalMode('list');
+        }}
+        initialMode={zoneModalMode}
+        initialEditZone={selectedZoneForEdit}
+        onSuccess={() => {
+          refreshMachineList(false);
+          showToast('Đã cập nhật danh sách phân khu & sức chứa phòng máy!');
+        }}
       />
     </div>
   );

@@ -39,6 +39,30 @@ class MachineService {
   }
 
   /**
+   * Create a new computer zone
+   */
+  async createZone(zoneData) {
+    const response = await apiClient.post('/computers/zones', zoneData);
+    return response.data;
+  }
+
+  /**
+   * Update an existing computer zone
+   */
+  async updateZone(zoneId, zoneData) {
+    const response = await apiClient.put(`/computers/zones/${zoneId}`, zoneData);
+    return response.data;
+  }
+
+  /**
+   * Delete a computer zone
+   */
+  async deleteZone(zoneId) {
+    const response = await apiClient.delete(`/computers/zones/${zoneId}`);
+    return response.data;
+  }
+
+  /**
    * Remote control machine status (ONLINE, OFFLINE, LOCKED, MAINTENANCE)
    */
   async changeStatus(computerId, status, memberId = null, notes = null) {

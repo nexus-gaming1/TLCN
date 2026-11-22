@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Search, Download, PlusCircle, LayoutList, LayoutGrid, ChevronDown } from 'lucide-react';
+import { Search, Download, PlusCircle, LayoutList, LayoutGrid, ChevronDown, Layers, Plus } from 'lucide-react';
 import { COMPUTER_STATUS_OPTIONS } from '../../../shared/constants/stationConstants';
 
 export default function MachineFilterBar({
@@ -16,6 +16,8 @@ export default function MachineFilterBar({
   viewMode = 'table',
   onViewModeChange,
   onOpenCreateModal,
+  onOpenCreateZone,
+  onOpenZoneManagement,
   onExportReport
 }) {
   const searchInputRef = useRef(null);
@@ -68,6 +70,28 @@ export default function MachineFilterBar({
             <span>Xuất Báo Cáo</span>
           </button>
 
+          {/* Nút Thêm Phân Khu Mới Riêng Biệt */}
+          <button
+            type="button"
+            onClick={onOpenCreateZone}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-extrabold rounded-lg text-xs transition-all border border-emerald-300 shadow-2xs cursor-pointer whitespace-nowrap"
+            title="Tạo mới một phân khu phòng máy (Khu VIP, Esports, v.v.)"
+          >
+            <Plus className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Thêm Phân Khu</span>
+          </button>
+
+          {/* Nút Quản Lý Phân Khu */}
+          <button
+            type="button"
+            onClick={onOpenZoneManagement}
+            className="flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 text-slate-800 font-bold rounded-lg text-xs transition-all border border-slate-300 shadow-2xs cursor-pointer whitespace-nowrap"
+            title="Quản lý và cấu hình sức chứa các phân khu phòng máy"
+          >
+            <Layers className="w-3.5 h-3.5 text-slate-600" />
+            <span>DS Phân Khu</span>
+          </button>
+
           {/* Nút Thêm Máy Mới */}
           <button
             type="button"
@@ -75,7 +99,7 @@ export default function MachineFilterBar({
             className="flex items-center gap-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-extrabold rounded-lg text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap"
           >
             <PlusCircle className="w-4 h-4 text-white" />
-            <span>+ Thêm Máy Mới</span>
+            <span>Thêm Máy Mới</span>
           </button>
 
           {/* Bộ Chuyển Đổi View: Bảng / Lưới */}

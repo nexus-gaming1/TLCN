@@ -210,12 +210,12 @@ const seedData = async (db) => {
 
     // 4. Seed Computer Zones
     await safeSeed(db.ComputerZone, [
-      { zone_id: 1, zone_name: 'Zone 1: Esports Pro Arena', description: 'Máy thi đấu 360Hz BenQ ZOWIE, CPU i9 14900K, RTX 4080', tier_level: 2 },
-      { zone_id: 2, zone_name: 'Zone 2: VIP Gaming Suite', description: 'Phòng VIP riêng biệt, ghế da cao cấp, RTX 4070 Ti Super', tier_level: 2 },
-      { zone_id: 3, zone_name: 'Zone 3: Tiêu Chuẩn Combat', description: 'Khu vực phổ thông i5 14400F, RTX 4060, Màn 240Hz', tier_level: 1 },
-      { zone_id: 4, zone_name: 'Zone 4: Stream Studio', description: 'Phòng Studio cách âm, Cam 4K, GoXLR, RTX 4090 24GB', tier_level: 3 },
-      { zone_id: 5, zone_name: 'Zone 5: Cloud Remote Nodes', description: 'Cụm Cloud vGPU stream WebRTC 1.1ms AV1 Dual EPYC', tier_level: 4 }
-    ], ['zone_name', 'description', 'tier_level']);
+      { zone_id: 1, zone_name: 'Zone 1: Esports Pro Arena', description: 'Máy thi đấu 360Hz BenQ ZOWIE, CPU i9 14900K, RTX 4080', tier_level: 2, code_prefix: 'ESP-', color_code: '#0284c7' },
+      { zone_id: 2, zone_name: 'Zone 2: VIP Gaming Suite', description: 'Phòng VIP riêng biệt, ghế da cao cấp, RTX 4070 Ti Super', tier_level: 2, code_prefix: 'VIP-', color_code: '#8b5cf6' },
+      { zone_id: 3, zone_name: 'Zone 3: Tiêu Chuẩn Combat', description: 'Khu vực phổ thông i5 14400F, RTX 4060, Màn 240Hz', tier_level: 1, code_prefix: 'PC-', color_code: '#10b981' },
+      { zone_id: 4, zone_name: 'Zone 4: Stream Studio', description: 'Phòng Studio cách âm, Cam 4K, GoXLR, RTX 4090 24GB', tier_level: 3, code_prefix: 'STR-', color_code: '#f59e0b' },
+      { zone_id: 5, zone_name: 'Zone 5: Cloud Remote Nodes', description: 'Cụm Cloud vGPU stream WebRTC 1.1ms AV1 Dual EPYC', tier_level: 4, code_prefix: 'CLD-', color_code: '#ef4444' }
+    ], ['zone_name', 'description', 'tier_level', 'code_prefix', 'color_code']);
 
     // 4.5. Seed Hardware Profiles into MySQL CSDL
     if (db.HardwareProfile) {

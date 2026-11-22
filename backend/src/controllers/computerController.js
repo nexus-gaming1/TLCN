@@ -1,4 +1,5 @@
 const computerService = require('../services/computerService');
+const computerZoneService = require('../services/computerZoneService');
 const stationControlService = require('../services/stationControlService');
 const computerSocketService = require('../services/computerSocketService');
 const machineStore = require('../stores/machineStore');
@@ -53,11 +54,51 @@ class ComputerController {
 
   async getZones(req, res, next) {
     try {
-      const zones = await computerService.getAllZones();
+      const zones = await computerZoneService.getAllZones();
       return res.json({
         status: 'success',
         data: zones,
         message: 'Lấy danh sách phân khu máy trạm thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createZone(req, res, next) {
+    try {
+      const createdZone = await computerZoneService.createZone(req.body);
+      return res.status(201).json({
+        status: 'success',
+        data: createdZone,
+        message: 'Tạo phân khu máy trạm mới thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async updateZone(req, res, next) {
+    try {
+      const { id } = req.params;
+      const updatedZone = await computerZoneService.updateZone(id, req.body);
+      return res.json({
+        status: 'success',
+        data: updatedZone,
+        message: 'Cập nhật phân khu máy trạm thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async deleteZone(req, res, next) {
+    try {
+      const { id } = req.params;
+      await computerZoneService.deleteZone(id);
+      return res.json({
+        status: 'success',
+        message: 'Xóa phân khu máy trạm thành công'
       });
     } catch (error) {
       next(error);

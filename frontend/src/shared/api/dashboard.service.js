@@ -17,6 +17,7 @@ export const dashboardService = {
           id: `zone-${z.zone_id}`,
           zone_id: z.zone_id,
           name: z.zone_name,
+          description: z.description,
           price_per_hour: z.price_per_hour,
           stations: (z.stations || []).map(mapComputerToMachineDTO)
         }));

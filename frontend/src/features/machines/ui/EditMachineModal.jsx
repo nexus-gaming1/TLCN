@@ -44,11 +44,24 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
         ? String(machineZoneId).replace('zone-', '')
         : '1';
 
+      // Auto-sanitize legacy malformed MAC if present (e.g. 3-char octet like :16B)
+      let cleanMac = (machineMac || '').trim();
+      if (cleanMac && !MAC_REGEX.test(cleanMac)) {
+        const parts = cleanMac.split(/[:-]/);
+        if (parts.length === 6) {
+          const sanitizedParts = parts.map((p) => p.slice(0, 2).padStart(2, '0').toUpperCase());
+          const candidateMac = sanitizedParts.join(':');
+          if (MAC_REGEX.test(candidateMac)) {
+            cleanMac = candidateMac;
+          }
+        }
+      }
+
       setFormData({
         computer_name: machine.id || machine.computer_name || '',
         zone_id: rawZoneId,
         ip_address: machineIp || '',
-        mac_address: machineMac || '',
+        mac_address: cleanMac,
         status: String(machineStatus || ComputerStatus.ONLINE).toUpperCase(),
         is_remote_enabled: Boolean(machineRemote)
       });

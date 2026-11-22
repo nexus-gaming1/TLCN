@@ -85,6 +85,7 @@ class HardwareProfileService {
       });
 
       const zones = await db.ComputerZone.findAll({
+        where: { is_deleted: false },
         attributes: ['zone_id', 'zone_name']
       });
 
