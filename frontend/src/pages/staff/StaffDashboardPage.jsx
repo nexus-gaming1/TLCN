@@ -120,9 +120,20 @@ export default function StaffDashboardPage({ user, onLogout }) {
   // 3. Xử lý ticket (Tiếp nhận / Hoàn tất / Bác bỏ / Duyệt Hoàn tiền)
   const handleProcessTicket = async (ticketId, action, refundAmountVal = null, note = '') => {
     try {
+      let defaultNote = '';
+      if (action === 'IN_PROGRESS') {
+        defaultNote = 'Nhân viên đang tới máy hỗ trợ';
+      } else if (action === 'RESOLVE') {
+        defaultNote = 'Nhân viên đã hỗ trợ xử lý hoàn tất';
+      } else if (action === 'REJECT') {
+        defaultNote = 'Từ chối yêu cầu';
+      } else if (action === 'REFUND') {
+        defaultNote = 'Duyệt hoàn tiền sự cố món ăn';
+      }
+
       const payload = {
         action,
-        resolution_note: note || (action === 'RESOLVE' ? 'Nhân viên đã hỗ trợ xong' : 'Bác bỏ yêu cầu'),
+        resolution_note: note || defaultNote,
       };
       // Chốt chặn an toàn: Chỉ gán refund_amount khi có giá trị số hợp lệ (Tránh lỗi NaN ở Backend)
       if (refundAmountVal !== null && refundAmountVal !== undefined && !isNaN(parseFloat(refundAmountVal))) {
@@ -175,7 +186,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
       playChimeSound();
       setToast({
         type: 'warning',
-        title: '🔔 CÓ YÊU CẦU HỖ TRỢ MỚI!',
+        title: 'CÓ YÊU CẦU HỖ TRỢ MỚI!',
         message: `${newTicket.title} - ${newTicket.description || 'Khách cần hỗ trợ tại máy'}`,
       });
       fetchSupportTickets();

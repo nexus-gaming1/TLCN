@@ -19,6 +19,7 @@ import MenuCard from './components/MenuCard';
 import CartDrawer from './components/CartDrawer';
 import ActiveOrderTracker from './components/ActiveOrderTracker';
 import supportService from '../../shared/api/support.service';
+import ReportIssueModal from './components/ReportIssueModal';
 
 export default function CustomerFoodPage({ user, onLogout }) {
   const memberId = user?.member_id ?? user?.id ?? user?.user_id;
@@ -42,6 +43,9 @@ export default function CustomerFoodPage({ user, onLogout }) {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [cancellingOrderId, setCancellingOrderId] = useState(null);
+  const [reportModalOrder, setReportModalOrder] = useState(null);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
 
   // Feedback Toast
   const [toast, setToast] = useState(null);
@@ -282,33 +286,41 @@ export default function CustomerFoodPage({ user, onLogout }) {
     }
   };
 
-    // Xử lý báo cáo sự cố đơn hàng F&B
-  const handleReportOrderIssue = async (order) => {
-    const reason = window.prompt(
-      `Báo cáo sự cố cho đơn hàng #${order.order_id}\nVui lòng nhập lý do (VD: Món nguội, giao thiếu Sting, nhầm món...):`
-    );
-    // Nếu khách bấm Cancel hoặc để trống thì hủy bỏ
-    if (!reason || !reason.trim()) return;
+  // Mở Modal báo sự cố
+  const handleOpenReportModal = (order) => {
+    setReportModalOrder(order);
+    setReportReason('');
+  };
+  // Gửi form khiếu nại sự cố
+  const handleSubmitReportIssue = async (e) => {
+    e.preventDefault();
+    if (!reportModalOrder || !reportReason.trim()) return;
+    setReportSubmitting(true);
     try {
       await supportService.createRequest({
         type: 'ORDER_DISPUTE',
-        order_id: order.order_id,
-        title: `[SỰ CỐ F&B] Đơn hàng #${order.order_id}`,
-        description: reason.trim()
+        order_id: reportModalOrder.order_id,
+        title: `[SỰ CỐ F&B] Đơn hàng #${reportModalOrder.order_id}`,
+        description: reportReason.trim(),
       });
       setToast({
         type: 'success',
         title: 'Đã gửi khiếu nại thành công!',
-        message: 'Thu ngân sẽ kiểm tra và thực hiện hoàn tiền lại ví tài khoản cho bạn ngay.'
+        message: 'Thu ngân sẽ kiểm tra và thực hiện hoàn tiền lại ví tài khoản cho bạn ngay.',
       });
+      setReportModalOrder(null);
+      setReportReason('');
     } catch (err) {
       setToast({
         type: 'error',
         title: 'Gửi khiếu nại thất bại',
-        message: err.message || 'Không thể tạo yêu cầu khiếu nại'
+        message: err.message || 'Không thể tạo yêu cầu khiếu nại',
       });
+    } finally {
+      setReportSubmitting(false);
     }
   };
+
 
   return (
     <CustomerLayout user={user} onLogout={onLogout} activeTab="orders">
@@ -460,12 +472,22 @@ export default function CustomerFoodPage({ user, onLogout }) {
               loading={loadingOrders}
               cancellingOrderId={cancellingOrderId}
               onCancelOrder={handleCancelOrder}
-              onReportIssue={handleReportOrderIssue} 
+              onReportIssue={handleOpenReportModal} 
               onRefresh={() => fetchMyOrders(false)}
             />
           </div>
         </div>
       </div>
+
+      <ReportIssueModal
+        isOpen={Boolean(reportModalOrder)}
+        order={reportModalOrder}
+        reason={reportReason}
+        onReasonChange={setReportReason}
+        submitting={reportSubmitting}
+        onSubmit={handleSubmitReportIssue}
+        onClose={() => setReportModalOrder(null)}
+      />
 
       <FloatingToast toast={toast} onClose={() => setToast(null)} />
     </CustomerLayout>

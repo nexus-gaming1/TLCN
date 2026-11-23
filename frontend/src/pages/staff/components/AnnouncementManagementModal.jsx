@@ -14,6 +14,7 @@ export default function AnnouncementManagementModal({ isOpen, onClose }) {
   const [type, setType] = useState('INFO');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [deletingId, setDeletingId] = useState(null); // Quản lý id banner đang chờ xác nhận xóa
 
   const fetchAnnouncements = useCallback(async () => {
     setLoading(true);
@@ -61,23 +62,22 @@ export default function AnnouncementManagementModal({ isOpen, onClose }) {
   };
 
   const handleToggle = async (id) => {
-    try {
-      await announcementService.toggleActive(id);
-      fetchAnnouncements();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc chắn muốn xóa vĩnh viễn thông báo này?')) return;
-    try {
-      await announcementService.deleteAnnouncement(id);
-      fetchAnnouncements();
-    } catch (err) {
-      alert(err.message);
-    }
-  };
+  try {
+    await announcementService.toggleActive(id);
+    fetchAnnouncements();
+  } catch (err) {
+    setErrorMsg(err.message || 'Lỗi khi cập nhật trạng thái thông báo');
+  }
+};
+const handleDelete = async (id) => {
+  try {
+    await announcementService.deleteAnnouncement(id);
+    setDeletingId(null);
+    fetchAnnouncements();
+  } catch (err) {
+    setErrorMsg(err.message || 'Lỗi khi xóa thông báo');
+  }
+};
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
@@ -219,14 +219,33 @@ export default function AnnouncementManagementModal({ isOpen, onClose }) {
                     <span className="text-[10px] font-mono hidden sm:inline">{a.is_active ? 'Bật' : 'Tắt'}</span>
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(a.announcement_id)}
-                    className="p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
-                    title="Xóa vĩnh viễn"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  {deletingId === a.announcement_id ? (
+                    <div className="flex items-center gap-1 animate-in fade-in">
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(a.announcement_id)}
+                        className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-black text-[11px] shadow-xs cursor-pointer"
+                      >
+                        Xác Nhận Xóa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeletingId(null)}
+                        className="px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-[11px] cursor-pointer"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setDeletingId(a.announcement_id)}
+                      className="p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 transition cursor-pointer"
+                      title="Xóa vĩnh viễn"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))
