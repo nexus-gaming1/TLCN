@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -9,7 +9,6 @@ import {
   AlertTriangle,
   Check,
   ShieldAlert,
-  Sliders,
   DollarSign,
   Monitor,
   Tag,
@@ -27,10 +26,25 @@ const PRESET_COLORS = [
   { label: 'Đá Slate', hex: '#475569' }
 ];
 
+const ZONE_MODES = Object.freeze({
+  LIST: 'list',
+  CREATE: 'create',
+  EDIT: 'edit'
+});
+
+const DEFAULT_ZONE_FORM = Object.freeze({
+  zone_name: '',
+  code_prefix: 'PC-',
+  tier_level: 1,
+  max_capacity: '',
+  color_code: PRESET_COLORS[0].hex,
+  description: ''
+});
+
 export default function ZoneManagementModal({
   isOpen = false,
   onClose,
-  initialMode = 'list', // 'list' | 'create' | 'edit'
+  initialMode = ZONE_MODES.LIST,
   initialEditZone = null,
   onSuccess
 }) {
@@ -45,100 +59,77 @@ export default function ZoneManagementModal({
   const [activeTab, setActiveTab] = useState(initialMode);
   const [editZoneId, setEditZoneId] = useState(null);
   const [editingZoneName, setEditingZoneName] = useState('');
-  const [formData, setFormData] = useState({
-    zone_name: '',
-    code_prefix: 'PC-',
-    tier_level: 1,
-    max_capacity: '',
-    color_code: '#0284c7',
-    description: ''
-  });
+  const [formData, setFormData] = useState(DEFAULT_ZONE_FORM);
 
   // Delete Confirm State
   const [deletingZone, setDeletingZone] = useState(null);
 
-  // Load Zones
-  const loadData = async () => {
+  const resetForm = useCallback(() => {
+    setFormData(DEFAULT_ZONE_FORM);
+    setErrorMessage(null);
+  }, []);
+
+  const handleOpenCreate = useCallback(() => {
+    setActiveTab(ZONE_MODES.CREATE);
+    setEditZoneId(null);
+    setEditingZoneName('');
+    resetForm();
+  }, [resetForm]);
+
+  const handleOpenEdit = useCallback((zone) => {
+    if (!zone) return;
+    setActiveTab(ZONE_MODES.EDIT);
+    setEditZoneId(zone.zone_id);
+    const zName = zone.zone_name || zone.name || '';
+    setEditingZoneName(zName);
+    setFormData({
+      zone_name: zName,
+      code_prefix: zone.code_prefix || zone.codePrefix || DEFAULT_ZONE_FORM.code_prefix,
+      tier_level: zone.tier_level || zone.tierLevel || DEFAULT_ZONE_FORM.tier_level,
+      max_capacity:
+        zone.max_capacity !== null && zone.max_capacity !== undefined
+          ? String(zone.max_capacity)
+          : zone.maxCapacity !== null && zone.maxCapacity !== undefined
+            ? String(zone.maxCapacity)
+            : DEFAULT_ZONE_FORM.max_capacity,
+      color_code: zone.color_code || zone.colorCode || DEFAULT_ZONE_FORM.color_code,
+      description: zone.description || DEFAULT_ZONE_FORM.description
+    });
+    setErrorMessage(null);
+  }, []);
+
+  // Load Zones - Stable reference (no re-renders on activeTab change)
+  const loadData = useCallback(async () => {
     setLoading(true);
     setErrorMessage(null);
     try {
       const zonesData = await machineService.getZones();
       if (Array.isArray(zonesData)) {
         setZones(zonesData);
-        if (initialEditZone && (activeTab === 'edit' || initialMode === 'edit')) {
-          const freshZone = zonesData.find((z) => z.zone_id === initialEditZone.zone_id);
-          if (freshZone) {
-            handleOpenEdit(freshZone);
-          }
-        }
       }
     } catch (err) {
       setErrorMessage(err.message || 'Lỗi khi tải dữ liệu phân khu');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
+  // Sync state once whenever modal opens
   useEffect(() => {
-    if (isOpen) {
-      loadData();
+    if (!isOpen) return;
+
+    loadData();
+
+    if (initialEditZone) {
+      handleOpenEdit(initialEditZone);
+    } else if (initialMode === ZONE_MODES.CREATE) {
+      handleOpenCreate();
+    } else {
+      setActiveTab(ZONE_MODES.LIST);
+      setEditZoneId(null);
+      resetForm();
     }
-  }, [isOpen]);
-
-  // Sync with initialMode & initialEditZone on open
-  useEffect(() => {
-    if (isOpen) {
-      if (initialEditZone) {
-        handleOpenEdit(initialEditZone);
-      } else if (initialMode === 'create') {
-        handleOpenCreate();
-      } else {
-        setActiveTab('list');
-        setEditZoneId(null);
-        resetForm();
-      }
-    }
-  }, [isOpen, initialMode, initialEditZone]);
-
-  const resetForm = () => {
-    setFormData({
-      zone_name: '',
-      code_prefix: 'PC-',
-      tier_level: 1,
-      max_capacity: '',
-      color_code: '#0284c7',
-      description: ''
-    });
-    setErrorMessage(null);
-  };
-
-  const handleOpenCreate = () => {
-    setActiveTab('create');
-    setEditZoneId(null);
-    setEditingZoneName('');
-    resetForm();
-  };
-
-  const handleOpenEdit = (zone) => {
-    setActiveTab('edit');
-    setEditZoneId(zone.zone_id);
-    const zName = zone.zone_name || zone.name || '';
-    setEditingZoneName(zName);
-    setFormData({
-      zone_name: zName,
-      code_prefix: zone.code_prefix || zone.codePrefix || 'PC-',
-      tier_level: zone.tier_level || zone.tierLevel || 1,
-      max_capacity:
-        zone.max_capacity !== null && zone.max_capacity !== undefined
-          ? String(zone.max_capacity)
-          : zone.maxCapacity !== null && zone.maxCapacity !== undefined
-          ? String(zone.maxCapacity)
-          : '',
-      color_code: zone.color_code || zone.colorCode || '#0284c7',
-      description: zone.description || ''
-    });
-    setErrorMessage(null);
-  };
+  }, [isOpen, initialMode, initialEditZone, loadData, handleOpenEdit, handleOpenCreate, resetForm]);
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
@@ -163,7 +154,7 @@ export default function ZoneManagementModal({
         description: formData.description
       };
 
-      if (activeTab === 'edit' && editZoneId) {
+      if (activeTab === ZONE_MODES.EDIT && editZoneId) {
         await machineService.updateZone(editZoneId, payload);
         setSuccessMessage(`Đã cập nhật phân khu "${formData.zone_name}" thành công!`);
       } else {
@@ -172,7 +163,7 @@ export default function ZoneManagementModal({
       }
 
       setTimeout(() => setSuccessMessage(null), 3000);
-      setActiveTab('list');
+      setActiveTab(ZONE_MODES.LIST);
       setEditZoneId(null);
       resetForm();
       await loadData();
@@ -246,11 +237,10 @@ export default function ZoneManagementModal({
                 setActiveTab('list');
                 setErrorMessage(null);
               }}
-              className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition flex items-center gap-1.5 border-b-2 cursor-pointer ${
-                activeTab === 'list'
-                  ? 'border-sky-600 text-sky-700 bg-white shadow-2xs font-extrabold'
-                  : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-              }`}
+              className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition flex items-center gap-1.5 border-b-2 cursor-pointer ${activeTab === 'list'
+                ? 'border-sky-600 text-sky-700 bg-white shadow-2xs font-extrabold'
+                : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                }`}
             >
               <Layers className="w-3.5 h-3.5" />
               <span>Danh Sách Phân Khu ({zones.length})</span>
@@ -260,11 +250,10 @@ export default function ZoneManagementModal({
             <button
               type="button"
               onClick={handleOpenCreate}
-              className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition flex items-center gap-1.5 border-b-2 cursor-pointer ${
-                activeTab === 'create'
-                  ? 'border-sky-600 text-sky-700 bg-white shadow-2xs font-extrabold'
-                  : 'border-transparent text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50/60 font-extrabold'
-              }`}
+              className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition flex items-center gap-1.5 border-b-2 cursor-pointer ${activeTab === 'create'
+                ? 'border-sky-600 text-sky-700 bg-white shadow-2xs font-extrabold'
+                : 'border-transparent text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50/60 font-extrabold'
+                }`}
             >
               <Plus className="w-3.5 h-3.5 text-emerald-600" />
               <span>Thêm Phân Khu Mới</span>
@@ -394,9 +383,8 @@ export default function ZoneManagementModal({
                               Sức chứa:
                             </span>
                             <span
-                              className={`font-mono text-[11px] ${
-                                isFull ? 'text-rose-600 font-extrabold' : 'text-slate-700'
-                              }`}
+                              className={`font-mono text-[11px] ${isFull ? 'text-rose-600 font-extrabold' : 'text-slate-700'
+                                }`}
                             >
                               {count} / {maxCap !== null ? `${maxCap} máy` : '∞ (Không giới hạn)'}
                             </span>
@@ -405,13 +393,12 @@ export default function ZoneManagementModal({
                           {maxCap !== null && (
                             <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
                               <div
-                                className={`h-full transition-all duration-300 ${
-                                  isFull
-                                    ? 'bg-rose-500'
-                                    : percent >= 80
+                                className={`h-full transition-all duration-300 ${isFull
+                                  ? 'bg-rose-500'
+                                  : percent >= 80
                                     ? 'bg-amber-500'
                                     : 'bg-emerald-500'
-                                }`}
+                                  }`}
                                 style={{ width: `${percent}%` }}
                               />
                             </div>
@@ -546,11 +533,10 @@ export default function ZoneManagementModal({
                       key={col.hex}
                       type="button"
                       onClick={() => setFormData((prev) => ({ ...prev, color_code: col.hex }))}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer ${
-                        formData.color_code === col.hex
-                          ? 'border-slate-900 bg-slate-100 shadow-xs'
-                          : 'border-slate-200 hover:bg-slate-50'
-                      }`}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-bold transition cursor-pointer ${formData.color_code === col.hex
+                        ? 'border-slate-900 bg-slate-100 shadow-xs'
+                        : 'border-slate-200 hover:bg-slate-50'
+                        }`}
                     >
                       <span
                         className="w-3.5 h-3.5 rounded-full shrink-0"
@@ -734,11 +720,10 @@ export default function ZoneManagementModal({
                     type="button"
                     disabled={!canDelete || submitting}
                     onClick={handleDelete}
-                    className={`px-5 py-2 rounded-xl text-xs font-extrabold transition shadow-xs flex items-center gap-1.5 ${
-                      canDelete
-                        ? 'bg-rose-600 hover:bg-rose-700 text-white cursor-pointer'
-                        : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
-                    }`}
+                    className={`px-5 py-2 rounded-xl text-xs font-extrabold transition shadow-xs flex items-center gap-1.5 ${canDelete
+                      ? 'bg-rose-600 hover:bg-rose-700 text-white cursor-pointer'
+                      : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
+                      }`}
                     title={!canDelete ? 'Vui lòng di dời máy trạm trước khi xóa' : 'Xác nhận xóa phân khu'}
                   >
                     <Trash2 className="w-3.5 h-3.5" />

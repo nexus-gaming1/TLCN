@@ -109,6 +109,22 @@ class ComputerZoneService {
   }
 
   /**
+   * Helper: Parse & validate max capacity
+   */
+  _validateCapacityValue(capacity) {
+    if (capacity === undefined || capacity === '' || capacity === null) {
+      return null;
+    }
+    const parsed = Number(capacity);
+    if (isNaN(parsed) || parsed < 1) {
+      const err = new Error('Sức chứa tối đa phải là số nguyên dương lớn hơn 0');
+      err.statusCode = 400;
+      throw err;
+    }
+    return parsed;
+  }
+
+  /**
    * Create a new ComputerZone
    */
   async createZone(zoneData) {
@@ -122,15 +138,7 @@ class ComputerZoneService {
         throw err;
       }
 
-      const parsedCapacity = max_capacity !== undefined && max_capacity !== '' && max_capacity !== null
-        ? Number(max_capacity)
-        : null;
-
-      if (parsedCapacity !== null && (isNaN(parsedCapacity) || parsedCapacity < 1)) {
-        const err = new Error('Sức chứa tối đa phải là số nguyên dương lớn hơn 0');
-        err.statusCode = 400;
-        throw err;
-      }
+      const parsedCapacity = this._validateCapacityValue(max_capacity);
 
       const newZone = await db.ComputerZone.create({
         zone_name: zone_name.trim(),
@@ -191,13 +199,7 @@ class ComputerZoneService {
       if (color_code !== undefined) zone.color_code = color_code ? color_code.trim() : '#0284c7';
 
       if (max_capacity !== undefined) {
-        const parsedCapacity = max_capacity !== '' && max_capacity !== null ? Number(max_capacity) : null;
-        if (parsedCapacity !== null && (isNaN(parsedCapacity) || parsedCapacity < 1)) {
-          const err = new Error('Sức chứa tối đa phải là số nguyên dương lớn hơn 0');
-          err.statusCode = 400;
-          throw err;
-        }
-        zone.max_capacity = parsedCapacity;
+        zone.max_capacity = this._validateCapacityValue(max_capacity);
       }
 
       await zone.save();

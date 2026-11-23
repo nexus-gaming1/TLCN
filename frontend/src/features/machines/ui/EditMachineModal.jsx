@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Monitor, X, Check, Network, ShieldAlert } from 'lucide-react';
 import machineService from '../../../shared/api/machine.service';
 import { ComputerStatus, COMPUTER_STATUS_OPTIONS } from '../../../shared/constants/stationConstants';
@@ -91,10 +91,6 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
   }, [isOpen]);
 
   if (!isOpen || !machine) return null;
-
-  const selectedZone = zones.find(
-    (z) => String(z.zone_id) === String(formData.zone_id)
-  ) || zones[0];
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

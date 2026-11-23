@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -33,11 +33,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
         setToastMessage({ text, isError });
         setTimeout(() => setToastMessage(null), 3500);
     };
-const {
-        data: machines = {},
-        isLoading,
-        isError,
-    } = useMachines();
+    const { data: machines = {} } = useMachines();
     const loadDashboardData = useCallback(async (showLoading = true) => {
         if (showLoading) setLoading(true);
         const data = await dashboardService.getOverview();
@@ -241,16 +237,6 @@ const {
                             setSortBy={setSortBy}
                             onOpenBootromLogs={() => setIsBootromModalOpen(true)}
                             onTriggerWakeOnLan={handleTriggerWakeOnLan}
-                            onOpenCreateZone={() => {
-                                setZoneModalMode('create');
-                                setSelectedZoneForEdit(null);
-                                setIsZoneModalOpen(true);
-                            }}
-                            onOpenZoneManagement={() => {
-                                setZoneModalMode('list');
-                                setSelectedZoneForEdit(null);
-                                setIsZoneModalOpen(true);
-                            }}
                         />
 
                         <KpiCards

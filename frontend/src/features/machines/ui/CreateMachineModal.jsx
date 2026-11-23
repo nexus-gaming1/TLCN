@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Monitor, X, Check, Network, ShieldAlert } from 'lucide-react';
 import machineService from '../../../shared/api/machine.service';
 import MachineZoneSelect from './MachineZoneSelect';

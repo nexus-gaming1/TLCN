@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ArrowUpDown, Zap, Gauge, Grid, LayoutList, ChevronDown, Check, Layers, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowUpDown, Zap, Gauge, Grid, LayoutList, ChevronDown, Check } from 'lucide-react';
 
 export default function SubHeader({
     viewMode,
@@ -7,9 +7,7 @@ export default function SubHeader({
     sortBy,
     setSortBy,
     onOpenBootromLogs,
-    onTriggerWakeOnLan,
-    onOpenZoneManagement,
-    onOpenCreateZone
+    onTriggerWakeOnLan
 }) {
     const [isSortOpen, setIsSortOpen] = useState(false);
     const [isWolConfirmOpen, setIsWolConfirmOpen] = useState(false);
@@ -105,28 +103,6 @@ export default function SubHeader({
                             </div>
                         )}
                     </div>
-
-                    {/* Nút Riêng Biệt: Thêm Phân Khu Mới */}
-                    <button
-                        type="button"
-                        onClick={() => onOpenCreateZone && onOpenCreateZone()}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white shadow-flat transition font-extrabold cursor-pointer"
-                        title="Tạo mới một phân khu phòng máy (Khu VIP, Esports, v.v.)"
-                    >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Thêm Phân Khu</span>
-                    </button>
-
-                    {/* Nút Quản lý Danh Sách Phân Khu */}
-                    <button
-                        type="button"
-                        onClick={() => onOpenZoneManagement && onOpenZoneManagement()}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 shadow-flat transition font-bold cursor-pointer"
-                        title="Xem danh sách, kiểm soát sức chứa và cấu hình các phân khu"
-                    >
-                        <Layers className="w-3.5 h-3.5 text-slate-600" />
-                        <span>DS Phân Khu</span>
-                    </button>
 
                     {/* Batch Wake-on-LAN Button */}
                     <button

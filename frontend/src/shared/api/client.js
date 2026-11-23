@@ -129,12 +129,17 @@ export const apiClient = {
   async handleTokenRefresh() {
     if (!refreshPromise) {
       refreshPromise = (async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+
         try {
           const res = await fetch(`${API_BASE_URL}/auth/refresh`, {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
           });
+          clearTimeout(timeoutId);
 
           const data = await res.json().catch(() => ({}));
           if (!res.ok || data.status === 'error' || !data.data?.accessToken) {
@@ -147,6 +152,9 @@ export const apiClient = {
             this.setCurrentUser(data.data.user);
           }
           return newAccessToken;
+        } catch (err) {
+          clearTimeout(timeoutId);
+          throw err;
         } finally {
           refreshPromise = null;
         }

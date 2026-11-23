@@ -1,5 +1,3 @@
-import React from 'react';
-
 /**
  * MachineKpiCards component for Fleet Summary Statuses
  * Responsive grid with gap-4/gap-5 and wrap protection to prevent squishing

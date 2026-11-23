@@ -1,4 +1,3 @@
-import React from 'react';
 import { Cpu, Plus, ShieldAlert } from 'lucide-react';
 
 /**
