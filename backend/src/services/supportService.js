@@ -125,8 +125,10 @@ class SupportService {
     // Lấy lại dữ liệu đầy đủ kèm quan hệ để bắn socket
     const fullTicket = await this.repository.findById(newRequest.request_id);
 
-    // Bắn socket tới nhân viên thu ngân
-    this.socketService.notifyNewRequest(fullTicket);
+    // Bắn socket tới nhân viên thu ngân (không bắn sự kiện KDS cho FEEDBACK)
+    if (!isFeedback) {
+      this.socketService.notifyNewRequest(fullTicket);
+    }
 
     return fullTicket;
   }
@@ -196,7 +198,8 @@ class SupportService {
       const order = await this.repository.findOrderById(ticket.order_id);
       if (!order) throw new NotFoundError('Không tìm thấy thông tin đơn hàng gắn với khiếu nại này');
 
-      const amountToRefund = refund_amount !== undefined ? parseFloat(refund_amount) : parseFloat(order.total_amount || 0);
+      const hasCustomAmount = refund_amount !== undefined && refund_amount !== null && refund_amount !== '';
+      const amountToRefund = hasCustomAmount ? parseFloat(refund_amount) : parseFloat(order.total_amount || 0);
       const refundReason = incomingNote || `Xử lý sự cố khiếu nại ticket #${ticket.request_id}`;
 
       // Gọi vào luồng hoàn tiền gốc của orderService (có khóa Pessimistic Lock, ghi sổ FinancialTransaction)

@@ -18,6 +18,7 @@ import {
   WifiOff,
   ShoppingBag,
   Megaphone,
+  History
 } from 'lucide-react';
 
 import StaffOrderCard from './components/StaffOrderCard';
@@ -52,6 +53,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
   const [supportTickets, setSupportTickets] = useState([]);
   const [loadingTickets, setLoadingTickets] = useState(false);
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
+  const [isTicketHistoryOpen, setIsTicketHistoryOpen] = useState(false);
 
   // Âm thanh chuông báo động KDS
   const playChimeSound = useCallback(() => {
@@ -104,13 +106,16 @@ export default function StaffDashboardPage({ user, onLogout }) {
     }
   }, [activeTab]);
 
-  // 2. Tải danh sách yêu cầu hỗ trợ / khiếu nại (ĐỘC LẬP Ở CẤP COMPONENT)
+ // 2. Tải danh sách yêu cầu hỗ trợ / khiếu nại (PENDING & IN_PROGRESS)
   const fetchSupportTickets = useCallback(async () => {
     setLoadingTickets(true);
     try {
-      const res = await supportService.getStaffRequests({ limit: 30 });
-      const actionableTickets = (res.rows || []).filter((t) => t.type !== 'FEEDBACK'); //Chỉ giữ lại sự cố cần hành động tại phòng máy
-      setSupportTickets(actionableTickets);
+      const res = await supportService.getStaffRequests({
+        type: 'MACHINE_SUPPORT,ORDER_DISPUTE',
+        status: 'PENDING,IN_PROGRESS',
+        limit: 50,
+      });
+      setSupportTickets(res.rows || []);
     } catch (err) {
       console.error('Lỗi khi tải support tickets:', err);
     } finally {
@@ -294,7 +299,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
       setRefundReason('');
       fetchOrders(true);
     } catch (error) {
-      setToast({ type: 'error', title: 'Hoàn tiền thất bại', message: error.message });
+      setToast({ type: 'error', title: 'Hoàn tiền thất bại', message: 'Đơn đã hoàn tiền'});
     } finally {
       setRefundSubmitting(false);
     }
@@ -440,6 +445,18 @@ export default function StaffDashboardPage({ user, onLogout }) {
                 </div>
 
                 <div className="flex items-center gap-2">
+                   {activeTab === 'TICKETS' && (
+                    <button
+                      type="button"
+                      onClick={() => setIsTicketHistoryOpen(true)}
+                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                      title="Xem lịch sử các phiếu hỗ trợ và khiếu nại đã xử lý"
+                    >
+                      <History className="w-3.5 h-3.5 text-cyan-600" />
+                      <span>Lịch sử đã xử lý</span>
+                    </button>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => {
@@ -489,6 +506,8 @@ export default function StaffDashboardPage({ user, onLogout }) {
                   tickets={supportTickets}
                   loading={loadingTickets}
                   onProcessTicket={handleProcessTicket}
+                  isHistoryOpen={isTicketHistoryOpen}
+                  onCloseHistory={() => setIsTicketHistoryOpen(false)}
                 />
               ) : (
                 <>

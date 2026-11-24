@@ -18,53 +18,46 @@ class SupportRepository {
   async findById(requestId) {
     return await this.models.SupportRequest.findByPk(requestId, {
       include: [
-        {
-          model: this.models.Computer,
-          as: 'computer',
-          attributes: ['computer_id', 'computer_name', 'status']
-        },
-        {
-          model: this.models.Member,
-          as: 'member',
-          include: [
-            {
-              model: this.models.User,
-              as: 'userInfo',
-              attributes: ['user_id', 'username', 'full_name']
-            }
-          ]
-        },
-        {
+         {
           model: this.models.ServiceOrder,
           as: 'order',
           include: [
             {
               model: this.models.ServiceOrderItem,
               as: 'orderItems'
+            },
+            {
+              model: this.models.FinancialTransaction,
+              as: 'transactions',
+              where: {
+                type: 'EXPENSE',
+                category: 'REFUND'
+              },
+              required: false,
+              separate: true,
+              attributes: ['transaction_id', 'amount']
             }
           ]
         },
-        {
-          model: this.models.User,
-          as: 'resolver',
-          attributes: ['user_id', 'full_name', 'role']
-        }
       ]
     });
   }
 
-  //Lấy danh sách ticket với bộ lọc linh hoạt (cho Staff/Admin)
+    //Lấy danh sách ticket với bộ lọc linh hoạt (cho Staff/Admin)
     async findAll(options = {}) {
     // Ép kiểu số nguyên an toàn để tránh lỗi cú pháp LIMIT '20' trên MySQL/TiDB
     const parsedLimit = Math.max(1, parseInt(options.limit, 10) || 50);
     const parsedOffset = Math.max(0, parseInt(options.offset, 10) || 0);
     const { status, type } = options;
     const where = {};
+    // Hỗ trợ cả 1 giá trị đơn ('PENDING') lẫn nhiều giá trị phân cách dấu phẩy ('PENDING,IN_PROGRESS')
     if (status && status !== 'ALL') {
-      where.status = status;
+      const statusList = String(status).split(',').map((s) => s.trim()).filter(Boolean);
+      where.status = statusList.length > 1 ? { [Op.in]: statusList } : statusList[0];
     }
     if (type && type !== 'ALL') {
-      where.type = type;
+      const typeList = String(type).split(',').map((t) => t.trim()).filter(Boolean);
+      where.type = typeList.length > 1 ? { [Op.in]: typeList } : typeList[0];
     }
     return await this.models.SupportRequest.findAndCountAll({
       where,
@@ -88,7 +81,20 @@ class SupportRepository {
         {
           model: this.models.ServiceOrder,
           as: 'order',
-          attributes: ['order_id', 'status', 'total_amount', 'payment_status']
+          attributes: ['order_id', 'status', 'total_amount', 'payment_status'],
+          include: [
+            {
+              model: this.models.FinancialTransaction,
+              as: 'transactions',
+              where: {
+                type: 'EXPENSE',
+                category: 'REFUND'
+              },
+              required: false,
+              separate: true,
+              attributes: ['transaction_id', 'amount']
+            }
+          ]
         },
         {
           model: this.models.User,
@@ -101,13 +107,14 @@ class SupportRepository {
           db.sequelize.literal(`CASE 
             WHEN SupportRequest.status = 'PENDING' THEN 1 
             WHEN SupportRequest.status = 'IN_PROGRESS' THEN 2 
-            ELSE 3 END`), 
+            ELSE 3 END`),
           'ASC'
         ],
         ['created_at', 'DESC']
       ],
       limit: parsedLimit,
-      offset: parsedOffset
+      offset: parsedOffset,
+      distinct: true
     });
   }
 
