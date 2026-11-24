@@ -48,6 +48,14 @@ class SupportService {
       if (!detectedComputerId) {
         throw new BusinessLogicError('Bạn cần có phiên chơi đang hoạt động tại phòng máy để yêu cầu hỗ trợ tại máy.');
       }
+
+      // Chống spam: Chặn tạo mới nếu hội viên hoặc máy trạm này đang có phiếu hỗ trợ chưa đóng
+      const existingMachineSupport = await this.repository.findActiveMachineSupport(parsedMemberId, detectedComputerId);
+      if (existingMachineSupport) {
+        throw new ConflictError(
+          `Máy trạm này đang có một yêu cầu hỗ trợ kỹ thuật đang được xử lý (Mã ticket: #${existingMachineSupport.request_id}). Vui lòng chờ nhân viên kiểm tra!`
+        );
+      }
     }
 
     // Trường hợp 2: Khiếu nại sự cố đơn món ăn / nước uống F&B
@@ -159,8 +167,23 @@ class SupportService {
       throw new ValidationError(`Hành động không hợp lệ. Cho phép: ${allowedActions.join(', ')}`);
     }
 
+    // Chốt chặn State Machine 2 bước (PENDING -> IN_PROGRESS -> RESOLVED/REJECTED)
+    if (action === 'IN_PROGRESS') {
+      if (ticket.status !== SupportRequestStatus.PENDING) {
+        throw new BusinessLogicError(`Yêu cầu #${parsedId} đã được tiếp nhận (${ticket.status}), không thể tiếp nhận lại`);
+      }
+    } else {
+      // Các quyết định cuối cùng (RESOLVE, REFUND, REJECT) bắt buộc phải qua bước Tiếp nhận (IN_PROGRESS)
+      if (ticket.status !== SupportRequestStatus.IN_PROGRESS) {
+        throw new BusinessLogicError(
+          `Vui lòng bấm "Tiếp nhận" yêu cầu #${parsedId} trước khi thực hiện thao tác kết thúc (${action})`
+        );
+      }
+    }
+
     let updatedStatus = ticket.status;
-    let finalNote = resolution_note ? resolution_note.trim() : ticket.resolution_note;
+    const incomingNote = resolution_note ? resolution_note.trim() : '';
+    let finalNote = incomingNote;
 
     // -------------------------------------------------------------
     // Luồng hoàn tiền liên thông với khiếu nại ORDER_DISPUTE
@@ -174,7 +197,7 @@ class SupportService {
       if (!order) throw new NotFoundError('Không tìm thấy thông tin đơn hàng gắn với khiếu nại này');
 
       const amountToRefund = refund_amount !== undefined ? parseFloat(refund_amount) : parseFloat(order.total_amount || 0);
-      const refundReason = finalNote || `Xử lý sự cố khiếu nại ticket #${ticket.request_id}`;
+      const refundReason = incomingNote || `Xử lý sự cố khiếu nại ticket #${ticket.request_id}`;
 
       // Gọi vào luồng hoàn tiền gốc của orderService (có khóa Pessimistic Lock, ghi sổ FinancialTransaction)
       await this.orderService.refundCompletedOrder(ticket.order_id, staffId, {
@@ -186,14 +209,29 @@ class SupportService {
       finalNote = `[ĐÃ HOÀN TIỀN ${amountToRefund.toLocaleString('vi-VN')}đ] ${refundReason}`;
     } else if (action === 'IN_PROGRESS') {
       updatedStatus = SupportRequestStatus.IN_PROGRESS;
+      finalNote =
+        incomingNote ||
+        (ticket.type === SupportRequestType.ORDER_DISPUTE
+          ? 'Thu ngân đã tiếp nhận và đang kiểm tra đơn hàng'
+          : 'Nhân viên đang tới máy hỗ trợ');
     } else if (action === 'RESOLVE') {
       updatedStatus = SupportRequestStatus.RESOLVED;
-      if (!finalNote) finalNote = 'Đã hỗ trợ xử lý hoàn tất tại máy';
+      finalNote =
+        incomingNote ||
+        (ticket.type === SupportRequestType.ORDER_DISPUTE
+          ? 'Đã xử lý sự cố món ăn (không hoàn tiền)'
+          : 'Nhân viên đã hỗ trợ xử lý hoàn tất tại máy');
     } else if (action === 'REJECT') {
-      updatedStatus = SupportRequestStatus.REJECTED;
-      if (!finalNote) {
-        throw new ValidationError('Vui lòng nhập lý do từ chối / bác bỏ khiếu nại vào ghi chú xử lý');
+      if (ticket.type === SupportRequestType.MACHINE_SUPPORT) {
+        throw new BusinessLogicError(
+          'Yêu cầu hỗ trợ kỹ thuật tại máy không hỗ trợ từ chối. Vui lòng kiểm tra trực tiếp và đánh dấu Hoàn thành.'
+        );
       }
+      if (!incomingNote) {
+        throw new ValidationError('Vui lòng nhập lý do từ chối khiếu nại vào ghi chú xử lý');
+      }
+      updatedStatus = SupportRequestStatus.REJECTED;
+      finalNote = incomingNote;
     }
 
     // Cập nhật ticket

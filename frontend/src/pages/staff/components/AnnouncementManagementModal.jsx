@@ -153,6 +153,7 @@ const handleDelete = async (id) => {
                   <option value="INFO">Tin Tức</option>
                   <option value="WARNING">Cảnh Báo</option>
                   <option value="PROMOTION">Khuyến Mãi</option>
+                  <option value="EVENT">Sự Kiện</option>
                 </select>
               </div>
               <button
@@ -191,6 +192,8 @@ const handleDelete = async (id) => {
                           ? 'bg-amber-100 text-amber-800'
                           : a.type === 'WARNING'
                           ? 'bg-rose-100 text-rose-800'
+                          : a.type === 'EVENT'
+                          ? 'bg-indigo-100 text-indigo-800'
                           : 'bg-cyan-100 text-cyan-800'
                       }`}
                     >

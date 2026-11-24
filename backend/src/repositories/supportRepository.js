@@ -148,6 +148,21 @@ class SupportRepository {
     });
   }
 
+  // Kiểm tra xem hội viên hoặc máy trạm đã có yêu cầu hỗ trợ kỹ thuật nào đang mở chưa (chống spam)
+  async findActiveMachineSupport(memberId, computerId = null) {
+    const orConditions = [{ member_id: memberId }];
+    if (computerId) {
+      orConditions.push({ computer_id: computerId });
+    }
+    return await this.models.SupportRequest.findOne({
+      where: {
+        type: 'MACHINE_SUPPORT',
+        status: { [Op.in]: ['PENDING', 'IN_PROGRESS'] },
+        [Op.or]: orConditions
+      }
+    });
+  }
+
   // Kiểm tra xem đơn hàng đã có khiếu nại nào đang chờ xử lý chưa (tránh spam khiếu nại)
   async findActiveDisputeByOrderId(orderId) {
     return await this.models.SupportRequest.findOne({

@@ -1,18 +1,22 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { RefreshCw, RotateCcw, Clock, XCircle, AlertCircle, X } from 'lucide-react';
+import { RefreshCw, RotateCcw, Clock, XCircle, AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 export default function StaffSupportTicketSection({
   tickets = [],
   loading = false,
   onProcessTicket,
 }) {
-  // State quản lý Modal Từ Chối
+  // State quản lý Modal Từ Chối (chỉ dùng cho ORDER_DISPUTE)
   const [rejectModalTicket, setRejectModalTicket] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
 
-  // State quản lý Modal Duyệt Hoàn Tiền
+  // State quản lý Modal Duyệt Hoàn Tiền (chỉ dùng cho ORDER_DISPUTE)
   const [refundModalTicket, setRefundModalTicket] = useState(null);
+
+  // State quản lý Modal Hoàn Thành / Hoàn Tất (ghi chú tùy chọn)
+  const [resolveModalTicket, setResolveModalTicket] = useState(null);
+  const [resolveNote, setResolveNote] = useState('');
 
   if (loading) {
     return (
@@ -35,7 +39,7 @@ export default function StaffSupportTicketSection({
   const handleConfirmReject = (e) => {
     e.preventDefault();
     if (!rejectModalTicket || !rejectReason.trim()) return;
-    onProcessTicket(rejectModalTicket.request_id, 'REJECT', null, rejectReason.trim());
+    onProcessTicket(rejectModalTicket.request_id, 'REJECT', null, rejectReason.trim(), rejectModalTicket.type);
     setRejectModalTicket(null);
     setRejectReason('');
   };
@@ -43,8 +47,29 @@ export default function StaffSupportTicketSection({
   // Xử lý submit Hoàn Tiền
   const handleConfirmRefund = () => {
     if (!refundModalTicket) return;
-    onProcessTicket(refundModalTicket.request_id, 'REFUND', null, 'Duyệt hoàn tiền sự cố món ăn');
+    onProcessTicket(
+      refundModalTicket.request_id,
+      'REFUND',
+      null,
+      'Duyệt hoàn tiền sự cố món ăn',
+      refundModalTicket.type
+    );
     setRefundModalTicket(null);
+  };
+
+  // Xử lý submit Hoàn Thành / Hoàn Tất (ghi chú tùy chọn)
+  const handleConfirmResolve = (e) => {
+    e.preventDefault();
+    if (!resolveModalTicket) return;
+    onProcessTicket(
+      resolveModalTicket.request_id,
+      'RESOLVE',
+      null,
+      resolveNote.trim(),
+      resolveModalTicket.type
+    );
+    setResolveModalTicket(null);
+    setResolveNote('');
   };
 
   return (
@@ -137,52 +162,72 @@ export default function StaffSupportTicketSection({
                 </div>
               </div>
 
-              {/* Nút thao tác của Thu ngân */}
-              <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                {isPending && (
-                  <button
-                    type="button"
-                    onClick={() => onProcessTicket(t.request_id, 'IN_PROGRESS')}
-                    className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-2xs transition cursor-pointer"
-                  >
-                    Tiếp Nhận
-                  </button>
-                )}
+              {/* Nút thao tác của Thu ngân theo đúng State Machine 2 bước */}
+              {!isResolved && !isRejected && (
+                <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-end gap-2 flex-wrap">
+                  {/* Giai đoạn 1 (PENDING): Chỉ hiện duy nhất nút Tiếp Nhận */}
+                  {isPending && (
+                    <button
+                      type="button"
+                      onClick={() => onProcessTicket(t.request_id, 'IN_PROGRESS', null, '', t.type)}
+                      className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-2xs transition cursor-pointer"
+                    >
+                      Tiếp Nhận
+                    </button>
+                  )}
 
-                {t.type === 'ORDER_DISPUTE' && !isResolved && !isRejected && (
-                  <button
-                    type="button"
-                    onClick={() => setRefundModalTicket(t)} // ✅ Mở Modal Hoàn Tiền
-                    className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Duyệt Hoàn Tiền</span>
-                  </button>
-                )}
+                  {/* Giai đoạn 2 (IN_PROGRESS) cho MACHINE_SUPPORT: Chỉ hiện duy nhất nút Hoàn Thành */}
+                  {isInProgress && t.type === 'MACHINE_SUPPORT' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResolveModalTicket(t);
+                        setResolveNote('');
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Hoàn Thành</span>
+                    </button>
+                  )}
 
-                {!isResolved && !isRejected && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRejectModalTicket(t); // ✅ Mở Modal Từ Chối
-                      setRejectReason('');
-                    }}
-                    className="px-3 py-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-600 font-extrabold text-xs shadow-2xs transition cursor-pointer"
-                  >
-                    Từ Chối
-                  </button>
-                )}
+                  {/* Giai đoạn 2 (IN_PROGRESS) cho ORDER_DISPUTE: Hiện 3 nút ra quyết định cuối */}
+                  {isInProgress && t.type === 'ORDER_DISPUTE' && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setRefundModalTicket(t)}
+                        className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Duyệt Hoàn Tiền</span>
+                      </button>
 
-                {!isResolved && !isRejected && (
-                  <button
-                    type="button"
-                    onClick={() => onProcessTicket(t.request_id, 'RESOLVE')}
-                    className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-2xs transition cursor-pointer"
-                  >
-                    Hoàn Tất
-                  </button>
-                )}
-              </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResolveModalTicket(t);
+                          setResolveNote('');
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-2xs transition cursor-pointer"
+                      >
+                        Hoàn Tất
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRejectModalTicket(t);
+                          setRejectReason('');
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl border border-rose-200 hover:bg-rose-50 text-rose-600 font-extrabold text-xs shadow-2xs transition cursor-pointer"
+                      >
+                        Từ Chối
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           );
         })}
@@ -309,6 +354,84 @@ export default function StaffSupportTicketSection({
                   Xác Nhận Hoàn Tiền
                 </button>
               </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* 3. MODAL XÁC NHẬN HOÀN THÀNH / HOÀN TẤT (GHI CHÚ TÙY CHỌN) */}
+      {resolveModalTicket &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900">
+                      {resolveModalTicket.type === 'ORDER_DISPUTE'
+                        ? `Hoàn Tất Khiếu Nại #${resolveModalTicket.request_id}`
+                        : `Hoàn Thành Hỗ Trợ #${resolveModalTicket.request_id}`}
+                    </h3>
+                    <p className="text-[11px] text-slate-400 font-mono">
+                      {resolveModalTicket.computer?.computer_name || 'NGOÀI QUÁN'} • @{resolveModalTicket.member?.userInfo?.username || 'khach'}
+                      {resolveModalTicket.order_id ? ` • Đơn #${resolveModalTicket.order_id}` : ''}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResolveModalTicket(null);
+                    setResolveNote('');
+                  }}
+                  className="p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-700 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleConfirmResolve} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Ghi chú xử lý <span className="text-slate-400 font-normal">(Tùy chọn)</span>:
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={resolveNote}
+                    onChange={(e) => setResolveNote(e.target.value)}
+                    placeholder={
+                      resolveModalTicket.type === 'ORDER_DISPUTE'
+                        ? 'VD: Đã đổi phần mì mới cho khách, đã bổ sung nước... (Để trống sẽ dùng ghi chú mặc định)'
+                        : 'VD: Đã đổi chuột mới, khách bấm nhầm chuông... (Để trống sẽ dùng ghi chú mặc định)'
+                    }
+                    className="w-full p-3 text-xs rounded-xl border border-slate-200 bg-white font-medium outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setResolveModalTicket(null);
+                      setResolveNote('');
+                    }}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition cursor-pointer"
+                  >
+                    Hủy Bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition cursor-pointer"
+                  >
+                    {resolveModalTicket.type === 'ORDER_DISPUTE'
+                      ? 'Xác Nhận Hoàn Tất'
+                      : 'Xác Nhận Hoàn Thành'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>,
           document.body

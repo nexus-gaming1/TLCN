@@ -118,14 +118,20 @@ export default function StaffDashboardPage({ user, onLogout }) {
     }
   }, []);
 
-  // 3. Xử lý ticket (Tiếp nhận / Hoàn tất / Bác bỏ / Duyệt Hoàn tiền)
-  const handleProcessTicket = async (ticketId, action, refundAmountVal = null, note = '') => {
+  // 3. Xử lý ticket (Tiếp nhận / Hoàn thành / Từ chối / Duyệt Hoàn tiền)
+  const handleProcessTicket = async (ticketId, action, refundAmountVal = null, note = '', ticketType = null) => {
     try {
       let defaultNote = '';
       if (action === 'IN_PROGRESS') {
-        defaultNote = 'Nhân viên đang tới máy hỗ trợ';
+        defaultNote =
+          ticketType === 'ORDER_DISPUTE'
+            ? 'Thu ngân đã tiếp nhận và đang kiểm tra đơn hàng'
+            : 'Nhân viên đang tới máy hỗ trợ';
       } else if (action === 'RESOLVE') {
-        defaultNote = 'Nhân viên đã hỗ trợ xử lý hoàn tất';
+        defaultNote =
+          ticketType === 'ORDER_DISPUTE'
+            ? 'Đã xử lý sự cố món ăn (không hoàn tiền)'
+            : 'Nhân viên đã hỗ trợ xử lý hoàn tất tại máy';
       } else if (action === 'REJECT') {
         defaultNote = 'Từ chối yêu cầu';
       } else if (action === 'REFUND') {
@@ -134,7 +140,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
 
       const payload = {
         action,
-        resolution_note: note || defaultNote,
+        resolution_note: note?.trim() || defaultNote,
       };
       // Chốt chặn an toàn: Chỉ gán refund_amount khi có giá trị số hợp lệ (Tránh lỗi NaN ở Backend)
       if (refundAmountVal !== null && refundAmountVal !== undefined && !isNaN(parseFloat(refundAmountVal))) {
@@ -326,7 +332,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
   return (
     <div className="bg-[#F8F9FA] min-h-screen text-slate-800 font-sans antialiased">
       <Header user={user} onLogout={handleLogout} />
-      <Sidebar activeNav="pos" role={user?.role} />
+      <Sidebar activeNav="pos"/>
 
       <div className="lg:pl-[240px]">
         <main className="pt-20 pb-16 px-6 max-w-7xl mx-auto space-y-4">

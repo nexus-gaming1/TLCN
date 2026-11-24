@@ -7,7 +7,7 @@ export default function Sidebar({ activeNav, setActiveNav, role: propRole }) {
     const navigate = useNavigate();
     const location = useLocation();
     const { role: contextRole } = useAuth();
-    const role = propRole || contextRole;
+    const role = contextRole || propRole; //ưu tiên lấy quyền thực tế của tài khoản đăng nhập vào
     const [mobileOpen, setMobileOpen] = useState(false);
 
     useEffect(() => {
