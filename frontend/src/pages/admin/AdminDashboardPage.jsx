@@ -10,9 +10,11 @@ import StationDrawer from '../../features/station-drawer/ui/StationDrawer';
 import BootromLogModal from '../../features/bootrom/BootromLogModal';
 import dashboardService from '../../shared/api/dashboard.service';
 import machineService from '../../shared/api/machine.service';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Megaphone } from 'lucide-react';
 import { useMachines } from '../../shared/hooks/useMachines';
 import { useMachineSocket } from '../../shared/hooks/useMachineSocket';
+import AnnouncementManagementModal from '../staff/components/AnnouncementManagementModal';
+
 export default function AdminDashboardPage({ user, onLogout }) {
     const [filter, setFilter] = useState('all');
     const [sortBy, setSortBy] = useState('name_asc');
@@ -24,6 +26,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
     const [loading, setLoading] = useState(true);
     const [isBootromModalOpen, setIsBootromModalOpen] = useState(false);
     const [toastMessage, setToastMessage] = useState(null);
+    const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
 
     const showGlobalToast = (text, isError = false) => {
         setToastMessage({ text, isError });
@@ -239,6 +242,18 @@ const {
                             onTriggerWakeOnLan={handleTriggerWakeOnLan}
                         />
 
+                        <div className="flex justify-end my-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsAnnouncementModalOpen(true)}
+                                className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+                                title="Quản lý banner thông báo toàn hệ thống"
+                            >
+                                <Megaphone className="w-4 h-4" />
+                                <span>Quản Lý Banner</span>
+                            </button>
+                        </div>
+
                         <KpiCards
                             metrics={metrics}
                             filter={filter}
@@ -296,6 +311,11 @@ const {
             <BootromLogModal
                 isOpen={isBootromModalOpen}
                 onClose={() => setIsBootromModalOpen(false)}
+            />
+
+            <AnnouncementManagementModal
+                isOpen={isAnnouncementModalOpen}
+                onClose={() => setIsAnnouncementModalOpen(false)}
             />
         </div>
     );

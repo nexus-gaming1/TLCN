@@ -258,7 +258,7 @@ function App() {
           <Route
             path="/staff/*"
             element={
-              <ProtectedRoute allowedRoles={['STAFF']}>
+              <ProtectedRoute allowedRoles={['ADMIN','STAFF']}>
                 <StaffWrapper />
               </ProtectedRoute>
             }

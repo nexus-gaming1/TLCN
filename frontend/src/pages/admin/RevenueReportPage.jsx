@@ -8,6 +8,8 @@ import RevenueChart from '../../features/reports/ui/RevenueChart';
 import PaymentMethodChart from '../../features/reports/ui/PaymentMethodChart';
 import TopMembersTable from '../../features/reports/ui/TopMembersTable';
 import TopSellingItems from '../../features/reports/ui/TopSellingItems';
+import ViewAllFeedbacksModal from '../../features/reports/ui/ViewAllFeedbacksModal';
+import supportService from '../../shared/api/support.service';
 
 import {
   Gamepad2,
@@ -15,7 +17,9 @@ import {
   RefreshCw,
   Loader2,
   TrendingUp,
-  Download
+  Download,
+  Star, 
+  MessageSquare
 } from 'lucide-react';
 
 export default function RevenueReportPage({ user, onLogout }) {
@@ -25,6 +29,12 @@ export default function RevenueReportPage({ user, onLogout }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshKey, setRefreshKey] = useState(0); // Thêm cờ để kích hoạt nút Refresh
   const [isExporting, setIsExporting] = useState(false);
+
+  //State lưu thống kê CSAT và danh sách Feedback
+  const [csatStats, setCsatStats] = useState({ averageRating: '0.0', totalReviews: 0 });
+  const [recentFeedbacks, setRecentFeedbacks] = useState([]);
+  const [allFeedbacks, setAllFeedbacks] = useState([]);
+  const [isAllFeedbacksModalOpen, setIsAllFeedbacksModalOpen] = useState(false);
 
   // Hàm tải dữ liệu báo cáo từ Backend API (fix lỗi Race Condition)
   useEffect(() => {
@@ -82,6 +92,24 @@ export default function RevenueReportPage({ user, onLogout }) {
       }
     };
   }, []);
+
+  useEffect(() => {
+    const fetchCsatData = async () => {
+      try {
+        const [stats, feedbackList, allFbList] = await Promise.all([
+          supportService.getStats(),
+          supportService.getStaffRequests({ type: 'FEEDBACK', limit: 5 }),
+          supportService.getStaffRequests({ type: 'FEEDBACK', limit: 100 }),
+        ]);
+        setCsatStats(stats || { averageRating: '0.0', totalReviews: 0 });
+        setRecentFeedbacks(feedbackList?.rows || []);
+        setAllFeedbacks(allFbList?.rows || []);
+      } catch (err) {
+        console.error('Lỗi khi tải dữ liệu CSAT:', err);
+      }
+    };
+    fetchCsatData();
+  }, [refreshKey]);
 
   
 const handleExportExcel = async () => {
@@ -183,30 +211,32 @@ const handleExportExcel = async () => {
                   <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleExportExcel}
-                  disabled={isExporting}
-                  className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
-                  title="Xuất file báo cáo Excel (.xlsx)"
-                >
-                  {isExporting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      <span>Đang xuất...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4 text-white" />
-                      <span>Xuất Excel</span>
-                    </>
-                  )}
-                </button>
+                {user?.role !== 'EMPLOYEE' && user?.role !== 'STAFF' && (
+                  <button
+                    type="button"
+                    onClick={handleExportExcel}
+                    disabled={isExporting}
+                    className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
+                    title="Xuất file báo cáo Excel (.xlsx)"
+                  >
+                    {isExporting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                        <span>Đang xuất...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 text-white" />
+                        <span>Xuất Excel</span>
+                      </>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
             {/* 3 Thẻ thống kê */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
               {/* Thẻ 1: Tổng doanh thu */}
               <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-all">
                 <div className="flex items-start justify-between">
@@ -293,6 +323,30 @@ const handleExportExcel = async () => {
                   </div>
                 </div>
               </div>
+
+              {/* Thẻ 4: Chỉ số hài lòng CSAT */}
+              <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between relative overflow-hidden group hover:shadow-md transition-all">
+                <div className="flex items-start justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                      Điểm Hài Lòng (CSAT Score)
+                    </span>
+                    <div className="flex items-baseline gap-2 mt-1">
+                      <span className="text-2xl font-black text-amber-500 font-mono tracking-tight">
+                        {csatStats.averageRating}
+                      </span>
+                      <span className="text-xs font-bold text-slate-400">/ 5.0 ⭐</span>
+                    </div>
+                  </div>
+                  <div className="w-11 h-11 rounded-2xl bg-amber-50 text-amber-500 border border-amber-100 flex items-center justify-center font-bold">
+                    <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500">
+                  <span>Dựa trên {csatStats.totalReviews} lượt đánh giá</span>
+                </div>
+              </div>
+
             </div>
 
             {/* bố cục 2 cột chính( 8 cột trái -4 cột phải ) */}
@@ -334,6 +388,60 @@ const handleExportExcel = async () => {
                 ) : (
                   <TopMembersTable data={analytics.topMembers} />
                 )}
+
+                {/* Khối danh sách Đánh giá của khách hàng */}
+                <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-cyan-600" />
+                      <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                        Ý Kiến &amp; Đánh Giá Mới Nhất Từ Khách Hàng
+                      </h3>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-slate-400">5 đánh giá gần nhất</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsAllFeedbacksModalOpen(true)}
+                        className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 font-extrabold text-xs border border-cyan-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                        title="Xem danh sách toàn bộ đánh giá của khách hàng"
+                      >
+                        <span>Xem tất cả ({csatStats.totalReviews || allFeedbacks.length}) ➔</span>
+                      </button>
+                    </div>
+                  </div>
+                  {recentFeedbacks.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-400 font-medium">
+                      Chưa có đánh giá nào từ khách hàng.
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-slate-100">
+                      {recentFeedbacks.map((fb) => (
+                        <div key={fb.request_id} className="py-3 flex items-start justify-between gap-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-extrabold text-slate-800">
+                                @{fb.member?.userInfo?.username || 'khach'}
+                              </span>
+                              <span className="text-[11px] text-amber-500 font-black">
+                                {'⭐'.repeat(fb.rating || 5)}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                {new Date(fb.created_at).toLocaleDateString('vi-VN')}
+                              </span>
+                            </div>
+                            {fb.description && (
+                              <p className="text-xs text-slate-600 italic font-medium">
+                                "{fb.description}"
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               {/* Cột phải( 4 cột ): Biểu đồ tròn phương thức thanh toán + top món ăn, đồ uống */}
@@ -360,6 +468,13 @@ const handleExportExcel = async () => {
             </div>
 
           </div>
+
+          {/* Modal Xem Toàn Bộ Đánh Giá */}
+          <ViewAllFeedbacksModal
+            isOpen={isAllFeedbacksModalOpen}
+            onClose={() => setIsAllFeedbacksModalOpen(false)}
+            feedbacks={allFeedbacks}
+          />
 
           {/* Footer */}
           <Footer />

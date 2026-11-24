@@ -100,6 +100,7 @@ class SupportService {
           ? `[Sự cố F&B] Đơn hàng #${parsedOrderId}`
           : `[Đánh giá dịch vụ] Khách chấm ${validatedRating || 5}⭐`;
 
+    const isFeedback = type === SupportRequestType.FEEDBACK;
     // Lưu vào CSDL
     const newRequest = await this.repository.create({
       member_id: parsedMemberId,
@@ -109,7 +110,8 @@ class SupportService {
       title: finalTitle,
       description: description ? description.trim() : null,
       rating: validatedRating,
-      status: SupportRequestStatus.PENDING
+      status: isFeedback ? SupportRequestStatus.RESOLVED : SupportRequestStatus.PENDING,
+      resolution_note: isFeedback ? 'Hệ thống đã ghi nhận đánh giá của bạn' : null,
     });
 
     // Lấy lại dữ liệu đầy đủ kèm quan hệ để bắn socket

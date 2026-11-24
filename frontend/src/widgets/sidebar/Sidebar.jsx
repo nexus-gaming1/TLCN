@@ -3,10 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutGrid, UserCheck, Cpu, Gamepad2, BarChart3, Sliders, Tag, Receipt, Coffee, Store, X } from 'lucide-react';
 import { useAuth } from '../../shared/context/AuthContext';
 
-export default function Sidebar({ activeNav, setActiveNav }) {
+export default function Sidebar({ activeNav, setActiveNav, role: propRole }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const { role } = useAuth();
+    const { role: contextRole } = useAuth();
+    const role = propRole || contextRole;
     const [mobileOpen, setMobileOpen] = useState(false);
 
     useEffect(() => {
@@ -20,7 +21,7 @@ export default function Sidebar({ activeNav, setActiveNav }) {
     // 1. Menu cho Nhân Viên (STAFF): Chỉ các chức năng được phép tại phòng máy
     const staffNavItems = [
         { id: 'grid', label: 'Sơ đồ phòng máy', icon: LayoutGrid, path: '/admin' },
-        { id: 'pos', label: 'Quầy Thu Ngân dịch vụ F&B', icon: Store, path: '/staff' },
+        { id: 'pos', label: 'Quầy nhân viên', icon: Store, path: '/staff' },
         { id: 'members', label: 'Quản lý hội viên', icon: UserCheck, path: '/admin/members' },
         { id: 'transactions', label: 'Sổ cái giao dịch', icon: Receipt, path: '/admin/transactions' },
         { id: 'reports', label: 'Báo cáo doanh thu', icon: BarChart3, path: '/admin/reports' },
@@ -29,6 +30,7 @@ export default function Sidebar({ activeNav, setActiveNav }) {
     // 2. Menu cho Quản Trị Viên (ADMIN): Đầy đủ toàn quyền
     const adminNavItems = [
         { id: 'grid', label: 'Sơ đồ phòng máy', icon: LayoutGrid, path: '/admin' },
+        { id: 'pos', label: 'Quầy nhân viên', icon: Store, path: '/staff' },
         { id: 'members', label: 'Hội viên', icon: UserCheck, path: '/admin/members' },
         { id: 'hardware', label: 'Danh sách máy', icon: Cpu, path: '/admin/machines' },
         { id: 'config', label: 'Cấu hình máy', icon: Sliders, path: '/admin/config' },

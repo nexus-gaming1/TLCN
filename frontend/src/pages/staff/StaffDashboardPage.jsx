@@ -109,7 +109,8 @@ export default function StaffDashboardPage({ user, onLogout }) {
     setLoadingTickets(true);
     try {
       const res = await supportService.getStaffRequests({ limit: 30 });
-      setSupportTickets(res.rows || []);
+      const actionableTickets = (res.rows || []).filter((t) => t.type !== 'FEEDBACK'); //Chỉ giữ lại sự cố cần hành động tại phòng máy
+      setSupportTickets(actionableTickets);
     } catch (err) {
       console.error('Lỗi khi tải support tickets:', err);
     } finally {
@@ -183,6 +184,8 @@ export default function StaffDashboardPage({ user, onLogout }) {
     const handleOrderUpdated = () => fetchOrders(true);
 
     const handleSupportCreated = (newTicket) => {
+      if (newTicket.type === 'FEEDBACK') return; //nếu là feedback thì bỏ qua kích hoạt chuông 
+
       playChimeSound();
       setToast({
         type: 'warning',
@@ -323,7 +326,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
   return (
     <div className="bg-[#F8F9FA] min-h-screen text-slate-800 font-sans antialiased">
       <Header user={user} onLogout={handleLogout} />
-      <Sidebar activeNav="pos" />
+      <Sidebar activeNav="pos" role={user?.role} />
 
       <div className="lg:pl-[240px]">
         <main className="pt-20 pb-16 px-6 max-w-7xl mx-auto space-y-4">
