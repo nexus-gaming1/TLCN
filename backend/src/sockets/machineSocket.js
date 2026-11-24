@@ -129,7 +129,7 @@ function registerMachineSocket(io) {
             }
             const computer = await findComputer(machine);
             if (computer) {
-                const activeSession = await db.RentalSession.findOne({
+                let activeSession = await db.RentalSession.findOne({
                     where: {
                         computer_id: computer.computer_id,
                         status: db.RentalSession.Status.ACTIVE
@@ -142,6 +142,29 @@ function registerMachineSocket(io) {
                 });
 
                 const hasActiveLocalSession = data.status === ComputerStatus.IN_USE;
+                if (!activeSession && hasActiveLocalSession && data.memberId) {
+                    const member = await db.Member.findByPk(data.memberId);
+                    if (member) {
+                        await billingService.startSession({
+                            memberId: data.memberId,
+                            computerId: computer.computer_id,
+                            startedAt: data.sessionStartedAt
+                                ? new Date(data.sessionStartedAt)
+                                : new Date()
+                        });
+                        activeSession = await db.RentalSession.findOne({
+                            where: {
+                                computer_id: computer.computer_id,
+                                status: db.RentalSession.Status.ACTIVE
+                            },
+                            include: [{
+                                model: db.Member,
+                                as: 'member',
+                                include: [{ model: db.User, as: 'userInfo', attributes: ['username'] }]
+                            }]
+                        });
+                    }
+                }
                 const previousStatus = computer.status;
                 if (activeSession && hasActiveLocalSession) {
                     computer.status = ComputerStatus.IN_USE;
@@ -162,6 +185,12 @@ function registerMachineSocket(io) {
                 machine.currentUser = hasActiveLocalSession
                     ? activeSession?.member?.userInfo?.username || null
                     : null;
+                machine.memberId = hasActiveLocalSession
+                    ? activeSession?.member_id || null
+                    : null;
+                machine.sessionStartedAt = hasActiveLocalSession
+                    ? activeSession?.started_at || null
+                    : null;
 
                 // Fail-closed security: if no active session, ensure overlay lock is maintained on agent
                 if (!hasActiveLocalSession) {
@@ -178,6 +207,15 @@ function registerMachineSocket(io) {
             );
 
             broadcastMachineUpdate(machine);
+
+            if (data.status === ComputerStatus.IN_USE && data.memberId) {
+                try {
+                    const computerSocketService = require('../services/computerSocketService');
+                    computerSocketService.syncMemberSessionTime(data.memberId).catch(() => {});
+                } catch (syncErr) {
+                    // socket error ignored during initial register
+                }
+            }
         });
 
 
@@ -195,6 +233,19 @@ function registerMachineSocket(io) {
                 );
 
             if (machine) {
+                    if (machine.currentUser && !machine.memberId) {
+                        const user = await db.User.findOne({
+                            where: { username: machine.currentUser },
+                            attributes: ['user_id'],
+                            include: [{
+                                model: db.Member,
+                                as: 'memberProfile',
+                                attributes: ['member_id'],
+                                required: false
+                            }]
+                        });
+                        machine.memberId = user?.memberProfile?.member_id || null;
+                    }
                     const computer = await findComputer(machine);
                     if (computer && Object.values(ComputerStatus).includes(data.status)) {
                         if (data.status === ComputerStatus.OFFLINE) {
@@ -206,6 +257,8 @@ function registerMachineSocket(io) {
                     'machine:heartbeat',
                     {
                         machineId: machine.machineId,
+                        localIp: machine.localIp,
+                        macAddress: machine.macAddress,
                         performance: machine.performance
                     }
                 );
@@ -227,17 +280,40 @@ function registerMachineSocket(io) {
                 `${data.previousStatus} -> ${data.status}`
             );
 
+            const currentMachine = machineStore.get(data.machineId);
+            const computer = await findComputer(currentMachine);
+            const activeSession = computer
+                ? await db.RentalSession.findOne({
+                    where: {
+                        computer_id: computer.computer_id,
+                        status: db.RentalSession.Status.ACTIVE
+                    }
+                })
+                : null;
+
+            if (
+                data.status === ComputerStatus.ONLINE &&
+                currentMachine?.status === ComputerStatus.IN_USE &&
+                activeSession
+            ) {
+                console.warn(
+                    `[Socket.IO] Ignoring stale ONLINE status for ${data.machineId}; ` +
+                    `an active rental session still exists.`
+                );
+                return;
+            }
+
             const updated = machineStore.updateStatus(
                 socket.id,
                 data
             );
-            const computer = await findComputer(updated);
-            if (computer) {
+            const updatedComputer = await findComputer(updated);
+            if (updatedComputer) {
                 if (data.status === ComputerStatus.OFFLINE) {
-                    await closeActiveSessions(computer.computer_id);
+                    await closeActiveSessions(updatedComputer.computer_id);
                 }
                 await syncComputerStatus(
-                    computer,
+                    updatedComputer,
                     data.status || ComputerStatus.ONLINE
                 );
             }
@@ -312,7 +388,7 @@ function registerMachineSocket(io) {
                         return;
                     }
 
-                    await billingService.startSession({
+                    const rentalSession = await billingService.startSession({
                         memberId,
                         computerId: computer.computer_id,
                         combo: authorization.combo
@@ -320,6 +396,8 @@ function registerMachineSocket(io) {
                     machine.status = 'IN_USE';
                     machine.currentUser =
                         data.username;
+                    machine.memberId = memberId;
+                    machine.sessionStartedAt = rentalSession.started_at;
                     machine.lastStatusChange = new Date().toISOString();
                     if (computer) {
                         const previousStatus = computer.status;
@@ -333,6 +411,12 @@ function registerMachineSocket(io) {
                         );
                     }
                     broadcastMachineUpdate(machine);
+                    try {
+                        const computerSocketService = require('../services/computerSocketService');
+                        computerSocketService.syncMemberSessionTime(memberId).catch(() => {});
+                    } catch (syncErr) {
+                        // ignored
+                    }
                 }
             }
         });
@@ -396,6 +480,9 @@ function registerMachineSocket(io) {
                     }
                     machine.status = ComputerStatus.ONLINE;
                     machine.currentUser = null;
+                    machine.memberId = null;
+                    machine.sessionStartedAt = null;
+                    machine.remainingMinutes = null;
                     machine.lastStatusChange = new Date().toISOString();
 
                     broadcastMachineUpdate(machine);
@@ -421,6 +508,36 @@ function registerMachineSocket(io) {
                 `Success=${data.success}` +
                 (data.error ? `, Error=${data.error}` : '')
             );
+        });
+
+        // ========================================
+        // 6.5. Remote Sunshine Pairing Events
+        // ========================================
+
+        socket.on('remote:pairing:detected', async (data) => {
+            if (!data) return;
+            try {
+                const pairingManagementService = require('../services/pairingManagementService');
+                await pairingManagementService.handlePairingDetected({
+                    machineId: data.machineId || machineStore.socketMap.get(socket.id),
+                    computerId: data.computerId,
+                    pairingId: data.pairingId,
+                    deviceName: data.deviceName,
+                    deviceAddress: data.deviceAddress
+                });
+            } catch (err) {
+                console.error('[Socket.IO] Error handling remote:pairing:detected:', err);
+            }
+        });
+
+        socket.on('remote:pairing:ack', (data) => {
+            if (!data) return;
+            try {
+                const computerSocketService = require('../services/computerSocketService');
+                computerSocketService.handlePairingAck(data);
+            } catch (err) {
+                console.error('[Socket.IO] Error handling remote:pairing:ack:', err);
+            }
         });
 
 

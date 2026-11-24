@@ -82,6 +82,7 @@ const ComboTimeStatus = Object.freeze({
   CANCELLED: 'CANCELLED',
 });
 
+
 const SupportRequestType = Object.freeze({
   MACHINE_SUPPORT: 'MACHINE_SUPPORT',   // Hỗ trợ kỹ thuật, thiết bị
   ORDER_DISPUTE: 'ORDER_DISPUTE',       // Khiếu nại sự cố đơn hàng
@@ -101,6 +102,16 @@ const AnnouncementType = Object.freeze({
 });
 
 
+const RemotePairingStatus = Object.freeze({
+  PENDING: 'PENDING',
+  CONFIRMING: 'CONFIRMING',
+  PAIRED: 'PAIRED',
+  EXPIRED: 'EXPIRED',
+  FAILED: 'FAILED',
+  CANCELLED: 'CANCELLED',
+});
+
+
 module.exports = {
   UserRole,
   UserStatus,
@@ -111,6 +122,7 @@ module.exports = {
   TransactionCategory,
   SessionType,
   ComboTimeStatus,
+  RemotePairingStatus,
   PaymentMethodEnum,
   TransactionStatusEnum,
   SupportRequestType,

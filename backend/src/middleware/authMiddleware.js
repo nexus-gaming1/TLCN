@@ -22,7 +22,7 @@ const authenticateToken = (req, res, next) => {
         req.user = decoded; // { user_id, username, role, ... }
         next();
     } catch (error) {
-        return res.status(403).json({
+        return res.status(401).json({
             status: 'error',
             message: 'Token không hợp lệ hoặc đã hết hạn.',
             error: { code: 'INVALID_TOKEN', details: error.message }

@@ -15,6 +15,8 @@ public class SessionService
 
     public MachineStatus CurrentStatus { get; private set; } = MachineStatus.ONLINE;
     public string? CurrentUser { get; private set; }
+    public int? CurrentMemberId { get; private set; }
+    public DateTime? CurrentSessionStartedAt { get; private set; }
     public string? Password { get; private set; }
 
     public string MachineId { get; }
@@ -60,7 +62,7 @@ public class SessionService
         }
     }
 
-    public bool Login(string username)
+    public bool Login(string username, int? memberId = null)
     {
         lock (_lock)
         {
@@ -72,6 +74,8 @@ public class SessionService
 
             var oldStatus = CurrentStatus;
             CurrentUser = username.Trim();
+            CurrentMemberId = memberId;
+            CurrentSessionStartedAt ??= DateTime.UtcNow;
             CurrentStatus = MachineStatus.IN_USE;
 
             _logger.LogInformation("User logged in: {User}. Status changed from {Old} to {New}", CurrentUser, oldStatus, CurrentStatus);
@@ -89,6 +93,8 @@ public class SessionService
             var oldStatus = CurrentStatus;
             var prevUser = CurrentUser;
             CurrentUser = null;
+            CurrentMemberId = null;
+            CurrentSessionStartedAt = null;
             CurrentStatus = MachineStatus.ONLINE;
 
             _logger.LogInformation("User logged out (was {User}). Status changed from {Old} to {New}", prevUser, oldStatus, CurrentStatus);
@@ -165,4 +171,3 @@ public class SessionService
         return null;
     }
 }
-

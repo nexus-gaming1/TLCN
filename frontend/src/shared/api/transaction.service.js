@@ -55,6 +55,32 @@ class TransactionService {
   }
 
   /**
+   * Tặng tiền miễn phí cho hội viên
+   */
+  async createBonusTopUp(data) {
+    try {
+      const response = await apiClient.post('/transactions/bonus-topup', data);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi tặng tiền miễn phí:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Trừ tiền miễn phí của hội viên
+   */
+  async createBonusWithdraw(data) {
+    try {
+      const response = await apiClient.post('/transactions/bonus-withdraw', data);
+      return response.data;
+    } catch (error) {
+      console.error('Lỗi khi trừ tiền miễn phí:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Hoàn tiền giao dịch
    */
   async refundTransaction(id, reason) {

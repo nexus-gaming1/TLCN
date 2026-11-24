@@ -50,6 +50,24 @@ class MachineService {
     return response.data;
   }
 
+  async sendCommandByAddress(ipAddress, macAddress, command, message = null) {
+    const response = await apiClient.post('/computers/by-address/command', {
+      ipAddress,
+      macAddress,
+      command,
+      message
+    });
+    return response.data;
+  }
+
+  async logoutByAddress(ipAddress, macAddress) {
+    const response = await apiClient.post('/computers/by-address/logout', {
+      ipAddress,
+      macAddress
+    });
+    return response.data;
+  }
+
   /**
    * Switch session from one computer to another
    */
@@ -98,6 +116,22 @@ class MachineService {
     }
     return [];
   }
+    async getRemoteMachines() {
+    try {
+      const response = await apiClient.get('/computers/remote');
+      // Extract computers array from response.data (or response.data.data)
+      const rawData = Array.isArray(response?.data)
+        ? response.data
+        : (Array.isArray(response?.data?.data) ? response.data.data : []);
+
+      if (Array.isArray(rawData) && rawData.length > 0) {
+        return rawData;
+      }
+    } catch (error) {
+      console.warn('Lỗi khi lấy danh sách trạm máy từ CSDL:', error.message);
+    }
+    return [];
+  }
 
   /**
    * Create a new computer station in CSDL
@@ -125,6 +159,60 @@ class MachineService {
   }
 
   /**
+   * Bắt đầu yêu cầu ghép nối Sunshine với máy trạm
+   */
+  async startPairingIntent(computerId, timeoutSeconds = 300) {
+    const response = await apiClient.post('/computers/remote/pairing/intent', {
+      computer_id: computerId,
+      timeout_seconds: timeoutSeconds
+    });
+    return response.data;
+  }
+
+  /**
+   * Lấy trạng thái ghép nối hiện tại của intent
+   */
+  async getPairingStatus(intentId) {
+    const response = await apiClient.get(`/computers/remote/pairing/status/${intentId}`);
+    return response.data;
+  }
+
+  /**
+   * Xác nhận mã PIN Moonlight với Sunshine
+   */
+  async confirmPairingPin(intentId, pin) {
+    const response = await apiClient.post('/computers/remote/pairing/confirm', {
+      intent_id: intentId,
+      pin: String(pin).trim()
+    });
+    return response.data;
+  }
+
+  /**
+   * Hủy yêu cầu ghép nối
+   */
+  async cancelPairingIntent(intentId) {
+    const response = await apiClient.post('/computers/remote/pairing/cancel', {
+      intent_id: intentId
+    });
+    return response.data;
+  }
+
+  /**
+   * Cập nhật máy trạm từ xa (Legacy pair API)
+   */
+  async pairMachine(computerId, pin, intentId = null) {
+    const payload = {
+      computer_id: computerId,
+      pin: String(pin).trim()
+    };
+    if (intentId) payload.intent_id = intentId;
+
+    const response = await apiClient.post('/computers/remote/pair', payload);
+    return response.data;
+  }
+
+  /**
    * Delete computer station from CSDL
    */
   async deleteMachine(computerId) {
@@ -133,6 +221,34 @@ class MachineService {
   }
   async getMachineStore() {
     const response = await apiClient.get('/computers/machinestore');
+    return response.data;
+  }
+
+  /**
+   * Gửi thông báo đến một máy trạm cụ thể
+   */
+  async sendNotification(machineId, { title, message, type = 'SYSTEM', groupType = 'ADMIN_MESSAGE', groupTitle = 'Tin nhắn quản trị' }) {
+    const response = await apiClient.post(`/computers/${machineId}/notification`, {
+      title,
+      message,
+      type,
+      groupType,
+      groupTitle
+    });
+    return response.data;
+  }
+
+  /**
+   * Phát thông báo đến tất cả máy trạm
+   */
+  async broadcastNotification({ title, message, type = 'SYSTEM', groupType = 'BROADCAST_MESSAGE', groupTitle = 'Thông báo phòng máy' }) {
+    const response = await apiClient.post('/computers/notifications/broadcast', {
+      type,
+      title,
+      message,
+      groupType,
+      groupTitle
+    });
     return response.data;
   }
 }

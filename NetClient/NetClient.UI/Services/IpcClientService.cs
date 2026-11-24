@@ -1,7 +1,8 @@
+using AntdUI;
+using NetClient.Shared.Ipc;
 using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
-using NetClient.Shared.Ipc;
 
 namespace NetClient.UI.Services;
 
@@ -11,7 +12,7 @@ public class IpcClientService
     private NamedPipeClientStream? _pipeClient;
     private StreamWriter? _writer;
     private CancellationTokenSource? _cts;
-
+    private readonly NotificationStore _notificationStore;
     public event Action? OnShowOverlay;
     public event Action? OnHideOverlay;
     public event Action<string>? OnSetUsername;
@@ -22,7 +23,10 @@ public class IpcClientService
     public event Action? OnDisconnected;
 
     public bool IsConnected => _pipeClient?.IsConnected ?? false;
-
+    public IpcClientService(NotificationStore notificationStore)
+    {
+        _notificationStore = notificationStore;
+    }
     public void Start()
     {
         _cts = new CancellationTokenSource();
@@ -159,6 +163,11 @@ public class IpcClientService
 
                 case IpcAction.Ping:
                     _ = SendMessageAsync(new IpcMessage { Action = IpcAction.Pong });
+                    break;
+                case IpcAction.Notification:
+                    if (msg.Notification != null)
+                        _notificationStore.Add(msg.Notification);
+
                     break;
             }
         }

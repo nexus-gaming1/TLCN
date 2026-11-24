@@ -10,6 +10,8 @@ public class CommandServiceTests
 {
     private readonly CommandService _commandService;
     private readonly SessionService _sessionService;
+    private readonly IpcServerService _ipcServerService;
+    private readonly SunshineService _sunshineService;
 
     public CommandServiceTests()
     {
@@ -22,7 +24,7 @@ public class CommandServiceTests
 
         _sessionService = new SessionService(NullLogger<SessionService>.Instance, config);
         var ipcServer = new IpcServerService(NullLogger<IpcServerService>.Instance, _sessionService);
-        _commandService = new CommandService(NullLogger<CommandService>.Instance, _sessionService, ipcServer);
+        _commandService = new CommandService(NullLogger<CommandService>.Instance, _sessionService, ipcServer, _sunshineService);
     }
 
     [Fact]
