@@ -45,7 +45,6 @@ export function mapComputerToMachineDTO(c) {
   // 1. Phân khu & Bảng giá từ CSDL
   const zoneName = c.zone_name || c.ComputerZone?.zone_name || `Zone ${zoneId}`;
   const tierLevel = Number(c.ComputerZone?.tier_level ?? 1);
-  const colorCode = c.ComputerZone?.color_code || '#0284c7';
 
   // Lấy đơn giá thực tế từ bảng giá (PricingPlan) liên kết với Phân khu trong MySQL
   const pricingPlans = c.ComputerZone?.PricingPlans || [];
@@ -93,7 +92,6 @@ export function mapComputerToMachineDTO(c) {
     zone_id: zoneId,
     zoneName,
     zoneIcon,
-    colorCode,
     tier_level: tierLevel,
     specDescription,
     price_per_hour: pricePerHour,

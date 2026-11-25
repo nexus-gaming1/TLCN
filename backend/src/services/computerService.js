@@ -564,7 +564,6 @@ class ComputerService {
           description: zone.description || '',
           max_capacity: zone.max_capacity ?? null,
           code_prefix: zone.code_prefix || 'PC-',
-          color_code: zone.color_code || '#0284c7',
           tier_level: zone.tier_level || 1,
           price_per_hour: activePlan.price_per_hour ? Number(activePlan.price_per_hour) : 0,
           total_stations: zoneStations.length,

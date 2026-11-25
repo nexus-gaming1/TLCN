@@ -1,5 +1,4 @@
-import React from 'react';
-import { Info, Monitor, Settings, ShieldAlert } from 'lucide-react';
+import { Monitor, Settings, ShieldAlert } from 'lucide-react';
 import StationCard from '../../entities/station/ui/StationCard';
 
 export default function ZoneSection({
@@ -30,22 +29,15 @@ export default function ZoneSection({
         : (zone.max_capacity !== undefined && zone.max_capacity !== null ? Number(zone.max_capacity) : null);
     const isFull = maxCapacity !== null && stationCount >= maxCapacity;
     const capacityPercent = maxCapacity ? Math.min(100, Math.round((stationCount / maxCapacity) * 100)) : 0;
-    const zoneColor = zone.colorCode || zone.color_code || '#0284c7';
 
     return (
         <section className="bg-white rounded-xl p-5 border border-slate-200 shadow-flat relative overflow-hidden">
             {/* Top accent bar */}
-            <div
-                className="absolute top-0 left-0 right-0 h-1"
-                style={{ backgroundColor: zoneColor }}
-            />
+            <div className="absolute top-0 left-0 right-0 h-1 bg-sky-500" />
 
             <div className="flex flex-wrap items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-100">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                    <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold"
-                        style={{ backgroundColor: zoneColor }}
-                    >
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sky-600 bg-sky-50 font-bold border border-sky-100">
                         <Monitor className="w-4 h-4" />
                     </div>
                     <h2 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">

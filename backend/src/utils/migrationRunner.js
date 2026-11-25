@@ -59,10 +59,9 @@ const runMigrations = async () => {
     await ensureColumn('pricing_plan', null, 'start_time', 'TIME NULL');
     await ensureColumn('pricing_plan', null, 'end_time', 'TIME NULL');
 
-    // 4. computer_zone: max_capacity, code_prefix, color_code, is_deleted, deleted_at
+    // 4. computer_zone: max_capacity, code_prefix, is_deleted, deleted_at
     await ensureColumn('computer_zone', null, 'max_capacity', 'INT NULL DEFAULT NULL');
     await ensureColumn('computer_zone', null, 'code_prefix', 'VARCHAR(20) NULL DEFAULT "PC-"');
-    await ensureColumn('computer_zone', null, 'color_code', 'VARCHAR(20) NULL DEFAULT "#0284c7"');
     await ensureColumn('computer_zone', null, 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
     await ensureColumn('computer_zone', null, 'deleted_at', 'DATETIME NULL DEFAULT NULL');
     await ensureColumn('pricing_plan', null, 'apply_date', 'DATE NULL');

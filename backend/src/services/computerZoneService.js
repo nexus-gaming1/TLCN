@@ -130,7 +130,7 @@ class ComputerZoneService {
   async createZone(zoneData) {
     try {
       const db = this.models;
-      const { zone_name, description, tier_level, max_capacity, code_prefix, color_code, pricing_plan_ids } = zoneData;
+      const { zone_name, description, tier_level, max_capacity, code_prefix, pricing_plan_ids } = zoneData;
 
       if (!zone_name || !zone_name.trim()) {
         const err = new Error('Tên phân khu không được để trống');
@@ -145,8 +145,7 @@ class ComputerZoneService {
         description: description ? description.trim() : '',
         tier_level: Number(tier_level) || 1,
         max_capacity: parsedCapacity,
-        code_prefix: code_prefix ? code_prefix.trim().toUpperCase() : 'PC-',
-        color_code: color_code ? color_code.trim() : '#0284c7'
+        code_prefix: code_prefix ? code_prefix.trim().toUpperCase() : 'PC-'
       });
 
       // Liên kết với bảng giá nếu có
@@ -182,7 +181,7 @@ class ComputerZoneService {
         throw err;
       }
 
-      const { zone_name, description, tier_level, max_capacity, code_prefix, color_code, pricing_plan_ids } = updateData;
+      const { zone_name, description, tier_level, max_capacity, code_prefix, pricing_plan_ids } = updateData;
 
       if (zone_name !== undefined) {
         if (!zone_name.trim()) {
@@ -196,7 +195,6 @@ class ComputerZoneService {
       if (description !== undefined) zone.description = description ? description.trim() : '';
       if (tier_level !== undefined) zone.tier_level = Number(tier_level) || 1;
       if (code_prefix !== undefined) zone.code_prefix = code_prefix ? code_prefix.trim().toUpperCase() : 'PC-';
-      if (color_code !== undefined) zone.color_code = color_code ? color_code.trim() : '#0284c7';
 
       if (max_capacity !== undefined) {
         zone.max_capacity = this._validateCapacityValue(max_capacity);

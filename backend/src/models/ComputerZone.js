@@ -34,7 +34,6 @@ module.exports = (sequelize) => {
     tier_level: { type: DataTypes.INTEGER, defaultValue: 1 },
     max_capacity: { type: DataTypes.INTEGER, allowNull: true, defaultValue: null },
     code_prefix: { type: DataTypes.STRING(20), allowNull: true, defaultValue: 'PC-' },
-    color_code: { type: DataTypes.STRING(20), allowNull: true, defaultValue: '#0284c7' },
     is_deleted: { type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false },
     deleted_at: { type: DataTypes.DATE, allowNull: true, defaultValue: null }
   }, {

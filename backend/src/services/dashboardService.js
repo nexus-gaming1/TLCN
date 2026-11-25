@@ -98,8 +98,6 @@ class DashboardService {
           max_capacity: z.max_capacity ?? null,
           codePrefix: z.code_prefix || 'PC-',
           code_prefix: z.code_prefix || 'PC-',
-          colorCode: z.color_code || '#0284c7',
-          color_code: z.color_code || '#0284c7',
           tierLevel: z.tier_level || 1,
           tier_level: z.tier_level || 1,
           stations: z.Computers ? z.Computers.map((c) => {
