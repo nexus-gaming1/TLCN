@@ -24,10 +24,14 @@ class MachineService {
 
   /**
    * Fetch all Computer Zones directly from CSDL MySQL (computer_zone table)
+   * @param {Object} [options]
+   * @param {boolean} [options.includeDeleted=false]
    */
-  async getZones() {
+  async getZones({ includeDeleted = false } = {}) {
     try {
-      const response = await apiClient.get('/computers/zones');
+      const response = await apiClient.get('/computers/zones', {
+        params: includeDeleted ? { include_deleted: 'true' } : {}
+      });
       const rawData = Array.isArray(response?.data)
         ? response.data
         : (Array.isArray(response?.data?.data) ? response.data.data : []);
@@ -59,6 +63,14 @@ class MachineService {
    */
   async deleteZone(zoneId) {
     const response = await apiClient.delete(`/computers/zones/${zoneId}`);
+    return response.data;
+  }
+
+  /**
+   * Restore a soft-deleted computer zone
+   */
+  async restoreZone(zoneId) {
+    const response = await apiClient.patch(`/computers/zones/${zoneId}/restore`);
     return response.data;
   }
 

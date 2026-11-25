@@ -46,6 +46,9 @@ module.exports = (sequelize) => {
   ComputerZone.associate = (models) => {
     ComputerZone.belongsToMany(models.PricingPlan, { through: models.ZonePricingPlan, foreignKey: 'zone_id' });
     ComputerZone.hasMany(models.Computer, { foreignKey: 'zone_id' });
+    if (models.HardwareProfile) {
+      ComputerZone.hasMany(models.HardwareProfile, { foreignKey: 'zone_id' });
+    }
   };
 
   return ComputerZone;

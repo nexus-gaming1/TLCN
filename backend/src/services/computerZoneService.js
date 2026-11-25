@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const defaultDb = require('../models');
 
 /**
@@ -12,12 +13,14 @@ class ComputerZoneService {
 
   /**
    * Fetch all zones with pricing plans and live computer counts
+   * @param {boolean} [includeDeleted=false] - Whether to include soft-deleted zones
    */
-  async getAllZones() {
+  async getAllZones(includeDeleted = false) {
     try {
       const db = this.models;
+      const whereCondition = includeDeleted ? {} : { is_deleted: false };
       const zones = await db.ComputerZone.findAll({
-        where: { is_deleted: false },
+        where: whereCondition,
         include: [
           {
             model: db.PricingPlan,
@@ -25,7 +28,7 @@ class ComputerZoneService {
             attributes: ['pricing_plan_id', 'name', 'price_per_hour', 'plan_type', 'is_active']
           }
         ],
-        order: [['zone_id', 'ASC']]
+        order: includeDeleted ? [['is_deleted', 'ASC'], ['zone_id', 'ASC']] : [['zone_id', 'ASC']]
       });
 
       // Lấy số lượng máy thực tế chưa xóa cho mỗi zone
@@ -60,10 +63,34 @@ class ComputerZoneService {
         inUseMap[item.zone_id] = Number(item.count) || 0;
       }
 
+      // Lấy số lượng mẫu cấu hình phần cứng đang hoạt động liên kết với mỗi zone
+      let hpMap = {};
+      if (db.HardwareProfile && typeof db.HardwareProfile.findAll === 'function') {
+        try {
+          const hpCounts = await db.HardwareProfile.findAll({
+            attributes: [
+              'zone_id',
+              [db.sequelize.fn('COUNT', db.sequelize.col('profile_id')), 'count']
+            ],
+            where: { is_deleted: false },
+            group: ['zone_id'],
+            raw: true
+          });
+          for (const item of hpCounts) {
+            if (item.zone_id) {
+              hpMap[item.zone_id] = Number(item.count) || 0;
+            }
+          }
+        } catch (_hpCountErr) {
+          // Graceful fallback if HardwareProfile model is not populated
+        }
+      }
+
       return zones.map((z) => {
         const plain = z.toJSON ? z.toJSON() : { ...z };
         plain.computer_count = countMap[plain.zone_id] || 0;
         plain.in_use_count = inUseMap[plain.zone_id] || 0;
+        plain.hardware_profile_count = hpMap[plain.zone_id] || 0;
         return plain;
       });
     } catch (error) {
@@ -226,25 +253,36 @@ class ComputerZoneService {
 
   /**
    * Delete a ComputerZone (Xóa mềm - Soft Delete)
-   * Quy trình 3 bước chuẩn:
-   * Bước 1: Chặn xóa nếu còn máy trạm bên trong (count > 0)
-   * Bước 2: Chặn xóa nếu đang có máy trong khu vực đó "Đang sử dụng" (IN_USE)
-   * Bước 3: Thực thi Xóa mềm (khi số máy = 0): cập nhật is_deleted = true, deleted_at = NOW()
+   * Tuân thủ quy chuẩn BR-ZONE-DELETE:
+   * - Điều kiện tiên quyết: Phân khu phải tồn tại và chưa bị xóa trước đó.
+   * - Chặn xóa nếu còn phiên sử dụng (IN_USE / ACTIVE) thuộc phân khu.
+   * - Chặn xóa nếu còn máy trạm gán vào phân khu (kể cả máy OFFLINE, bất kể trạng thái).
+   * - Chặn xóa nếu còn liên kết với mẫu cấu hình phần cứng (HardwareProfile) đang hoạt động.
+   * - Xử lý: Cập nhật is_deleted = true, deleted_at = NOW(). Không xóa vật lý bản ghi.
+   *   Bảo toàn lịch sử phiên chơi, giao dịch và dữ liệu kiểm toán.
    */
   async deleteZone(zoneId) {
     try {
       const db = this.models;
-      const zone = (typeof db.ComputerZone.findOne === 'function')
-        ? await db.ComputerZone.findOne({ where: { zone_id: Number(zoneId), is_deleted: false } })
-        : await db.ComputerZone.findByPk(Number(zoneId));
+      const zone = (typeof db.ComputerZone.findByPk === 'function')
+        ? await db.ComputerZone.findByPk(Number(zoneId))
+        : (typeof db.ComputerZone.findOne === 'function' ? await db.ComputerZone.findOne({ where: { zone_id: Number(zoneId) } }) : null);
 
-      if (!zone || zone.is_deleted) {
-        const err = new Error('Phân khu máy trạm không tồn tại hoặc đã bị xóa');
+      if (!zone) {
+        const err = new Error('Phân khu máy trạm không tồn tại');
         err.statusCode = 404;
+        err.code = 'ZONE_NOT_FOUND';
         throw err;
       }
 
-      // Bước 2: Chặn xóa nếu đang có máy trong khu vực đó "Đang sử dụng" (IN_USE)
+      if (zone.is_deleted) {
+        const err = new Error('Phân khu máy trạm đã bị xóa trước đó');
+        err.statusCode = 400;
+        err.code = 'ZONE_ALREADY_DELETED';
+        throw err;
+      }
+
+      // 1. Chặn xóa nếu đang có phiên chơi / máy đang sử dụng (IN_USE)
       const inUseCount = await db.Computer.count({
         where: {
           zone_id: Number(zoneId),
@@ -260,7 +298,7 @@ class ComputerZoneService {
         throw err;
       }
 
-      // Bước 1: Chặn xóa nếu vẫn còn máy trạm bên trong
+      // 2. Chặn xóa nếu vẫn còn bất kỳ máy trạm nào được gán vào phân khu (bất kể trạng thái)
       const activeCount = await db.Computer.count({
         where: { zone_id: Number(zoneId), is_deleted: false }
       });
@@ -272,7 +310,22 @@ class ComputerZoneService {
         throw err;
       }
 
-      // Bước 3: Thực thi Xóa mềm (khi số máy = 0)
+      // 3. Chặn xóa nếu còn liên kết cấu hình phần cứng (HardwareProfile) đang hoạt động
+      if (db.HardwareProfile && typeof db.HardwareProfile.findAll === 'function') {
+        const activeProfiles = await db.HardwareProfile.findAll({
+          where: { zone_id: Number(zoneId), is_deleted: false }
+        });
+
+        if (activeProfiles && activeProfiles.length > 0) {
+          const profileNames = activeProfiles.map((p) => `'${p.profile_name || p.id}'`).join(', ');
+          const err = new Error(`Không thể xóa phân khu vì vẫn còn liên kết với mẫu cấu hình phần cứng đang hoạt động (${profileNames}). Vui lòng gán lại phân khu hoặc xóa cấu hình trước khi xóa phân khu.`);
+          err.statusCode = 400;
+          err.code = 'ZONE_HAS_HARDWARE_PROFILES';
+          throw err;
+        }
+      }
+
+      // 4. Thực thi Xóa mềm (Soft Delete) - Cập nhật cờ is_deleted và deleted_at
       if (typeof zone.softDelete === 'function') {
         await zone.softDelete();
       } else {
@@ -285,12 +338,85 @@ class ComputerZoneService {
         }
       }
 
-      // Xóa liên kết bảng giá nếu có
-      if (db.ZonePricingPlan && typeof db.ZonePricingPlan.destroy === 'function') {
-        await db.ZonePricingPlan.destroy({ where: { zone_id: zone.zone_id } });
+      return true;
+    } catch (error) {
+      if (!error.statusCode) error.statusCode = 500;
+      throw error;
+    }
+  }
+
+  /**
+   * Restore a soft-deleted ComputerZone
+   * Admin có thể khôi phục phân khu nếu chưa phát sinh xung đột với dữ liệu hiện tại
+   */
+  async restoreZone(zoneId) {
+    try {
+      const db = this.models;
+      const zone = (typeof db.ComputerZone.findByPk === 'function')
+        ? await db.ComputerZone.findByPk(Number(zoneId))
+        : (typeof db.ComputerZone.findOne === 'function' ? await db.ComputerZone.findOne({ where: { zone_id: Number(zoneId) } }) : null);
+
+      if (!zone) {
+        const err = new Error('Phân khu máy trạm không tồn tại');
+        err.statusCode = 404;
+        err.code = 'ZONE_NOT_FOUND';
+        throw err;
       }
 
-      return true;
+      if (!zone.is_deleted) {
+        const err = new Error('Phân khu máy trạm đang hoạt động, không cần khôi phục');
+        err.statusCode = 400;
+        err.code = 'ZONE_NOT_DELETED';
+        throw err;
+      }
+
+      // Kiểm tra xung đột dữ liệu hiện tại trước khi khôi phục
+      // 1. Trùng tên với phân khu đang hoạt động khác
+      if (typeof db.ComputerZone.findOne === 'function') {
+        const duplicateName = await db.ComputerZone.findOne({
+          where: {
+            zone_name: zone.zone_name,
+            zone_id: { [Op.ne]: zone.zone_id },
+            is_deleted: false
+          }
+        });
+        if (duplicateName) {
+          const err = new Error(`Không thể khôi phục vì tên phân khu '${zone.zone_name}' đang trùng với một phân khu đang hoạt động khác.`);
+          err.statusCode = 409;
+          err.code = 'ZONE_NAME_CONFLICT';
+          throw err;
+        }
+
+        // 2. Trùng tiền tố máy (code_prefix) với phân khu đang hoạt động khác
+        if (zone.code_prefix) {
+          const duplicatePrefix = await db.ComputerZone.findOne({
+            where: {
+              code_prefix: zone.code_prefix,
+              zone_id: { [Op.ne]: zone.zone_id },
+              is_deleted: false
+            }
+          });
+          if (duplicatePrefix) {
+            const err = new Error(`Không thể khôi phục vì tiền tố máy '${zone.code_prefix}' đang được sử dụng bởi phân khu '${duplicatePrefix.zone_name}'.`);
+            err.statusCode = 409;
+            err.code = 'ZONE_PREFIX_CONFLICT';
+            throw err;
+          }
+        }
+      }
+
+      // Thực thi khôi phục
+      if (typeof zone.restore === 'function') {
+        await zone.restore();
+      } else {
+        zone.is_deleted = false;
+        zone.deleted_at = null;
+        if (typeof zone.save === 'function') {
+          await zone.save();
+        }
+      }
+
+      return zone;
     } catch (error) {
       if (!error.statusCode) error.statusCode = 500;
       throw error;

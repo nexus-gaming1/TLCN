@@ -12,14 +12,16 @@ import {
   DollarSign,
   Monitor,
   Tag,
-  ArrowRight
+  ArrowRight,
+  RotateCcw
 } from 'lucide-react';
 import machineService from '../../../shared/api/machine.service';
 
 const ZONE_MODES = Object.freeze({
   LIST: 'list',
   CREATE: 'create',
-  EDIT: 'edit'
+  EDIT: 'edit',
+  DELETED: 'deleted'
 });
 
 const DEFAULT_ZONE_FORM = Object.freeze({
@@ -91,7 +93,7 @@ export default function ZoneManagementModal({
     setLoading(true);
     setErrorMessage(null);
     try {
-      const zonesData = await machineService.getZones();
+      const zonesData = await machineService.getZones({ includeDeleted: true });
       if (Array.isArray(zonesData)) {
         setZones(zonesData);
       }
@@ -173,7 +175,7 @@ export default function ZoneManagementModal({
     setErrorMessage(null);
     try {
       await machineService.deleteZone(deletingZone.zone_id);
-      setSuccessMessage(`Đã xóa phân khu "${deletingZone.zone_name}" thành công!`);
+      setSuccessMessage(`Đã xóa mềm phân khu "${deletingZone.zone_name}" thành công!`);
       setTimeout(() => setSuccessMessage(null), 3000);
       setDeletingZone(null);
       await loadData();
@@ -185,6 +187,26 @@ export default function ZoneManagementModal({
       setSubmitting(false);
     }
   };
+
+  const handleRestoreZone = async (zone) => {
+    if (!zone) return;
+    setSubmitting(true);
+    setErrorMessage(null);
+    try {
+      await machineService.restoreZone(zone.zone_id);
+      setSuccessMessage(`Đã khôi phục phân khu "${zone.zone_name}" thành công!`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+      await loadData();
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || err.message || 'Lỗi khi khôi phục phân khu');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const activeZones = zones.filter((z) => !z.is_deleted);
+  const deletedZones = zones.filter((z) => z.is_deleted);
 
   if (!isOpen) return null;
 
@@ -221,23 +243,23 @@ export default function ZoneManagementModal({
             <button
               type="button"
               onClick={() => {
-                setActiveTab('list');
+                setActiveTab(ZONE_MODES.LIST);
                 setErrorMessage(null);
               }}
-              className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition flex items-center gap-1.5 border-b-2 cursor-pointer ${activeTab === 'list'
+              className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition flex items-center gap-1.5 border-b-2 cursor-pointer ${activeTab === ZONE_MODES.LIST
                 ? 'border-sky-600 text-sky-700 bg-white shadow-2xs font-extrabold'
                 : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
                 }`}
             >
               <Layers className="w-3.5 h-3.5" />
-              <span>Danh Sách Phân Khu ({zones.length})</span>
+              <span>Phân Khu Hoạt Động ({activeZones.length})</span>
             </button>
 
             {/* NÚT THÊM PHÂN KHU MỚI LUÔN LUÔN HIỆN DIỆN */}
             <button
               type="button"
               onClick={handleOpenCreate}
-              className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition flex items-center gap-1.5 border-b-2 cursor-pointer ${activeTab === 'create'
+              className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition flex items-center gap-1.5 border-b-2 cursor-pointer ${activeTab === ZONE_MODES.CREATE
                 ? 'border-sky-600 text-sky-700 bg-white shadow-2xs font-extrabold'
                 : 'border-transparent text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50/60 font-extrabold'
                 }`}
@@ -246,7 +268,23 @@ export default function ZoneManagementModal({
               <span>Thêm Phân Khu Mới</span>
             </button>
 
-            {activeTab === 'edit' && editZoneId && (
+            {/* TAB XEM PHÂN KHU ĐÃ XÓA MỀM */}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveTab(ZONE_MODES.DELETED);
+                setErrorMessage(null);
+              }}
+              className={`px-3.5 py-2 text-xs font-bold rounded-t-lg transition flex items-center gap-1.5 border-b-2 cursor-pointer ${activeTab === ZONE_MODES.DELETED
+                ? 'border-rose-600 text-rose-700 bg-white shadow-2xs font-extrabold'
+                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-100/70'
+                }`}
+            >
+              <Trash2 className="w-3.5 h-3.5 text-slate-400" />
+              <span>Đã Xóa ({deletedZones.length})</span>
+            </button>
+
+            {activeTab === ZONE_MODES.EDIT && editZoneId && (
               <button
                 type="button"
                 className="px-3.5 py-2 text-xs font-extrabold rounded-t-lg border-b-2 border-amber-600 text-amber-700 bg-white shadow-2xs flex items-center gap-1.5"
@@ -275,12 +313,12 @@ export default function ZoneManagementModal({
 
         {/* Body */}
         <div className="p-6 overflow-y-auto flex-1 space-y-5">
-          {activeTab === 'list' ? (
+          {activeTab === ZONE_MODES.LIST ? (
             /* ================= VIEW: LIST OF ZONES ================= */
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-bold uppercase text-slate-400">
-                  Phân khu đang hoạt động trên hệ thống ({zones.length})
+                  Phân khu đang hoạt động trên hệ thống ({activeZones.length})
                 </span>
                 <button
                   type="button"
@@ -296,13 +334,13 @@ export default function ZoneManagementModal({
                 <div className="py-12 text-center text-slate-400 text-xs font-mono">
                   ⏳ Đang tải dữ liệu phân khu từ CSDL...
                 </div>
-              ) : zones.length === 0 ? (
+              ) : activeZones.length === 0 ? (
                 <div className="py-12 text-center text-slate-400 text-xs font-medium">
-                  Chưa có phân khu nào được tạo. Nhấn "Thêm Phân Khu Mới" để bắt đầu.
+                  Chưa có phân khu hoạt động nào. Nhấn "Thêm Phân Khu Mới" để bắt đầu.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                  {zones.map((zone) => {
+                  {activeZones.map((zone) => {
                     const count = Number(zone.computer_count || 0);
                     const maxCap = zone.max_capacity !== null && zone.max_capacity !== undefined
                       ? Number(zone.max_capacity)
@@ -411,6 +449,93 @@ export default function ZoneManagementModal({
                           >
                             <Trash2 className="w-4 h-4" />
                             <span>Xóa</span>
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : activeTab === ZONE_MODES.DELETED ? (
+            /* ================= VIEW: DELETED ZONES (TRASH / SOFT-DELETED) ================= */
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-mono font-bold uppercase text-slate-400">
+                    Phân khu đã xóa mềm ({deletedZones.length})
+                  </span>
+                  <p className="text-[11px] text-slate-500 font-medium">
+                    Áp dụng BR-ZONE-DELETE: Lưu vết lịch sử phiên chơi, giao dịch và có thể khôi phục
+                  </p>
+                </div>
+              </div>
+
+              {loading ? (
+                <div className="py-12 text-center text-slate-400 text-xs font-mono">
+                  ⏳ Đang tải dữ liệu phân khu từ CSDL...
+                </div>
+              ) : deletedZones.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 text-xs font-medium bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  Thùng rác trống. Không có phân khu nào bị xóa mềm.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {deletedZones.map((zone) => {
+                    return (
+                      <div
+                        key={zone.zone_id}
+                        className="bg-slate-50/70 border border-slate-200 rounded-xl p-4 shadow-2xs flex flex-col justify-between gap-3 relative overflow-hidden"
+                      >
+                        {/* Top Indicator Line */}
+                        <div className="absolute top-0 left-0 right-0 h-1 bg-rose-400" />
+
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0" />
+                              <h4 className="font-extrabold text-sm text-slate-700 truncate line-through">
+                                {zone.zone_name}
+                              </h4>
+                            </div>
+                            <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 text-[10px] font-mono font-bold">
+                              Đã xóa mềm
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 font-mono">
+                            <span>Tiền tố: <strong>{zone.code_prefix || 'PC-'}</strong></span>
+                            <span>•</span>
+                            <span>Tier #{zone.tier_level}</span>
+                          </div>
+
+                          {zone.deleted_at && (
+                            <div className="mt-2 text-[11px] text-rose-600/90 font-mono">
+                              Thời điểm xóa: {new Date(zone.deleted_at).toLocaleString('vi-VN')}
+                            </div>
+                          )}
+
+                          {zone.description && (
+                            <p className="mt-1 text-xs text-slate-500 italic">
+                              {zone.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Card Actions: Restore */}
+                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/80">
+                          <span className="text-[11px] text-slate-400 font-mono">
+                            Zone ID: #{zone.zone_id}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={submitting}
+                            onClick={() => handleRestoreZone(zone)}
+                            className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition cursor-pointer flex items-center gap-1.5 text-xs font-bold disabled:opacity-50"
+                            title="Khôi phục phân khu để sử dụng lại trên hệ thống"
+                          >
+                            <RotateCcw className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Khôi phục</span>
                           </button>
                         </div>
                       </div>
@@ -600,9 +725,11 @@ export default function ZoneManagementModal({
         {deletingZone && (() => {
           const deleteZoneCount = Number(deletingZone.computer_count || 0);
           const deleteZoneInUseCount = Number(deletingZone.in_use_count || 0);
+          const deleteZoneHpCount = Number(deletingZone.hardware_profile_count || 0);
           const hasMachines = deleteZoneCount > 0;
           const hasInUseMachines = deleteZoneInUseCount > 0;
-          const canDelete = !hasMachines && !hasInUseMachines;
+          const hasHardwareProfiles = deleteZoneHpCount > 0;
+          const canDelete = !hasMachines && !hasInUseMachines && !hasHardwareProfiles;
 
           return (
             <div className="absolute inset-0 z-30 bg-slate-900/40 backdrop-blur-[2px] flex items-center justify-center p-4 animate-in fade-in duration-150">
@@ -619,7 +746,7 @@ export default function ZoneManagementModal({
 
                 <div className="space-y-3 text-xs leading-relaxed">
                   <p className="text-slate-700 font-medium">
-                    Bạn có chắc chắn muốn xóa phân khu <strong>"{deletingZone.zone_name}"</strong>?
+                    Bạn có chắc chắn muốn xóa mềm phân khu <strong>"{deletingZone.zone_name}"</strong>?
                   </p>
 
                   {hasInUseMachines ? (
@@ -629,7 +756,7 @@ export default function ZoneManagementModal({
                         <span>Không thể xóa phân khu này</span>
                       </div>
                       <p className="text-[11px] text-rose-700 font-medium">
-                        Không thể xóa vì phân khu này đang có <strong>{deleteZoneInUseCount}</strong> máy trạm đang trong phiên sử dụng. Vui lòng kết thúc phiên chơi trước.
+                        Không thể xóa vì phân khu đang có <strong>{deleteZoneInUseCount}</strong> máy trạm đang trong phiên sử dụng. Vui lòng kết thúc phiên chơi trước.
                       </p>
                     </div>
                   ) : hasMachines ? (
@@ -639,13 +766,26 @@ export default function ZoneManagementModal({
                         <span>Không thể xóa phân khu này</span>
                       </div>
                       <p className="text-[11px] text-rose-700 font-medium">
-                        Không thể xóa vì phân khu này đang chứa <strong>{deleteZoneCount}</strong> máy trạm. Vui lòng chuyển hết máy sang phân khu khác trước.
+                        Không thể xóa vì phân khu đang chứa <strong>{deleteZoneCount}</strong> máy trạm. Vui lòng chuyển hoặc xóa máy trước khi xóa phân khu.
+                      </p>
+                    </div>
+                  ) : hasHardwareProfiles ? (
+                    <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 space-y-1">
+                      <div className="font-extrabold flex items-center gap-1.5 text-amber-900">
+                        <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
+                        <span>Không thể xóa phân khu này</span>
+                      </div>
+                      <p className="text-[11px] text-amber-700 font-medium">
+                        Không thể xóa vì phân khu đang có <strong>{deleteZoneHpCount}</strong> cấu hình phần cứng (HardwareProfile) liên kết. Vui lòng chuyển hoặc xóa cấu hình liên kết trước.
                       </p>
                     </div>
                   ) : (
-                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-600 space-y-1">
-                      <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                        Phân khu này sẽ được gỡ khỏi Sơ đồ phòng máy và danh sách lựa chọn khi thêm máy mới. Toàn bộ lịch sử giao dịch và báo cáo doanh thu trước đây vẫn được giữ nguyên.
+                    <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-slate-600 space-y-2">
+                      <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                        Hệ thống áp dụng <strong>Xóa mềm (Soft Delete)</strong>. Phân khu này sẽ được gỡ khỏi Sơ đồ phòng máy và danh sách chọn khi tạo máy mới.
+                      </p>
+                      <p className="text-[11px] text-slate-500 font-medium">
+                        Toàn bộ lịch sử phiên chơi, giao dịch và dữ liệu kiểm toán được bảo toàn nguyên vẹn. Bạn có thể khôi phục lại phân khu này bất kỳ lúc nào tại tab "Đã Xóa".
                       </p>
                     </div>
                   )}
@@ -668,10 +808,10 @@ export default function ZoneManagementModal({
                       ? 'bg-rose-600 hover:bg-rose-700 text-white cursor-pointer'
                       : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60'
                       }`}
-                    title={!canDelete ? 'Vui lòng di dời máy trạm trước khi xóa' : 'Xác nhận xóa phân khu'}
+                    title={!canDelete ? 'Không đủ điều kiện xóa theo quy định BR-ZONE-DELETE' : 'Xác nhận xóa mềm phân khu'}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>{submitting ? 'Đang xóa...' : 'Xóa phân khu'}</span>
+                    <span>{submitting ? 'Đang xóa...' : 'Xác nhận xóa mềm'}</span>
                   </button>
                 </div>
               </div>

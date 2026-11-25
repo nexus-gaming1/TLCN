@@ -54,7 +54,8 @@ class ComputerController {
 
   async getZones(req, res, next) {
     try {
-      const zones = await computerZoneService.getAllZones();
+      const includeDeleted = req.query.include_deleted === 'true';
+      const zones = await computerZoneService.getAllZones(includeDeleted);
       return res.json({
         status: 'success',
         data: zones,
@@ -98,7 +99,21 @@ class ComputerController {
       await computerZoneService.deleteZone(id);
       return res.json({
         status: 'success',
-        message: 'Xóa phân khu máy trạm thành công'
+        message: 'Xóa mềm phân khu máy trạm thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async restoreZone(req, res, next) {
+    try {
+      const { id } = req.params;
+      const restoredZone = await computerZoneService.restoreZone(id);
+      return res.json({
+        status: 'success',
+        data: restoredZone,
+        message: 'Khôi phục phân khu máy trạm thành công'
       });
     } catch (error) {
       next(error);

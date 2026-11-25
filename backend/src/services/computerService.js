@@ -517,6 +517,10 @@ class ComputerService {
     return await this.computerZoneService.deleteZone(zoneId);
   }
 
+  async restoreZone(zoneId) {
+    return await this.computerZoneService.restoreZone(zoneId);
+  }
+
   /**
    * Fetch full Room Layout Grid grouped by Computer Zones with standardized Station DTOs
    * Open/Closed Principle (OCP): Dynamically summarizes statuses without hardcoded switch-cases.
