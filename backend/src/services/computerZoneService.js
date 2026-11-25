@@ -64,7 +64,7 @@ class ComputerZoneService {
       }
 
       // Lấy số lượng mẫu cấu hình phần cứng đang hoạt động liên kết với mỗi zone
-      let hpMap = {};
+      const hpMap = {};
       if (db.HardwareProfile && typeof db.HardwareProfile.findAll === 'function') {
         try {
           const hpCounts = await db.HardwareProfile.findAll({
