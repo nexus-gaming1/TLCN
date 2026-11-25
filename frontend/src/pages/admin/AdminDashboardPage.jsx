@@ -12,9 +12,11 @@ import AmountInputModal from '../../features/transactions/ui/AmountInputModal';
 import SendNotificationModal from '../../features/notifications/SendNotificationModal';
 import dashboardService from '../../shared/api/dashboard.service';
 import machineService from '../../shared/api/machine.service';
-import { CheckCircle2, AlertCircle, RotateCw, Power, LogOut, Info, Lock, Unlock, ArrowRightLeft, Wallet, Coins, Gift, CreditCard, Bell } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RotateCw, Power, LogOut, Info, Lock, Unlock, ArrowRightLeft, Wallet, Coins, Gift, CreditCard, Bell, Megaphone } from 'lucide-react';
 import { useMachines } from '../../shared/hooks/useMachines';
 import { useMachineSocket } from '../../shared/hooks/useMachineSocket';
+import AnnouncementManagementModal from '../staff/components/AnnouncementManagementModal';
+
 export default function AdminDashboardPage({ user, onLogout }) {
     const [filter, setFilter] = useState('all');
     const [sortBy, setSortBy] = useState('name_asc');
@@ -27,8 +29,10 @@ export default function AdminDashboardPage({ user, onLogout }) {
     const [isBootromModalOpen, setIsBootromModalOpen] = useState(false);
     const [notificationModal, setNotificationModal] = useState({ isOpen: false, station: null });
     const [toastMessage, setToastMessage] = useState(null);
+    const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
     const [contextMenu, setContextMenu] = useState(null);
     const [balanceModal, setBalanceModal] = useState({ isOpen: false, action: 'TOPUP', station: null });
+
 
     const showGlobalToast = (text, isError = false) => {
         setToastMessage({ text, isError });
@@ -450,6 +454,18 @@ export default function AdminDashboardPage({ user, onLogout }) {
                             onOpenBroadcastModal={() => setNotificationModal({ isOpen: true, station: null })}
                         />
 
+                        <div className="flex justify-end my-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsAnnouncementModalOpen(true)}
+                                className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+                                title="Quản lý banner thông báo toàn hệ thống"
+                            >
+                                <Megaphone className="w-4 h-4" />
+                                <span>Quản Lý Banner</span>
+                            </button>
+                        </div>
+
                         <KpiCards
                             metrics={metrics}
                             filter={filter}
@@ -516,6 +532,12 @@ export default function AdminDashboardPage({ user, onLogout }) {
             <BootromLogModal
                 isOpen={isBootromModalOpen}
                 onClose={() => setIsBootromModalOpen(false)}
+            />
+
+            {/* ANNOUNCEMENT MANAGEMENT MODAL */}
+            <AnnouncementManagementModal
+                isOpen={isAnnouncementModalOpen}
+                onClose={() => setIsAnnouncementModalOpen(false)}
             />
 
             {/* SEND NOTIFICATION MODAL */}
@@ -602,6 +624,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
                     </button>
                 </div>
             )}
+
         </div>
     );
 }

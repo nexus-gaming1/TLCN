@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User, LogOut, ChevronDown, ShieldCheck, UserCircle, Shield, Receipt } from 'lucide-react';
+import { User, LogOut, ChevronDown, ShieldCheck, UserCircle, Shield, Receipt, BellRing } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-
+import CustomerSupportModal from './CustomerSupportModal';
 /**
  * CustomerHeader Widget
  * Located at: widgets/layouts/customer/CustomerHeader.jsx
@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
  */
 export default function CustomerHeader({ user, onLogout }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -26,12 +27,21 @@ export default function CustomerHeader({ user, onLogout }) {
   return (
     <header className="fixed top-0 left-[17.5rem] right-0 h-16 bg-white/90 backdrop-blur-md z-40 flex items-center justify-between px-8 border-b border-slate-200/80 text-slate-800 shadow-xs">
       <div className="flex items-center gap-2 text-xs font-mono">
-        <span className="text-slate-400 uppercase tracking-wider font-semibold">HỆ THỐNG</span>
-        <span className="text-slate-300">/</span>
-        <span className="text-cyan-600 font-extrabold uppercase tracking-wider">CỔNG DỊCH VỤ</span>
+        <span className="text-slate-400 uppercase tracking-wider font-semibold">Xin chào, {user?.full_name || 'Hội viên'}</span>
       </div>
 
       <div className="flex items-center gap-6">
+
+        {/* nút gọi hỗ trợ*/}
+        <button
+          type="button"
+          onClick={() => setIsSupportModalOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-50 hover:bg-cyan-100 text-cyan-700 font-extrabold text-xs border border-cyan-200 transition-all shadow-2xs cursor-pointer"
+          title="Gọi nhân viên hoặc đánh giá dịch vụ"
+        >
+          <BellRing className="w-4 h-4 text-cyan-600 animate-pulse" />
+          <span className="hidden sm:inline">Hỗ Trợ & Đánh Giá</span>
+        </button>
 
         {/* User Profile Dropdown Container */}
         <div className="relative" ref={dropdownRef}>
@@ -144,6 +154,11 @@ export default function CustomerHeader({ user, onLogout }) {
           )}
         </div>
       </div>
+      {/* Modal hỗ trợ khách hàng */}
+      <CustomerSupportModal
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+      />
     </header>
   );
 }
