@@ -53,10 +53,10 @@ export default function MachineKpiCards({
     },
     {
       id: 'reserved',
-      title: 'Đặt Trước / Khóa',
+      title: 'Tạm Khóa',
       count: reservedCount,
       percent: reservedPercent,
-      sub: 'Trạm bị khóa hoặc tạm dừng',
+      sub: 'Đặt trước hoặc khóa trạm',
       bgColor: 'bg-[#faf5ff]',
       titleColor: 'text-[#7e22ce]',
       percentBg: 'bg-[#f3e8ff]',
@@ -117,7 +117,10 @@ export default function MachineKpiCards({
                   )}
                   <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${c.dotBg}`}></span>
                 </span>
-                <span className={`text-xs sm:text-sm font-extrabold truncate ${c.titleColor}`}>
+                <span
+                  className={`text-[11px] sm:text-xs xl:text-[13px] font-extrabold truncate ${c.titleColor}`}
+                  title={c.title}
+                >
                   {c.title}
                 </span>
               </div>

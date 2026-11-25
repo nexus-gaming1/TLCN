@@ -330,14 +330,14 @@ const seedData = async (db) => {
     // 6. Seed Computers (Rich set of 36 computers with MAC addresses & Hardware Profile mapping)
     await safeSeed(db.Computer, [
       // Zone 1: Esports Pro Arena (8 trạm)
-      { computer_id: 1, computer_name: 'ESP-01', ip_address: '192.168.1.101', mac_address: 'F4:D4:88:5A:01:01', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 2, computer_name: 'ESP-02', ip_address: '192.168.1.102', mac_address: 'F4:D4:88:5A:01:02', status: ComputerStatus.IN_USE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 3, computer_name: 'ESP-03', ip_address: '192.168.1.103', mac_address: 'F4:D4:88:5A:01:03', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 4, computer_name: 'ESP-04', ip_address: '192.168.1.104', mac_address: 'F4:D4:88:5A:01:04', status: ComputerStatus.IN_USE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 5, computer_name: 'ESP-05', ip_address: '192.168.1.105', mac_address: 'F4:D4:88:5A:01:05', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 6, computer_name: 'ESP-06', ip_address: '192.168.1.106', mac_address: 'F4:D4:88:5A:01:06', status: ComputerStatus.IN_USE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 7, computer_name: 'ESP-07', ip_address: '192.168.1.107', mac_address: 'F4:D4:88:5A:01:07', status: ComputerStatus.MAINTENANCE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 8, computer_name: 'ESP-08', ip_address: '192.168.1.108', mac_address: 'F4:D4:88:5A:01:08', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
+      { computer_id: 1, computer_name: 'ESP-01', ip_address: '192.168.1.101', mac_address: 'F4:D4:88:5A:01:01', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
+      { computer_id: 2, computer_name: 'ESP-02', ip_address: '192.168.1.102', mac_address: 'F4:D4:88:5A:01:02', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
+      { computer_id: 3, computer_name: 'ESP-03', ip_address: '192.168.1.103', mac_address: 'F4:D4:88:5A:01:03', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
+      { computer_id: 4, computer_name: 'ESP-04', ip_address: '192.168.1.104', mac_address: 'F4:D4:88:5A:01:04', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
+      { computer_id: 5, computer_name: 'ESP-05', ip_address: '192.168.1.105', mac_address: 'F4:D4:88:5A:01:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
+      { computer_id: 6, computer_name: 'ESP-06', ip_address: '192.168.1.106', mac_address: 'F4:D4:88:5A:01:06', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
+      { computer_id: 7, computer_name: 'ESP-07', ip_address: '192.168.1.107', mac_address: 'F4:D4:88:5A:01:07', status: ComputerStatus.MAINTENANCE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
+      { computer_id: 8, computer_name: 'ESP-08', ip_address: '192.168.1.108', mac_address: 'F4:D4:88:5A:01:08', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
 
       // Zone 2: VIP Gaming Suite (8 trạm)
       { computer_id: 9, computer_name: 'VIP-01', ip_address: '192.168.1.201', mac_address: 'F4:D4:88:5A:02:01', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },

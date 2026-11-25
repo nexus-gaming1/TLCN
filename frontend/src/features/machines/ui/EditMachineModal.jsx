@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Monitor, X, Check, Network, ShieldAlert } from 'lucide-react';
+import { Monitor, X, Check, Network, ShieldAlert, Cpu } from 'lucide-react';
 import machineService from '../../../shared/api/machine.service';
+import hardwareService from '../../../shared/api/hardwareService';
 import { ComputerStatus, COMPUTER_STATUS_OPTIONS } from '../../../shared/constants/stationConstants';
 import MachineZoneSelect from './MachineZoneSelect';
 
@@ -16,6 +17,8 @@ const MAC_REGEX = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
 export default function EditMachineModal({ isOpen = false, machine = null, onClose, onSubmit }) {
   const [zones, setZones] = useState([]);
   const [loadingZones, setLoadingZones] = useState(false);
+  const [hardwareProfiles, setHardwareProfiles] = useState([]);
+  const [loadingProfiles, setLoadingProfiles] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
   const [errorNotice, setErrorNotice] = useState(null);
@@ -23,6 +26,7 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
   const [formData, setFormData] = useState({
     computer_name: '',
     zone_id: '1',
+    hardware_profile_id: '1',
     ip_address: '',
     mac_address: '',
     status: ComputerStatus.ONLINE,
@@ -35,6 +39,7 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
   const machineMac = machine?.mac_address;
   const machineStatus = machine?.status;
   const machineZoneId = machine?.zoneId || machine?.zone_id;
+  const machineProfileId = machine?.hardware_profile_id;
   const machineRemote = machine?.is_remote_enabled;
 
   // Optimized useEffect: Depend on primitive identifiers instead of whole object reference
@@ -43,6 +48,9 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
       const rawZoneId = machineZoneId
         ? String(machineZoneId).replace('zone-', '')
         : '1';
+      const rawProfileId = machineProfileId
+        ? String(machineProfileId)
+        : rawZoneId;
 
       // Auto-sanitize legacy malformed MAC if present (e.g. 3-char octet like :16B)
       let cleanMac = (machineMac || '').trim();
@@ -60,6 +68,7 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
       setFormData({
         computer_name: machine.id || machine.computer_name || '',
         zone_id: rawZoneId,
+        hardware_profile_id: rawProfileId,
         ip_address: machineIp || '',
         mac_address: cleanMac,
         status: String(machineStatus || ComputerStatus.ONLINE).toUpperCase(),
@@ -68,25 +77,33 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
       setErrors({});
       setErrorNotice(null);
     }
-  }, [isOpen, machineId, machineIp, machineMac, machineStatus, machineZoneId, machineRemote]);
+  }, [isOpen, machineId, machineIp, machineMac, machineStatus, machineZoneId, machineProfileId, machineRemote]);
 
-  // Load active computer zones from backend API
+  // Load active computer zones and hardware profiles from backend API
   useEffect(() => {
     if (isOpen) {
-      const fetchZones = async () => {
+      const fetchModalData = async () => {
         setLoadingZones(true);
+        setLoadingProfiles(true);
         try {
-          const zonesData = await machineService.getZones();
+          const [zonesData, specsData] = await Promise.all([
+            machineService.getZones(),
+            hardwareService.getHardwareSpecs()
+          ]);
           if (Array.isArray(zonesData) && zonesData.length > 0) {
             setZones(zonesData);
           }
+          if (specsData && Array.isArray(specsData.specs)) {
+            setHardwareProfiles(specsData.specs);
+          }
         } catch (err) {
-          console.warn('Lỗi khi nạp danh sách phân khu:', err.message);
+          console.warn('Lỗi khi nạp danh sách dữ liệu modal:', err.message);
         } finally {
           setLoadingZones(false);
+          setLoadingProfiles(false);
         }
       };
-      fetchZones();
+      fetchModalData();
     }
   }, [isOpen]);
 
@@ -94,10 +111,22 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData((prev) => {
+      const next = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+      // Khi người dùng thay đổi Zone, tự động đề xuất hardware_profile_id chuẩn của Zone đó
+      if (name === 'zone_id') {
+        const matchingProfile = hardwareProfiles.find(
+          (hp) => String(hp.zoneId || hp.zone_id) === String(value)
+        );
+        if (matchingProfile) {
+          next.hardware_profile_id = String(matchingProfile.profile_id);
+        }
+      }
+      return next;
+    });
 
     // Clear specific field validation error upon typing
     if (errors[name]) {
@@ -138,10 +167,12 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
     try {
       const computerId = machine.computer_id || machine.id;
       const targetZoneId = Number(formData.zone_id) || 1;
+      const targetProfileId = Number(formData.hardware_profile_id) || targetZoneId;
 
       const payload = {
         computer_name: formData.computer_name.trim(),
         zone_id: targetZoneId,
+        hardware_profile_id: targetProfileId,
         ip_address: formData.ip_address.trim(),
         mac_address: formData.mac_address.trim(),
         status: formData.status,
@@ -242,7 +273,7 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
               </div>
             </div>
 
-            {/* Row 2: Dynamic Zone Selection & Hardware Preview */}
+            {/* Row 2: Dynamic Zone Selection */}
             <MachineZoneSelect
               zones={zones}
               selectedZoneId={formData.zone_id}
@@ -251,6 +282,100 @@ export default function EditMachineModal({ isOpen = false, machine = null, onClo
               name="zone_id"
               accentColor="indigo"
             />
+
+            {/* Row 2.5: Hardware Profile Selection (Chỉ có ở Edit Modal để xử lý linh kiện ngoại lệ / bảo hành) */}
+            {(() => {
+              const defaultZoneProfile = hardwareProfiles.find(
+                (hp) => String(hp.zoneId || hp.zone_id) === String(formData.zone_id)
+              );
+              const selectedProfile = hardwareProfiles.find(
+                (hp) => String(hp.profile_id) === String(formData.hardware_profile_id)
+              ) || defaultZoneProfile;
+
+              const isOverrideHardware = Boolean(
+                selectedProfile &&
+                defaultZoneProfile &&
+                String(selectedProfile.profile_id) !== String(defaultZoneProfile.profile_id)
+              );
+
+              return (
+                <div
+                  className={`flex flex-col gap-2 p-3.5 rounded-xl border transition-colors ${
+                    isOverrideHardware
+                      ? 'bg-amber-50/70 border-amber-300'
+                      : 'bg-slate-50 border-slate-200/90'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] uppercase font-mono font-bold text-slate-700 flex items-center gap-1.5">
+                      <Cpu className={`w-3.5 h-3.5 ${isOverrideHardware ? 'text-amber-600' : 'text-indigo-600'}`} />
+                      Cấu Hình Phần Cứng (Hardware Profile)
+                    </label>
+                    {isOverrideHardware ? (
+                      <span className="text-[10px] text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded font-extrabold flex items-center gap-1 animate-in fade-in">
+                        ⚠️ Linh kiện thay thế / Bảo hành
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-bold flex items-center gap-1">
+                        ✓ Chuẩn theo phân khu
+                      </span>
+                    )}
+                  </div>
+
+                  {loadingProfiles ? (
+                    <div className="text-slate-400 font-mono text-xs flex items-center gap-2">
+                      <span className="animate-spin">⏳</span> Đang tải danh sách cấu hình...
+                    </div>
+                  ) : (
+                    <select
+                      name="hardware_profile_id"
+                      value={formData.hardware_profile_id}
+                      onChange={handleChange}
+                      className={`w-full px-3 py-2 bg-white border rounded-xl text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 cursor-pointer ${
+                        isOverrideHardware
+                          ? 'border-amber-300 focus:ring-amber-500/30'
+                          : 'border-slate-300 focus:ring-indigo-500/30'
+                      }`}
+                    >
+                      {hardwareProfiles.map((hp) => {
+                        const isDefault = String(hp.zoneId || hp.zone_id) === String(formData.zone_id);
+                        return (
+                          <option key={hp.profile_id} value={String(hp.profile_id)}>
+                            {hp.profileName} {isDefault ? '(Mặc định Zone này)' : `(Khác: Zone ${hp.zoneId || hp.zone_id})`} - {hp.gpu?.model || hp.gpu_model || ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  )}
+
+                  {/* Thẻ tóm tắt thông số cấu hình đang chọn */}
+                  {selectedProfile && (
+                    <div className="p-2.5 bg-white border border-slate-200 rounded-lg text-[11px] text-slate-600 flex flex-col gap-1 shadow-2xs">
+                      <div className="font-extrabold text-slate-800 flex items-center justify-between">
+                        <span>{selectedProfile.description || selectedProfile.profileName}</span>
+                        {isOverrideHardware && (
+                          <span className="text-[10px] text-amber-700 font-normal">
+                            (Đang chọn đè cấu hình khác)
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap font-mono text-[10px] text-slate-600">
+                        <span>CPU: <strong className="text-slate-800">{selectedProfile.cpu?.model || selectedProfile.cpu_model || 'Chuẩn'}</strong></span>
+                        <span>•</span>
+                        <span>GPU: <strong className="text-indigo-700 font-bold">{selectedProfile.gpu?.model || selectedProfile.gpu_model || 'Chuẩn'}</strong></span>
+                        <span>•</span>
+                        <span>RAM: <strong className="text-slate-800">{selectedProfile.ram?.capacity || selectedProfile.ram_capacity || 'Chuẩn'}</strong></span>
+                      </div>
+                      {isOverrideHardware && (
+                        <p className="text-[10px] text-amber-700 font-medium border-t border-amber-100 pt-1 mt-0.5">
+                          * Lưu ý: Máy trạm đang áp dụng mẫu cấu hình này khác với cấu hình mặc định của Phân khu hiện tại.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Row 3: IP & MAC Configuration */}
             <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl flex flex-col gap-3">

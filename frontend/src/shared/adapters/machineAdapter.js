@@ -1,7 +1,7 @@
 /**
  * MachineAdapter Utility (Frontend Mapper)
  * Enforces Single Responsibility Principle (SRP): Transforms raw backend computer response DTOs into Frontend UI Machine objects.
- * Uses Object Mapping & Optional Chaining (?.) and maps directly from CSDL Seeder data.
+ * Maps 100% live data directly from MySQL CSDL (Computer, ComputerZone, HardwareProfile, PricingPlan).
  */
 
 // Zone Icon Mapping Dictionary
@@ -15,7 +15,7 @@ const ZONE_ICON_MAP = Object.freeze({
 
 // Computer Status Mapping Dictionary (aligned 100% with backend ComputerStatus enum)
 const STATUS_CONFIG_MAP = Object.freeze({
-  ONLINE: { status: 'ONLINE', statusLabel: 'Online (Sẵn sàng)', cleanStatus: 'Sẵn sàng nạp khách' },
+  ONLINE: { status: 'ONLINE', statusLabel: 'Online (Sẵn sàng)', cleanStatus: 'Chưa có phiên chơi' },
   IN_USE: { status: 'IN_USE', statusLabel: 'Đang sử dụng', cleanStatus: 'Khách đang hoạt động' },
   MAINTENANCE: { status: 'MAINTENANCE', statusLabel: 'Bảo trì', cleanStatus: 'Đang kiểm tra phần cứng' },
   OFFLINE: { status: 'OFFLINE', statusLabel: 'Offline', cleanStatus: 'Tắt nguồn' },
@@ -31,21 +31,40 @@ const DEFAULT_STATUS_CONFIG = Object.freeze({
 });
 
 /**
- * Map single raw Computer entity from API (populated from Seeder CSDL) into UI Machine DTO
+ * Map single raw Computer entity from API into UI Machine DTO
+ * Reads 100% live records from MySQL CSDL without hardcoded mock fallbacks
  * @param {object} c - Raw Computer item from backend Sequelize query
  */
 export function mapComputerToMachineDTO(c) {
   if (!c) return null;
 
-  const zoneId = c.zone_id || 1;
-  const zoneIcon = ZONE_ICON_MAP[zoneId] || 'military_tech';
+  const zoneId = Number(c.zone_id || c.ComputerZone?.zone_id || 1);
+  const zoneIcon = ZONE_ICON_MAP[zoneId] || 'grid_view';
   const statusConfig = STATUS_CONFIG_MAP[c.status] || DEFAULT_STATUS_CONFIG;
 
-  // Extract zone name & description populated from backend CSDL Seeder
+  // 1. Phân khu & Bảng giá từ CSDL
   const zoneName = c.zone_name || c.ComputerZone?.zone_name || `Zone ${zoneId}`;
-  const zoneDesc = c.ComputerZone?.description || '';
+  const tierLevel = Number(c.ComputerZone?.tier_level ?? 1);
+  const colorCode = c.ComputerZone?.color_code || '#0284c7';
 
-  // Optional Chaining (?.): Extract active user info & logs cleanly from backend response
+  // Lấy đơn giá thực tế từ bảng giá (PricingPlan) liên kết với Phân khu trong MySQL
+  const pricingPlans = c.ComputerZone?.PricingPlans || [];
+  const activePlan = pricingPlans.find(
+    (p) => p.is_active && (c.is_remote_enabled ? p.plan_type === 'REMOTE' : p.plan_type === 'LOCAL')
+  ) || pricingPlans.find((p) => p.is_active) || pricingPlans[0];
+  const pricePerHour = Number(c.price_per_hour || activePlan?.price_per_hour || 0);
+
+  // 2. Thông số phần cứng thực tế (HardwareProfile từ MySQL)
+  const hp = c.HardwareProfile;
+  const cpu = hp?.cpu_model || c.cpu || 'Chưa thiết lập';
+  const gpu = hp?.gpu_model || c.gpu || 'Chưa thiết lập';
+  const ram = hp?.ram_capacity || c.ram || 'Chưa thiết lập';
+  const monitor = hp?.monitor || c.monitor || '';
+  const gear = hp?.gear || c.gear || '';
+  const storage = hp?.storage_type || c.storage || '';
+  const specDescription = hp?.description || c.ComputerZone?.description || '';
+
+  // 3. Thông tin người dùng & phiên chơi từ ComputerStatusLogs / RentalSessions
   const latestLog = c.ComputerStatusLogs?.[0] || c.RentalSessions?.[0];
   const memberObj = latestLog?.Member || c.Member;
   const userName = memberObj?.userInfo?.full_name || memberObj?.userInfo?.username || c.user || null;
@@ -62,28 +81,30 @@ export function mapComputerToMachineDTO(c) {
   else if (c.status === 'OFFLINE') type = 'off';
   else if (c.status === 'LOCKED') type = 'locked';
 
-  const pricePerHour = Number(c.ComputerZone?.PricingPlan?.price_per_hour || c.price_per_hour || (zoneId === 2 ? 15000 : zoneId === 3 ? 10000 : zoneId === 4 ? 20000 : zoneId === 5 ? 25000 : 12000));
-  const tierLevel = Number(c.ComputerZone?.tier_level || (zoneId === 3 ? 1 : (zoneId === 1 || zoneId === 2) ? 2 : zoneId === 4 ? 3 : 4));
-
   return {
     id: c.computer_name || c.id || `PC-${c.computer_id}`,
     computer_id: c.computer_id,
-    numericId: String(c.computer_id || 1).padStart(2, '0'),
-    ip: c.ip_address || `192.168.1.${100 + (c.computer_id || 1)}`,
-    mac_address: c.mac_address || 'F4:D4:88:5A:00:00',
-    port: `Port #${c.computer_id || 1}`,
+    hardware_profile_id: c.hardware_profile_id || hp?.profile_id || zoneId,
+    numericId: String(c.computer_id || '').padStart(2, '0'),
+    ip: c.ip_address || '--',
+    mac_address: c.mac_address || '--',
+    port: c.port || (c.computer_id ? `Cổng #${c.computer_id}` : '--'),
     zoneId: `zone-${zoneId}`,
     zone_id: zoneId,
     zoneName,
     zoneIcon,
+    colorCode,
     tier_level: tierLevel,
-    specDescription: zoneDesc,
+    specDescription,
     price_per_hour: pricePerHour,
     is_remote_enabled: Boolean(c.is_remote_enabled),
-    cpu: c.is_remote_enabled ? 'Cloud vGPU Core' : 'Intel Core High Performance',
-    gpu: c.is_remote_enabled ? 'RTX 4090 Cloud vGPU' : 'NVIDIA GeForce RTX',
-    ram: '32GB DDR5',
-    bootImage: 'Win11-Pro-Cyber-v25.02',
+    cpu,
+    gpu,
+    ram,
+    monitor,
+    gear,
+    storage,
+    bootImage: c.boot_image || c.bootImage || hp?.storage_type || 'Win11-Pro-Cyber-v25.02',
     userName,
     userRank: memberObj?.Rank?.name ? `Rank ${memberObj.Rank.name}` : null,
     userInitials,

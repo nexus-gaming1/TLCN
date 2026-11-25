@@ -440,6 +440,7 @@ export default function ManageConfigPage({ user, onLogout }) {
         zones={zones}
         computers={computers}
         hardwarePresets={hardwarePresets}
+        existingProfiles={specs}
       />
 
       <HardwareProfileFormModal
@@ -451,6 +452,7 @@ export default function ManageConfigPage({ user, onLogout }) {
         zones={zones}
         computers={computers}
         hardwarePresets={hardwarePresets}
+        existingProfiles={specs}
       />
     </div>
   );

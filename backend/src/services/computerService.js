@@ -37,7 +37,12 @@ class ComputerService {
           {
             model: db.ComputerZone,
             include: [{ model: db.PricingPlan, required: false, attributes: ['pricing_plan_id', 'name', 'price_per_hour', 'plan_type', 'is_active'] }]
-          }
+          },
+          ...(db.HardwareProfile ? [{
+            model: db.HardwareProfile,
+            required: false,
+            attributes: ['profile_id', 'profile_name', 'cpu_model', 'gpu_model', 'ram_capacity', 'storage_type', 'monitor', 'gear', 'description']
+          }] : [])
         ],
         order: [['computer_id', 'ASC']]
       });
@@ -248,6 +253,20 @@ class ComputerService {
         }
       }
 
+      let resolvedHardwareProfileId = Number(computerData.hardware_profile_id) || null;
+      if (!resolvedHardwareProfileId && zone_id && db.HardwareProfile) {
+        const zoneProfile = await db.HardwareProfile.findOne({
+          where: { zone_id: Number(zone_id), is_deleted: false }
+        });
+        if (zoneProfile) {
+          resolvedHardwareProfileId = zoneProfile.profile_id;
+        }
+      }
+      if (!resolvedHardwareProfileId && db.HardwareProfile) {
+        const defaultProfile = await db.HardwareProfile.findOne({ where: { is_deleted: false } });
+        resolvedHardwareProfileId = defaultProfile ? defaultProfile.profile_id : 1;
+      }
+
       const runTransaction = async () => {
         return await db.sequelize.transaction(async (t) => {
           // If computer_name, ip_address, mac_address are fully provided
@@ -257,6 +276,7 @@ class ComputerService {
               ip_address: ip_address.trim(),
               mac_address: mac_address.trim(),
               zone_id: Number(zone_id) || 1,
+              hardware_profile_id: resolvedHardwareProfileId,
               status: status || ComputerStatus.OFFLINE,
               is_remote_enabled: Boolean(is_remote_enabled)
             }, { transaction: t });
@@ -269,6 +289,7 @@ class ComputerService {
             ip_address: ip_address ? ip_address.trim() : null,
             mac_address: mac_address ? mac_address.trim() : null,
             zone_id: Number(zone_id) || 1,
+            hardware_profile_id: resolvedHardwareProfileId,
             status: status || ComputerStatus.OFFLINE,
             is_remote_enabled: Boolean(is_remote_enabled)
           }, { transaction: t });
@@ -424,6 +445,17 @@ class ComputerService {
 
       if (updateData.is_remote_enabled !== undefined) {
         computer.is_remote_enabled = Boolean(updateData.is_remote_enabled);
+      }
+
+      if (updateData.zone_id !== undefined) {
+        computer.zone_id = Number(updateData.zone_id);
+        if (updateData.hardware_profile_id === undefined) {
+          computer.hardware_profile_id = Number(updateData.zone_id);
+        }
+      }
+
+      if (updateData.hardware_profile_id !== undefined) {
+        computer.hardware_profile_id = Number(updateData.hardware_profile_id);
       }
 
       await computer.save();

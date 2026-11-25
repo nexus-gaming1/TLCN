@@ -221,6 +221,18 @@ class HardwareProfileService {
         if (existing) {
           throw createHttpError(`Mẫu cấu hình với tên '${nameToSave}' đã tồn tại trong hệ thống`, 409);
         }
+
+        if (persistenceData.zone_id) {
+          const existingZoneProfile = await db.HardwareProfile.findOne({
+            where: { zone_id: persistenceData.zone_id, is_deleted: false }
+          });
+          if (existingZoneProfile) {
+            throw createHttpError(
+              `Phân khu này đã được gán cho mẫu cấu hình '${existingZoneProfile.profile_name}'. Mỗi phân khu chỉ được có 1 cấu hình chuẩn.`,
+              409
+            );
+          }
+        }
       }
 
       return await executeWithDeadlockRetry(async () => {
@@ -266,7 +278,7 @@ class HardwareProfileService {
         return await db.sequelize.transaction(async (t) => {
           const profile = await this.findProfileOrFail(
             specId,
-            'Mã định danh cấu hình (specId) không hợp lệ',
+            'Mã định danh cấu hình không hợp lệ',
             `Không tìm thấy mẫu cấu hình phần cứng với mã định danh: ${specId}`,
             t
           );
@@ -294,6 +306,20 @@ class HardwareProfileService {
             }
           }
           if (persistenceData.zone_id !== null && persistenceData.zone_id !== undefined) {
+            const existingZoneProfile = await db.HardwareProfile.findOne({
+              where: {
+                zone_id: persistenceData.zone_id,
+                profile_id: { [Op.ne]: profile.profile_id },
+                is_deleted: false
+              },
+              transaction: t
+            });
+            if (existingZoneProfile) {
+              throw createHttpError(
+                `Phân khu này đã được gán cho mẫu cấu hình '${existingZoneProfile.profile_name}'. Mỗi phân khu chỉ được có 1 cấu hình chuẩn.`,
+                409
+              );
+            }
             profile.zone_id = persistenceData.zone_id;
           }
 

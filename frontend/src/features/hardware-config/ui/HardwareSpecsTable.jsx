@@ -15,20 +15,20 @@ import Pagination from '../../../shared/ui/Pagination';
  */
 function ComponentSpecCell({ icon: Icon, title, subText, truncateSub = false }) {
   return (
-    <td className="py-3.5 px-4">
-      <div className="flex items-start gap-2.5">
+    <td className="py-3 px-3">
+      <div className="flex items-start gap-2">
         <div className="text-slate-500 shrink-0 mt-0.5">
-          <Icon className="w-4 h-4" />
+          <Icon className="w-3.5 h-3.5" />
         </div>
-        <div className="flex flex-col">
-          <span className="font-extrabold text-slate-900 leading-tight">
+        <div className="flex flex-col min-w-0">
+          <span className="font-extrabold text-slate-900 leading-tight text-xs truncate max-w-[190px]" title={title || ''}>
             {title || 'Chưa thiết lập'}
           </span>
           <span
-            className={`font-mono text-[11px] text-slate-600 font-medium mt-0.5 ${
-              truncateSub ? 'truncate max-w-[200px]' : ''
+            className={`font-mono text-[10px] text-slate-600 font-medium mt-0.5 ${
+              truncateSub ? 'truncate max-w-[170px]' : 'truncate max-w-[185px]'
             }`}
-            title={truncateSub ? subText || '' : undefined}
+            title={subText || ''}
           >
             {subText || ''}
           </span>
@@ -190,17 +190,6 @@ export default function HardwareSpecsTable({
             {specs.length} CẤU HÌNH
           </span>
         </div>
-
-        {/* Realtime SAN Sync Heartbeat */}
-        <div className="hidden sm:flex items-center gap-2 font-mono text-[11px] text-slate-500">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-          </span>
-          <span>
-            Đồng bộ BootROM SAN: <strong className="text-emerald-700 font-bold">Trực tiếp (0.1s)</strong>
-          </span>
-        </div>
       </div>
 
       {/* Mobile Card List (< md) */}
@@ -267,10 +256,10 @@ export default function HardwareSpecsTable({
 
       {/* Desktop High-Density Table (>= md) */}
       <div className="hidden md:block w-full overflow-x-auto">
-        <table className="w-full text-left border-collapse min-w-[1050px]">
+        <table className="w-full text-left border-collapse min-w-[980px]">
           <thead>
             <tr className="bg-slate-100 text-slate-700 text-[11px] uppercase tracking-wider select-none border-b-2 border-slate-300 font-extrabold">
-              <th className="py-3 px-4 w-12 text-center">
+              <th className="py-3 px-3 w-10 text-center">
                 <input
                   type="checkbox"
                   checked={isAllSelected}
@@ -278,13 +267,13 @@ export default function HardwareSpecsTable({
                   className="rounded accent-sky-600 cursor-pointer w-4 h-4"
                 />
               </th>
-              <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[150px]">Mã Máy / Phân Khu</th>
-              <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[240px]">Bộ Xử Lý (CPU)</th>
-              <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[200px]">Bộ Nhớ RAM</th>
-              <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[240px]">Card Đồ Họa (GPU)</th>
-              <th className="py-3 px-4 font-extrabold text-slate-800 min-w-[220px]">Lưu Trữ / BootROM</th>
-              <th className="py-3 px-4 font-extrabold text-slate-800 text-center min-w-[150px] whitespace-nowrap">Trạng Thái</th>
-              <th className="py-3 px-4 font-extrabold text-slate-800 text-right pr-6 min-w-[140px]">Thao Tác</th>
+              <th className="py-3 px-3 font-extrabold text-slate-800 min-w-[130px]">Mã Máy / Phân Khu</th>
+              <th className="py-3 px-3 font-extrabold text-slate-800 min-w-[180px]">Bộ Xử Lý (CPU)</th>
+              <th className="py-3 px-3 font-extrabold text-slate-800 min-w-[140px]">Bộ Nhớ RAM</th>
+              <th className="py-3 px-3 font-extrabold text-slate-800 min-w-[180px]">Card Đồ Họa (GPU)</th>
+              <th className="py-3 px-3 font-extrabold text-slate-800 min-w-[150px]">Lưu Trữ / BootROM</th>
+              <th className="py-3 px-3 font-extrabold text-slate-800 text-center min-w-[120px] whitespace-nowrap">Trạng Thái</th>
+              <th className="py-3 px-4 font-extrabold text-slate-800 text-right pr-5 min-w-[100px]">Thao Tác</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 text-xs font-medium text-slate-800">

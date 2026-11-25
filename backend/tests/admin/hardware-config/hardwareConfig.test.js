@@ -18,7 +18,25 @@ const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const HTTP_INTERNAL_ERROR = 500;
 
-const DEFAULT_ZONE_ID = 1;
+let DEFAULT_ZONE_ID = 1;
+let dedicatedTestZone = null;
+
+test.before(async () => {
+  dedicatedTestZone = await db.ComputerZone.create({
+    zone_name: `Test Zone ${Date.now()}`,
+    description: 'Zone for isolated test execution',
+    tier_level: 1,
+    is_deleted: false
+  });
+  DEFAULT_ZONE_ID = dedicatedTestZone.zone_id;
+});
+
+test.after(async () => {
+  if (dedicatedTestZone) {
+    await dedicatedTestZone.destroy();
+  }
+});
+
 const NON_EXISTENT_PROFILE_ID = 'NON_EXISTENT_PROFILE_99999';
 const DTO_PROFILE_NAME = 'DTO Test Profile';
 const MOCK_PROFILE_NAME = 'Mock Profile';
@@ -389,6 +407,33 @@ test('Hardware Config - createHardwareSpec throws 409 Conflict when profileName 
     );
   } finally {
     await safeCleanupProfile(profileId);
+  }
+});
+
+test('Hardware Config - enforces 1-1 Zone to Profile mapping and rejects duplicate zone assignments with 409', async () => {
+  const profileNameA = `Zone_Lock_A_${Date.now()}`;
+  const profileNameB = `Zone_Lock_B_${Date.now()}`;
+  let profileA = null;
+
+  try {
+    const resA = await computerService.createHardwareSpec({
+      profileName: profileNameA,
+      zoneId: DEFAULT_ZONE_ID
+    });
+    profileA = resA.profile;
+
+    await assertRejection(
+      () => computerService.createHardwareSpec({
+        profileName: profileNameB,
+        zoneId: DEFAULT_ZONE_ID
+      }),
+      HTTP_CONFLICT,
+      'Mỗi phân khu chỉ được có 1 cấu hình chuẩn'
+    );
+  } finally {
+    if (profileA) {
+      await safeCleanupProfile(profileA.profile_id);
+    }
   }
 });
 
