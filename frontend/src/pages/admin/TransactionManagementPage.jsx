@@ -181,19 +181,26 @@ export default function TransactionManagementPage({ user, onLogout }) {
     const headers = ['Mã GD', 'Thời Gian', 'Khách Hàng', 'SĐT', 'Khoản Mục', 'Số Tiền (VNĐ)', 'Phương Thức', 'Trạng Thái', 'Ghi Chú'];
     const csvRows = [
       headers.map(sanitizeCsvCell).join(','),
-      ...transactions.map((t) =>
-        [
+      ...transactions.map((t) => {
+        const catUpper = String(t.category || '').toUpperCase();
+        const typeUpper = String(t.type || '').toUpperCase();
+        const statusUpper = String(t.status || '').toUpperCase();
+        const isRefunded = statusUpper === 'REFUNDED' || statusUpper === 'HOÀN TIỀN' || catUpper === 'REFUND';
+        const isNegative = typeUpper === 'EXPENSE' || catUpper === 'MEMBER_WITHDRAW' || isRefunded;
+        const rawAmt = Math.abs(Number(t.amount) || 0);
+        const signedAmt = isNegative ? -rawAmt : rawAmt;
+        return [
           sanitizeCsvCell(t.txnCode || t.txn_code || `TXN-${t.id}`),
           sanitizeCsvCell(t.createdAt || t.created_at || ''),
           sanitizeCsvCell(t.memberName || t.member_name || 'Khách Vãng Lai'),
           sanitizeCsvCell(t.phone || t.member_phone || ''),
           sanitizeCsvCell(t.category || ''),
-          sanitizeCsvCell(t.amount || 0),
+          sanitizeCsvCell(signedAmt),
           sanitizeCsvCell(t.paymentMethod || t.payment_method || ''),
           sanitizeCsvCell(t.status || ''),
           sanitizeCsvCell(t.notes || '')
-        ].join(',')
-      )
+        ].join(',');
+      })
     ];
 
     const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });

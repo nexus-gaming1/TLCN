@@ -119,6 +119,8 @@ class TransactionService {
       : (kpiRow?.totalTxnCount ?? 0);
     const successCount = parseInt(rawSuccessCount, 10) || 0;
     const pendingCount = parseInt(kpiRow?.pendingCount || 0, 10) || 0;
+    const refundedCount = parseInt(kpiRow?.refundedCount || 0, 10) || 0;
+    const failedCount = parseInt(kpiRow?.failedCount || 0, 10) || 0;
     const totalTxnCount = parseInt(kpiRow?.totalTxnCount || 0, 10) || 0;
 
     let vsYesterdayPercent = 0;
@@ -141,6 +143,8 @@ class TransactionService {
       successRate,
       successCount,
       pendingCount,
+      refundedCount,
+      failedCount,
       totalTxnCount,
       dateRange: kpiFilterInput.dateRange
     };

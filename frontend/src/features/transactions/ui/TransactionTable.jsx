@@ -137,7 +137,27 @@ const formatDateTime = (dateStr) => {
 function getAmountMeta(txn) {
   const catUpper = String(txn.category || '').toUpperCase();
   const typeUpper = String(txn.type || '').toUpperCase();
-  const isNegative = typeUpper === 'EXPENSE' || catUpper === 'REFUND' || catUpper === 'MEMBER_WITHDRAW';
+  const statusUpper = String(txn.status || '').toUpperCase();
+
+  const isRefunded = statusUpper === 'REFUNDED' || statusUpper === 'HOÀN TIỀN' || catUpper === 'REFUND';
+  const isFailed = statusUpper === 'FAILED' || statusUpper === 'THẤT BẠI';
+  const isExpense = typeUpper === 'EXPENSE' || catUpper === 'MEMBER_WITHDRAW';
+
+  if (isRefunded) {
+    return {
+      prefix: '-',
+      colorClass: 'text-rose-600 font-bold'
+    };
+  }
+
+  if (isFailed) {
+    return {
+      prefix: '',
+      colorClass: 'text-slate-400 line-through'
+    };
+  }
+
+  const isNegative = isExpense;
   return {
     prefix: isNegative ? '-' : '+',
     colorClass: isNegative ? 'text-rose-600' : 'text-emerald-700'
