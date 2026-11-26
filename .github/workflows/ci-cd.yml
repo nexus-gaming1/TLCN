@@ -172,13 +172,14 @@ jobs:
           severity: 'CRITICAL'
           exit-code: '1'
 
-      # SonarQube phân tích chất lượng code & bảo mật SAST (Không dùng continue-on-error, bắt buộc đạt Quality Gate)
+      # SonarQube / SonarCloud phân tích chất lượng code & bảo mật SAST
       - name: SonarQube Code Quality & Security Analysis
         if: env.SONAR_TOKEN != ''
         uses: sonarsource/sonarqube-scan-action@v3
         with:
           args: >
-            -Dsonar.projectKey=nexus-cloud-cyber-os
+            -Dsonar.projectKey=nexus-gaming1_TLCN
+            -Dsonar.organization=nexus-gaming1
             -Dsonar.projectName="NEXUS Cloud Cyber OS"
 
       - name: SonarQube Configuration Notice
