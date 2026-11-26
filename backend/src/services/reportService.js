@@ -1,9 +1,11 @@
 const reportRepository = require('../repositories/reportRepository');
+const supportService = require('./supportService');
 const ExcelJS = require('exceljs');
 
 class ReportService {
-  constructor(repository = reportRepository) {
+  constructor(repository = reportRepository, supportSvc = supportService) {
     this.repository = repository;
+    this.supportService = supportSvc;
   }
 
   
@@ -54,19 +56,23 @@ class ReportService {
         totalRevenue: 0
       };
     }
-    // 3. Thực thi song song 5 truy vấn CSDL bằng Promise.all (Tối ưu tốc độ)
+    // 3. Thực thi song song 7 truy vấn CSDL bằng Promise.all (Tối ưu tốc độ)
     const [
       topupRows,
       serviceRows,
       paymentMethodRows,
       topItemRows,
-      topMemberRows
+      topMemberRows,
+      refundSummary,
+      supportStats
     ] = await Promise.all([
       this.repository.getTopupRevenueByDateRange(startDate, endDate),
       this.repository.getServiceOrderRevenueByDateRange(startDate, endDate),
       this.repository.getPaymentMethodDistribution(startDate, endDate),
-      this.repository.getTopSellingItems(startDate, endDate, 5),
-      this.repository.getTopVipMembers(startDate, endDate, 5)
+      this.repository.getTopSellingItems(startDate, endDate, 50),
+      this.repository.getTopVipMembers(startDate, endDate, 5),
+      this.repository.getRefundSummaryByDateRange(startDate, endDate),
+      this.supportService.getStats().catch(() => ({ pendingRequests: 0 }))
     ]);
     // 4. Ánh xạ dữ liệu biểu đồ nạp tiền và tiền món ăn vào dateMap
     topupRows.forEach((row) => {
@@ -94,6 +100,13 @@ class ReportService {
       };
     });
     const grandTotalRevenue = grandTopupRevenue + grandServiceRevenue;
+    const formattedAllItems = topItemRows.map((row) => ({
+      itemId: row.service_item_id,
+      name: row.item_name || 'Món không tên',
+      totalSold: parseInt(row.totalSold || 0, 10),
+      revenue: parseFloat(row.revenue || 0)
+    }));
+
     // 6. Format dữ liệu phân tích chuyên sâu
     const analytics = {
       // Tỷ trọng phương thức thanh toán
@@ -101,13 +114,10 @@ class ReportService {
         method: row.method || 'OTHER',
         total: parseFloat(row.total || 0)
       })),
-      // Top 5 món ăn bán chạy
-      topItems: topItemRows.map((row) => ({
-        itemId: row.service_item_id,
-        name: row.item_name || 'Món không tên',
-        totalSold: parseInt(row.totalSold || 0, 10),
-        revenue: parseFloat(row.revenue || 0)
-      })),
+      // Top 5 món ăn bán chạy (hiển thị dashboard & Excel)
+      topItems: formattedAllItems.slice(0, 5),
+      // Toàn bộ món ăn phát sinh bán trong kỳ (dùng cho Modal Xem tất cả)
+      allItems: formattedAllItems,
       // Top 5 hội viên nạp tiền nhiều nhất
       topMembers: topMemberRows.map((row) => ({
         memberId: row.memberId,
@@ -116,12 +126,25 @@ class ReportService {
         totalTopup: parseFloat(row.totalTopup || 0)
       }))
     };
+
+
+    //Tổng hợp số liệu hoàn tiền sự cố, thực thu và phiếu hỗ trợ đang chờ
+    const totalRefundAmount = parseFloat(refundSummary?.totalRefundAmount || 0);
+    const refundCount = parseInt(refundSummary?.refundCount || 0, 10);
+    const netRevenue = Math.max(0, grandTotalRevenue - totalRefundAmount);
+    const pendingSupportRequests = parseInt(supportStats?.pendingRequests || 0, 10);
+
+
     // 7. Cấu trúc Response trả về hoàn chỉnh
     return {
       summary: {
         totalRevenue: grandTotalRevenue,
         totalTopupRevenue: grandTopupRevenue,
         totalServiceRevenue: grandServiceRevenue,
+        totalRefundAmount,
+        refundCount,
+        netRevenue,
+        pendingSupportRequests,
         days: parsedDays,
         startDate: this.formatDateVN(startDate),
         endDate: this.formatDateVN(endDate)

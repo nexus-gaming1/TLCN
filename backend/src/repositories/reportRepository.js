@@ -177,6 +177,31 @@ class ReportRepository {
       subQuery: false
     });
   }
+
+  // Truy vấn tổng tiền hoàn sự cố và số lượt hoàn tiền trong kỳ báo cáo
+  async getRefundSummaryByDateRange(startDate, endDate) {
+    const result = await this.models.FinancialTransaction.findOne({
+      attributes: [
+        [this.sequelize.fn('COALESCE', this.sequelize.fn('SUM', this.sequelize.col('amount')), 0), 'totalRefundAmount'],
+        [this.sequelize.fn('COUNT', this.sequelize.col('transaction_id')), 'refundCount']
+      ],
+      where: {
+        type: TransactionType.EXPENSE,
+        category: TransactionCategory.REFUND,
+        status: TransactionStatusEnum.COMPLETED,
+        created_at: {
+          [Op.gte]: startDate,
+          [Op.lte]: endDate
+        }
+      },
+      raw: true
+    });
+    return {
+      totalRefundAmount: parseFloat(result?.totalRefundAmount || 0),
+      refundCount: parseInt(result?.refundCount || 0, 10)
+    };
+  }
+
 }
 
 module.exports = new ReportRepository();

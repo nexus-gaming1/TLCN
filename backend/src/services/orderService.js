@@ -15,6 +15,8 @@ const orderSocketService = require('./orderSocketService');
 class OrderService {
   constructor(orderRepo = orderRepository) {
     this.orderRepo = orderRepo;
+    // Bộ nhớ đệm lưu lý do hủy cho đơn tiền mặt chưa thu (UNPAID) không phát sinh FinancialTransaction
+    this.cancelReasonCache = new Map();
   }
 
   //Helper: Tính tổng tiền của đơn hàng từ danh sách items
@@ -486,6 +488,10 @@ class OrderService {
       order.status = OrderStatus.CANCELLED;
       order.processed_by = staffId;
       await this.orderRepo.save(order, t);
+
+      // Lưu cache lý do hủy để hiển thị chính xác ngay cả với đơn UNPAID không có FinancialTransaction
+      this.cancelReasonCache.set(order.order_id, reason.trim());
+
       return {
         order_id: order.order_id,
         status: order.status,
@@ -620,12 +626,19 @@ class OrderService {
     const data = rows.map(order => {
       const orderItemsList = order.orderItems || order.ServiceOrderItems || [];
       const memberObj = order.member || order.Member;
-
+      const txList = order.transactions || order.financialTransactions || [];
+      const orderTotal = this.calculateTotal(orderItemsList);
+      const alreadyRefunded = txList
+        .filter((tx) => tx.type === TransactionType.EXPENSE && tx.category === TransactionCategory.REFUND)
+        .reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
+      const remainingRefundable = Math.max(0, orderTotal - alreadyRefunded);
       return {
         order_id: order.order_id,
         status: order.status,
         payment_status: order.payment_status,
-        total_amount: this.calculateTotal(orderItemsList),
+        total_amount: orderTotal,
+        already_refunded: alreadyRefunded,
+        remaining_refundable: remainingRefundable,
         created_at: order.created_at,
         computer_name: memberComputerMap.get(order.used_by) || 'Đã đăng xuất máy',
         customer_name: memberObj?.userInfo?.full_name || memberObj?.userInfo?.username || `Khách #${order.used_by}`,
@@ -709,10 +722,23 @@ class OrderService {
       const orderItemsList = order.orderItems || order.ServiceOrderItems || [];
       const totalAmount = this.calculateTotal(orderItemsList);
       const txList = order.transactions || order.financialTransactions || [];
-      const paymentMethod = txList.length > 0 ? txList[0].payment_method : 'CASH';
+      const saleTxn = txList.find(tx => tx.category === TransactionCategory.SERVICE_SALE);
+      const paymentMethod = saleTxn ? saleTxn.payment_method : (txList.length > 0 ? txList[0].payment_method : 'CASH');
+      const cancelRefundTxn = txList.find(
+        tx => tx.type === TransactionType.EXPENSE && tx.category === TransactionCategory.REFUND
+      );
+      let extractedCancelReason = cancelRefundTxn?.notes?.trim() || null;
+      if (!extractedCancelReason && cancelRefundTxn?.description) {
+        const match = String(cancelRefundTxn.description).match(/Lý do:\s*(.+?)(?:\s*\(Xử lý bởi|$)/i);
+        if (match && match[1]) {
+          extractedCancelReason = match[1].trim();
+        }
+      }
+      if (!extractedCancelReason) {
+        extractedCancelReason = this.cancelReasonCache.get(order.order_id) || null;
+      }
       const memberObj = order.member || order.Member;
       const staffObj = order.processedBy || order.User;
-
       return {
         order_id: order.order_id,
         status: order.status,
@@ -722,6 +748,13 @@ class OrderService {
         created_at: order.created_at,
         customer_name: memberObj?.userInfo?.full_name || memberObj?.userInfo?.username || `Hội viên #${order.used_by}`,
         staff_name: staffObj?.full_name || null,
+        cancel_reason: order.status === OrderStatus.CANCELLED ? extractedCancelReason : null,
+        items: orderItemsList.map(oi => ({
+          service_item_id: oi.service_item_id,
+          item_name: oi.item_name,
+          quantity: oi.quantity,
+          price: parseFloat(oi.price || 0)
+        })),
         items_summary: orderItemsList.map(i => `${i.quantity}x ${i.item_name}`).join(', '),
         item_count: orderItemsList.reduce((acc, curr) => acc + curr.quantity, 0)
       };
