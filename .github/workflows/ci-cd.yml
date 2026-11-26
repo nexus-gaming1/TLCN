@@ -136,27 +136,32 @@ jobs:
     name: "Chặng 4 - Security & Vulnerability Scan"
     needs: stage-3-test
     runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
 
     steps:
-      - name: Checkout Source Code
+      - name: Checkout Source Code (Full Depth cho SonarQube)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
-      - name: Scan Backend Dependencies Security (NPM Audit)
+      - name: Scan Backend Dependencies Security (NPM Audit - Strict)
         run: |
-          echo "🛡️ Quét lỗ hổng thư viện Backend..."
+          echo "🛡️ Quét lỗ hổng bảo mật thư viện Backend (Chặn đứng nếu có lỗ hổng CRITICAL)..."
           cd backend
-          npm audit --audit-level=high || echo "⚠️ Cảnh báo bảo mật tìm thấy trong thư viện backend"
+          npm audit --audit-level=critical
 
-      - name: Scan Frontend Dependencies Security (NPM Audit)
+      - name: Scan Frontend Dependencies Security (NPM Audit - Strict)
         run: |
-          echo "🛡️ Quét lỗ hổng thư viện Frontend..."
+          echo "🛡️ Quét lỗ hổng bảo mật thư viện Frontend (Chặn đứng nếu có lỗ hổng CRITICAL)..."
           cd frontend
-          npm audit --audit-level=high || echo "⚠️ Cảnh báo bảo mật tìm thấy trong thư viện frontend"
+          npm audit --audit-level=critical
 
       - name: Run Trivy Repository Security Vulnerability Scanner
         uses: aquasecurity/trivy-action@master
@@ -164,18 +169,23 @@ jobs:
           scan-type: 'fs'
           ignore-unfixed: true
           format: 'table'
-          severity: 'HIGH,CRITICAL'
+          severity: 'CRITICAL'
+          exit-code: '1'
 
+      # SonarQube phân tích chất lượng code & bảo mật SAST (Không dùng continue-on-error, bắt buộc đạt Quality Gate)
       - name: SonarQube Code Quality & Security Analysis
+        if: env.SONAR_TOKEN != ''
         uses: sonarsource/sonarqube-scan-action@v3
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
           args: >
             -Dsonar.projectKey=nexus-cloud-cyber-os
             -Dsonar.projectName="NEXUS Cloud Cyber OS"
-        continue-on-error: true
+
+      - name: SonarQube Configuration Notice
+        if: env.SONAR_TOKEN == ''
+        run: |
+          echo "ℹ️ [THÔNG BÁO] Bước SonarQube Scan chưa được kích hoạt do thiếu SONAR_TOKEN trong GitHub Secrets."
+          echo "👉 Để kích hoạt phân tích SonarQube thật, vui lòng cấu hình vào GitHub Repo: Settings -> Secrets and variables -> Actions (SONAR_TOKEN, SONAR_HOST_URL)."
 
   # =========================================================================
   # CHẶNG 5: ĐÓNG GÓI DOCKER & TỐI ƯU LAYER CACHE
