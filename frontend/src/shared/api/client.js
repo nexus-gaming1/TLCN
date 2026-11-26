@@ -82,9 +82,11 @@ export const apiClient = {
       });
       clearTimeout(timeoutId);
 
-      // Nếu gặp lỗi 401 (Access Token hết hạn hoặc không hợp lệ) và chưa từng retry
+      const data = await res.json().catch(() => ({}));
+
+      // Nếu gặp lỗi 401 hoặc 403 INVALID_TOKEN (Access Token hết hạn hoặc không hợp lệ) và chưa từng retry
       const isAuthEndpoint = endpoint.includes('/auth/login') || endpoint.includes('/auth/refresh') || endpoint.includes('/auth/logout');
-      if (res.status === 401 && !isRetry && !isAuthEndpoint) {
+      if ((res.status === 401 || (res.status === 403 && data.error?.code === 'INVALID_TOKEN')) && !isRetry && !isAuthEndpoint) {
         // Tự động kích hoạt cơ chế Refresh Token ngầm
         try {
           await this.handleTokenRefresh();
@@ -95,8 +97,6 @@ export const apiClient = {
           throw refreshErr;
         }
       }
-
-      const data = await res.json().catch(() => ({}));
 
       if (!res.ok || data.status === 'error') {
         if (res.status === 401 && isAuthEndpoint) {

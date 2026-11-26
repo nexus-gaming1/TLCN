@@ -1,4 +1,5 @@
 const transactionService = require('../services/transactionService');
+const computerSocketService = require('../services/computerSocketService');
 
 function buildCounterPayload(req) {
   const body = req.body && typeof req.body === 'object' ? req.body : {};
@@ -32,7 +33,11 @@ class TransactionController {
 
   async createTopUp(req, res, next) {
     try {
-      const newTxn = await transactionService.createTopUpTransaction(buildCounterPayload(req));
+      const payload = buildCounterPayload(req);
+      const newTxn = await transactionService.createTopUpTransaction(payload);
+      if (payload.member_id) {
+        await computerSocketService.syncMemberSessionTime(payload.member_id);
+      }
       return res.status(201).json({
         status: 'success',
         data: newTxn,
@@ -44,17 +49,55 @@ class TransactionController {
   }
 
   async createWithdraw(req, res, next) {
-    try {
-      const newTxn = await transactionService.createWithdrawTransaction(buildCounterPayload(req));
-      return res.status(201).json({
-        status: 'success',
-        data: newTxn,
-        message: 'Rút tiền tại quầy thành công'
-      });
-    } catch (error) {
-      next(error);
-    }
+      try {
+        const payload = buildCounterPayload(req);
+        const newTxn = await transactionService.createWithdrawTransaction(payload);
+        if (payload.member_id) {
+          await computerSocketService.syncMemberSessionTime(payload.member_id);
+        }
+        return res.status(201).json({
+          status: 'success',
+          data: newTxn,
+          message: 'Rút tiền tại quầy thành công'
+        });
+      } catch (error) {
+        next(error);
+      }
   }
+
+  async createBonusTopUp(req, res, next) {
+      try {
+        const payload = buildCounterPayload(req);
+        const newTxn = await transactionService.createBonusTopUpTransaction(payload);
+        if (payload.member_id) {
+          await computerSocketService.syncMemberSessionTime(payload.member_id);
+        }
+        return res.status(201).json({
+          status: 'success',
+          data: newTxn,
+          message: 'Tặng tiền miễn phí thành công'
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
+
+  async createBonusWithdraw(req, res, next) {
+      try {
+        const payload = buildCounterPayload(req);
+        const newTxn = await transactionService.createBonusWithdrawTransaction(payload);
+        if (payload.member_id) {
+          await computerSocketService.syncMemberSessionTime(payload.member_id);
+        }
+        return res.status(201).json({
+          status: 'success',
+          data: newTxn,
+          message: 'Trừ tiền miễn phí thành công'
+        });
+      } catch (error) {
+        next(error);
+      }
+    }
 
   async refundTransaction(req, res, next) {
     try {
@@ -66,6 +109,9 @@ class TransactionController {
           status: 'error',
           message: 'Không tìm thấy giao dịch để hoàn tiền'
         });
+      }
+      if (updated.used_by) {
+        await computerSocketService.syncMemberSessionTime(updated.used_by);
       }
       return res.json({
         status: 'success',

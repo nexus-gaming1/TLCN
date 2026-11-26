@@ -2,7 +2,9 @@ const computerService = require('../services/computerService');
 const computerZoneService = require('../services/computerZoneService');
 const stationControlService = require('../services/stationControlService');
 const computerSocketService = require('../services/computerSocketService');
+const pairingManagementService = require('../services/pairingManagementService');
 const machineStore = require('../stores/machineStore');
+const db = require('../models');
 
 function findMachineByAddress(ipAddress, macAddress) {
   const normalizeIp = (value) => {
@@ -636,6 +638,178 @@ class ComputerController {
         status: 'success',
         data: machines,
         message: 'Lấy danh sách máy trạm đang kết nối thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+  async getRemoteComputers(req, res, next) {
+    try {
+      const remoteComputers = await computerService.getRemoteComputers();
+      return res.json({
+        status: 'success',
+        data: remoteComputers,
+        message: 'Lấy danh sách máy trạm từ xa thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+  /**
+   * Khởi tạo pairing intent cho máy trạm thuê từ xa
+   */
+  async startPairingIntent(req, res, next) {
+    try {
+      const computerId = req.body.computer_id || req.body.computerId;
+      let memberId = req.user?.member_id || req.user?.user_id;
+
+      if (!memberId) {
+        return res.status(401).json({
+          status: 'error',
+          message: 'Không tìm thấy hồ sơ hội viên gắn với tài khoản này.'
+        });
+      }
+
+      const timeoutSeconds = req.body.timeout_seconds || req.body.timeoutSeconds || 300;
+      const result = await pairingManagementService.createPairingIntent({
+        memberId,
+        computerId,
+        timeoutSeconds
+      });
+
+      return res.status(201).json({
+        status: 'success',
+        data: result,
+        message: 'Khởi tạo yêu cầu ghép nối Sunshine thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Kiểm tra trạng thái pairing intent
+   */
+  async getPairingStatus(req, res, next) {
+    try {
+      const intentId = req.params.intentId;
+      let memberId = req.user?.member_id || req.user?.user_id;
+
+      const result = await pairingManagementService.getPairingStatus({
+        intentId,
+        memberId,
+        role: req.user?.role
+      });
+
+      return res.json({
+        status: 'success',
+        data: result,
+        message: 'Lấy trạng thái ghép nối thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Xác nhận mã PIN ghép nối
+   */
+  async confirmPairing(req, res, next) {
+    try {
+      const intentId = req.body.intent_id || req.body.intentId;
+      const pin = req.body.pin;
+      let memberId = req.user?.member_id || req.user?.user_id;
+
+      const result = await pairingManagementService.confirmPairing({
+        intentId,
+        memberId,
+        pin,
+        role: req.user?.role
+      });
+
+      return res.json({
+        status: 'success',
+        data: result,
+        message: result.message || 'Xác nhận ghép nối thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Hủy yêu cầu ghép nối
+   */
+  async cancelPairing(req, res, next) {
+    try {
+      const intentId = req.body.intent_id || req.body.intentId;
+      let memberId = req.user?.member_id || req.user?.user_id;
+
+      const result = await pairingManagementService.cancelPairingIntent({
+        intentId,
+        memberId,
+        role: req.user?.role
+      });
+
+      return res.json({
+        status: 'success',
+        data: result,
+        message: result.message || 'Đã hủy yêu cầu ghép nối'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Endpoint cũ /remote/pair duy trì tính tương thích
+   */
+  async pairRemoteComputer(req, res, next) {
+    try {
+      const { computer_id, pin, intent_id } = req.body;
+      let memberId = req.user?.member_id || req.user?.user_id;
+
+      // If intent_id provided, confirm it directly
+      if (intent_id) {
+        const result = await pairingManagementService.confirmPairing({
+          intentId: intent_id,
+          memberId,
+          pin,
+          role: req.user?.role
+        });
+        return res.json({
+          status: 'success',
+          data: result,
+          message: 'Pairing máy trạm từ xa thành công'
+        });
+      }
+
+      // Otherwise, look for an active pending intent for this computer
+      const pendingIntent = await db.RemotePairing.findOne({
+        where: {
+          computer_id,
+          status: 'PENDING'
+        },
+        order: [['created_at', 'DESC']]
+      });
+
+      if (pendingIntent) {
+        const result = await pairingManagementService.confirmPairing({
+          intentId: pendingIntent.id,
+          memberId,
+          pin,
+          role: req.user?.role
+        });
+        return res.json({
+          status: 'success',
+          data: result,
+          message: 'Pairing máy trạm từ xa thành công'
+        });
+      }
+
+      return res.status(400).json({
+        status: 'error',
+        message: 'Không tìm thấy yêu cầu pairing đang chờ. Vui lòng khởi tạo pairing intent trước.'
       });
     } catch (error) {
       next(error);

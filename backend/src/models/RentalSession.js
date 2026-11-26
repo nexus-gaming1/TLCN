@@ -47,6 +47,7 @@ module.exports = (sequelize) => {
     RentalSession.belongsTo(models.Computer, { foreignKey: 'computer_id', as: 'computer' });
     RentalSession.belongsTo(models.Member, { foreignKey: 'member_id', as: 'member' });
     RentalSession.belongsTo(models.ComboTime, { foreignKey: 'combo_time_id', as: 'comboTime' });
+    RentalSession.hasMany(models.RemotePairing, { foreignKey: 'rental_session_id', as: 'remotePairings' });
   };
 
   RentalSession.Status = RentalSessionStatus;

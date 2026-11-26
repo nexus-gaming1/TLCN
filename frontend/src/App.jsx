@@ -18,7 +18,7 @@ import CustomerFoodPage from './pages/customer/CustomerFoodPage';
 import ServiceCatalogPage from './pages/admin/ServiceCatalogPage';
 import RevenueReportPage from './pages/admin/RevenueReportPage';
 import GameManagementPage from './pages/admin/GameManagementPage';
-
+import CustomerRemoteRentalPage from './pages/customer/CustomerRemoteRentalPage';
 // Protected Route Wrapper
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { currentUser, role, loading } = useAuth();
@@ -137,6 +137,10 @@ const CustomerComboWrapper = () => {
   return <CustomerComboPage user={currentUser} onLogout={logout} />;
 };
 
+const CustomerRemoteRentalWrapper = () => {
+  const { currentUser, logout } = useAuth();
+  return <CustomerRemoteRentalPage user={currentUser} onLogout={logout} />;
+};
 const CustomerFoodWrapper = () => {
   const { currentUser, logout } = useAuth();
   return <CustomerFoodPage user={currentUser} onLogout={logout} />;
@@ -258,7 +262,7 @@ function App() {
           <Route
             path="/staff/*"
             element={
-              <ProtectedRoute allowedRoles={['STAFF']}>
+              <ProtectedRoute allowedRoles={['ADMIN','STAFF']}>
                 <StaffWrapper />
               </ProtectedRoute>
             }
@@ -308,6 +312,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/customer/remote-rental"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'MEMBER']}>
+                <CustomerRemoteRentalWrapper />
+              </ProtectedRoute>
+            }
+          />  
 
           {/* Root & Catch-all Redirect */}
           <Route path="/" element={<RoleRedirect />} />

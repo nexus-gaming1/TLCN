@@ -7,7 +7,7 @@ import {
     disconnectSocket,
 } from '../socket/socket';
 
-export function useMachineSocket() {
+export function useMachineSocket({ onMachinesList, onMachineUpdated, onHeartbeat, onSessionTimeUpdated, onMemberBalanceUpdated } = {}) {
     const queryClient = useQueryClient();
 
     useEffect(() => {
@@ -18,11 +18,14 @@ export function useMachineSocket() {
                 ['machines'],
                 machines
             );
+            onMachinesList?.(machines);
         };
 
         // Backend gửi heartbeat riêng
         const handleHeartbeat = ({
             machineId,
+            localIp,
+            macAddress,
             performance,
         }) => {
             queryClient.setQueryData(
@@ -45,6 +48,61 @@ export function useMachineSocket() {
                     };
                 }
             );
+            onHeartbeat?.({ machineId, localIp, macAddress, performance });
+        };
+
+        const handleMachineUpdated = (machine) => {
+            if (!machine?.machineId) {
+                return;
+            }
+
+            queryClient.setQueryData(
+                ['machines'],
+                (old = {}) => ({
+                    ...old,
+                    [machine.machineId]: machine,
+                })
+            );
+            onMachineUpdated?.(machine);
+        };
+
+        const handleSessionTimeUpdated = (data) => {
+            if (data?.machineId) {
+                queryClient.setQueryData(
+                    ['machines'],
+                    (old = {}) => {
+                        const machine = old[data.machineId];
+                        if (!machine) return old;
+                        return {
+                            ...old,
+                            [data.machineId]: {
+                                ...machine,
+                                remainingMinutes: data.remainingMinutes,
+                                realBalance: data.realBalance,
+                                bonusBalance: data.bonusBalance,
+                                totalBalance: data.totalBalance,
+                                hasActiveCombo: data.hasActiveCombo
+                            }
+                        };
+                    }
+                );
+            }
+            onSessionTimeUpdated?.(data);
+            if (data?.machineId) {
+                onMachineUpdated?.({
+                    machineId: data.machineId,
+                    computerId: data.computerId,
+                    memberId: data.memberId,
+                    remainingMinutes: data.remainingMinutes,
+                    realBalance: data.realBalance,
+                    bonusBalance: data.bonusBalance,
+                    hasActiveCombo: data.hasActiveCombo
+                });
+            }
+        };
+
+        const handleMemberBalanceUpdated = (data) => {
+            onMemberBalanceUpdated?.(data);
         };
 
         socket.on(
@@ -55,6 +113,21 @@ export function useMachineSocket() {
         socket.on(
             'machine:heartbeat',
             handleHeartbeat
+        );
+
+        socket.on(
+            'machine:updated',
+            handleMachineUpdated
+        );
+
+        socket.on(
+            'session:time_updated',
+            handleSessionTimeUpdated
+        );
+
+        socket.on(
+            'member:balance_updated',
+            handleMemberBalanceUpdated
         );
 
         connectSocket();
@@ -70,8 +143,23 @@ export function useMachineSocket() {
                 handleHeartbeat
             );
 
+            socket.off(
+                'machine:updated',
+                handleMachineUpdated
+            );
+
+            socket.off(
+                'session:time_updated',
+                handleSessionTimeUpdated
+            );
+
+            socket.off(
+                'member:balance_updated',
+                handleMemberBalanceUpdated
+            );
+
             disconnectSocket();
         };
 
-    }, [queryClient]);
+    }, [onHeartbeat, onMachineUpdated, onMachinesList, onSessionTimeUpdated, onMemberBalanceUpdated, queryClient]);
 }

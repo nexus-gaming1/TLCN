@@ -21,6 +21,15 @@ public class RegisterPayload
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = MachineStatus.ONLINE.ToString();
+
+    [JsonPropertyName("username")]
+    public string? Username { get; set; }
+
+    [JsonPropertyName("memberId")]
+    public int? MemberId { get; set; }
+
+    [JsonPropertyName("sessionStartedAt")]
+    public DateTime? SessionStartedAt { get; set; }
 }
 
 public class HeartbeatPayload
@@ -33,6 +42,9 @@ public class HeartbeatPayload
 
     [JsonPropertyName("username")]
     public string? Username { get; set; }
+
+    [JsonPropertyName("memberId")]
+    public int? MemberId { get; set; }
 
     [JsonPropertyName("timestamp")]
     public string Timestamp { get; set; } = string.Empty;
@@ -146,3 +158,73 @@ public class NotificationPayload
     [JsonPropertyName("durationSeconds")]
     public int DurationSeconds { get; set; } = 5;
 }
+
+public class PairingStartDetectionPayload
+{
+    [JsonPropertyName("intentId")]
+    public string IntentId { get; set; } = string.Empty;
+
+    [JsonPropertyName("computerId")]
+    public int ComputerId { get; set; }
+
+    [JsonPropertyName("timeoutSeconds")]
+    public int TimeoutSeconds { get; set; } = 300;
+}
+
+public class PairingStopDetectionPayload
+{
+    [JsonPropertyName("intentId")]
+    public string IntentId { get; set; } = string.Empty;
+}
+
+public class PairingConfirmPayload
+{
+    [JsonPropertyName("intentId")]
+    public string IntentId { get; set; } = string.Empty;
+
+    [JsonPropertyName("pairingId")]
+    public string PairingId { get; set; } = string.Empty;
+
+    [JsonPropertyName("pin")]
+    public string Pin { get; set; } = string.Empty;
+
+    [JsonPropertyName("deviceName")]
+    public string? DeviceName { get; set; }
+}
+
+public class PairingDetectedPayload
+{
+    [JsonPropertyName("machineId")]
+    public string MachineId { get; set; } = string.Empty;
+
+    [JsonPropertyName("computerId")]
+    public int ComputerId { get; set; }
+
+    [JsonPropertyName("intentId")]
+    public string IntentId { get; set; } = string.Empty;
+
+    [JsonPropertyName("pairingId")]
+    public string PairingId { get; set; } = string.Empty;
+
+    [JsonPropertyName("deviceName")]
+    public string? DeviceName { get; set; }
+
+    [JsonPropertyName("deviceAddress")]
+    public string? DeviceAddress { get; set; }
+}
+
+public class PairingAck
+{
+    [JsonPropertyName("intentId")]
+    public string IntentId { get; set; } = string.Empty;
+
+    [JsonPropertyName("machineId")]
+    public string MachineId { get; set; } = string.Empty;
+
+    [JsonPropertyName("success")]
+    public bool Success { get; set; }
+
+    [JsonPropertyName("error")]
+    public string? Error { get; set; }
+}
+

@@ -206,101 +206,225 @@ class TransactionService {
   /**
    * Shared helper cho giao dịch thu/chi tại quầy (Top-up & Withdraw) - DRY & ACID
    */
-  async _executeCounterTransaction(data, isTopUp) {
-    if (!data || typeof data !== 'object' || Array.isArray(data)) {
-      throw new ValidationError('Dữ liệu giao dịch không hợp lệ');
-    }
+ 
+async _executeCounterTransaction(data, isTopUp) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new ValidationError('Dữ liệu giao dịch không hợp lệ');
+  }
 
-    const { member_id, customer_identifier, amount, description, notes, category, payment_method, processed_by } = data;
-    const actionNoun = isTopUp ? 'nạp' : 'rút';
-    const parsedAmount = Number(amount);
+  const {
+    member_id,
+    customer_identifier,
+    amount,
+    description,
+    notes,
+    category,
+    payment_method,
+    processed_by
+  } = data;
 
-    if (amount === undefined || amount === null || amount === '' || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-      throw new ValidationError(`Số tiền ${actionNoun} không hợp lệ (phải lớn hơn 0)`);
-    }
-    if (parsedAmount > MAX_TRANSACTION_AMOUNT) {
-      throw new ValidationError(`Số tiền ${actionNoun} vượt quá hạn mức tối đa (${MAX_TRANSACTION_AMOUNT.toLocaleString('vi-VN')}đ)`);
-    }
+  const actionNoun = isTopUp ? 'nạp' : 'rút';
+  const parsedAmount = Number(amount);
 
-    const identifier = member_id || (customer_identifier ? validateSafeText(String(customer_identifier), 'Mã khách hàng') : '');
-    if (!identifier) {
-      throw new ValidationError(isTopUp ? 'Thiếu thông tin mã hội viên cần nạp' : 'Thiếu thông tin mã hội viên cần rút tiền');
-    }
+  if (
+    amount === undefined ||
+    amount === null ||
+    amount === '' ||
+    !Number.isFinite(parsedAmount) ||
+    parsedAmount <= 0
+  ) {
+    throw new ValidationError(`Số tiền ${actionNoun} không hợp lệ (phải lớn hơn 0)`);
+  }
 
-    if (!processed_by) {
-      throw new ValidationError(
-        isTopUp
-          ? 'Thiếu thông tin nhân viên thu ngân thực hiện nạp tiền (processed_by)'
-          : 'Thiếu thông tin nhân viên thu ngân thực hiện rút tiền (processed_by)'
+  if (parsedAmount > MAX_TRANSACTION_AMOUNT) {
+    throw new ValidationError(
+      `Số tiền ${actionNoun} vượt quá hạn mức tối đa (${MAX_TRANSACTION_AMOUNT.toLocaleString('vi-VN')}đ)`
+    );
+  }
+
+  const identifier = member_id || (
+    customer_identifier
+      ? validateSafeText(String(customer_identifier), 'Mã khách hàng')
+      : ''
+  );
+
+  if (!identifier) {
+    throw new ValidationError(
+      isTopUp
+        ? 'Thiếu thông tin mã hội viên cần nạp'
+        : 'Thiếu thông tin mã hội viên cần rút tiền'
+    );
+  }
+
+  if (!processed_by) {
+    throw new ValidationError(
+      isTopUp
+        ? 'Thiếu thông tin nhân viên thu ngân thực hiện nạp tiền (processed_by)'
+        : 'Thiếu thông tin nhân viên thu ngân thực hiện rút tiền (processed_by)'
+    );
+  }
+
+  const safeDescription = validateSafeText(description, 'Mô tả giao dịch');
+  const safeNotes = validateSafeText(notes, 'Ghi chú giao dịch');
+  const resolvedPaymentMethod = normalizePaymentMethod(payment_method);
+
+  const defaultCat = isTopUp
+    ? TransactionCategory.MEMBER_TOPUP
+    : TransactionCategory.MEMBER_WITHDRAW;
+
+  const resolvedCategory = normalizeCategory(category, defaultCat);
+
+  try {
+    return await this.transactionRepo.runInTransaction(async (t) => {
+      let member = null;
+
+      if (member_id) {
+        member = await this.memberRepo.findMemberWithLock(member_id, t);
+      } else if (
+        typeof this.memberRepo.findMemberByIdentifierWithLock === 'function'
+      ) {
+        member = await this.memberRepo.findMemberByIdentifierWithLock(identifier, t);
+      } else {
+        member = await this.memberRepo.findMemberWithLock(identifier, t);
+      }
+
+      if (!member) {
+        throw new NotFoundError('Không tìm thấy tài khoản hội viên');
+      }
+
+      const currentBalance = parseFloat(member.real_balance || 0);
+
+      if (isTopUp) {
+        member.real_balance = currentBalance + parsedAmount;
+        member.point = (member.point || 0) +
+          Math.floor(parsedAmount / this.config.BONUS_POINT_RATE);
+      } else {
+        if (currentBalance < parsedAmount) {
+          throw new BusinessLogicError('Số dư tài khoản không đủ để rút tiền');
+        }
+
+        member.real_balance = currentBalance - parsedAmount;
+      }
+
+      await this.memberRepo.saveMember(member, t);
+
+      const defaultDesc = `${isTopUp ? 'Nạp tiền' : 'Rút tiền'} tại quầy cho ${
+        member.userInfo ? member.userInfo.full_name : 'hội viên'
+      }`;
+
+      const newTxn = await this.transactionRepo.create({
+        type: isTopUp ? TransactionType.INCOME : TransactionType.EXPENSE,
+        category: resolvedCategory,
+        amount: parsedAmount,
+        payment_method: resolvedPaymentMethod,
+        status: TransactionStatusEnum.COMPLETED,
+        description: safeDescription || defaultDesc,
+        notes: safeNotes || '',
+        used_by: member.member_id,
+        processed_by,
+        created_at: new Date()
+      }, { transaction: t });
+
+      console.info(
+        `[Transaction] ${isTopUp ? 'TOPUP' : 'WITHDRAW'} #${newTxn.transaction_id} | member=${member.member_id} | amount=${parsedAmount} | method=${resolvedPaymentMethod} | staff=${processed_by}`
       );
+
+      return newTxn;
+    });
+  } catch (error) {
+    console.error(
+      `[Transaction] ${isTopUp ? 'TOPUP' : 'WITHDRAW'} failed:`,
+      error.message
+    );
+    throw error;
+  }
+}
+
+async createTopUpTransaction(data) {
+  return await this._executeCounterTransaction(data, true);
+}
+
+async createWithdrawTransaction(data) {
+  return await this._executeCounterTransaction(data, false);
+}
+
+async createBonusTopUpTransaction(data) {
+  return this.createBonusBalanceTransaction(data, true);
+}
+
+async createBonusWithdrawTransaction(data) {
+  return this.createBonusBalanceTransaction(data, false);
+}
+
+async createBonusBalanceTransaction(data, isTopUp) {
+  const { member_id, amount, description, processed_by } = data;
+  const bonusAmount = parseFloat(amount || 0);
+
+  if (!Number.isFinite(bonusAmount) || bonusAmount <= 0) {
+    throw new ValidationError('Số tiền miễn phí không hợp lệ (phải lớn hơn 0)');
+  }
+
+  if (!member_id) {
+    throw new ValidationError('Thiếu thông tin mã hội viên cần cập nhật tiền miễn phí');
+  }
+
+  if (!processed_by) {
+    throw new ValidationError(
+      'Thiếu thông tin nhân viên thực hiện giao dịch tiền miễn phí (processed_by)'
+    );
+  }
+
+  return this.transactionRepo.runInTransaction(async (t) => {
+    const member = await this.memberRepo.findMemberWithLock(member_id, t);
+
+    if (!member) {
+      throw new NotFoundError('Không tìm thấy tài khoản hội viên');
     }
 
-    const safeDescription = validateSafeText(description, 'Mô tả giao dịch');
-    const safeNotes = validateSafeText(notes, 'Ghi chú giao dịch');
-    const resolvedPaymentMethod = normalizePaymentMethod(payment_method);
-    const defaultCat = isTopUp ? TransactionCategory.MEMBER_TOPUP : TransactionCategory.MEMBER_WITHDRAW;
-    const resolvedCategory = normalizeCategory(category, defaultCat);
+    const currentBonusBalance = parseFloat(member.bonus_balance || 0);
 
-    try {
-      return await this.transactionRepo.runInTransaction(async (t) => {
-        let member = null;
-        if (member_id) {
-          member = await this.memberRepo.findMemberWithLock(member_id, t);
-        } else if (typeof this.memberRepo.findMemberByIdentifierWithLock === 'function') {
-          member = await this.memberRepo.findMemberByIdentifierWithLock(identifier, t);
-        } else {
-          member = await this.memberRepo.findMemberWithLock(identifier, t);
-        }
-
-        if (!member) {
-          throw new NotFoundError('Không tìm thấy tài khoản hội viên');
-        }
-
-        const currentBalance = parseFloat(member.real_balance || 0);
-        if (isTopUp) {
-          member.real_balance = currentBalance + parsedAmount;
-          member.point = (member.point || 0) + Math.floor(parsedAmount / this.config.BONUS_POINT_RATE);
-        } else {
-          if (currentBalance < parsedAmount) {
-            throw new BusinessLogicError('Số dư tài khoản không đủ để rút tiền');
-          }
-          member.real_balance = currentBalance - parsedAmount;
-        }
-
-        await this.memberRepo.saveMember(member, t);
-
-        const defaultDesc = `${isTopUp ? 'Nạp tiền' : 'Rút tiền'} tại quầy cho ${member.userInfo ? member.userInfo.full_name : 'hội viên'}`;
-        const newTxn = await this.transactionRepo.create({
-          type: isTopUp ? TransactionType.INCOME : TransactionType.EXPENSE,
-          category: resolvedCategory,
-          amount: parsedAmount,
-          payment_method: resolvedPaymentMethod,
-          status: TransactionStatusEnum.COMPLETED,
-          description: safeDescription || defaultDesc,
-          notes: safeNotes || '',
-          used_by: member.member_id,
-          processed_by,
-          created_at: new Date()
-        }, { transaction: t });
-
-        console.info(
-          `[Transaction] ${isTopUp ? 'TOPUP' : 'WITHDRAW'} #${newTxn.transaction_id} | member=${member.member_id} | amount=${parsedAmount} | method=${resolvedPaymentMethod} | staff=${processed_by}`
-        );
-        return newTxn;
-      });
-    } catch (error) {
-      console.error(`[Transaction] ${isTopUp ? 'TOPUP' : 'WITHDRAW'} failed:`, error.message);
-      throw error;
+    if (!isTopUp && currentBonusBalance < bonusAmount) {
+      throw new BusinessLogicError('Số dư miễn phí không đủ để trừ');
     }
-  }
 
-  async createTopUpTransaction(data) {
-    return await this._executeCounterTransaction(data, true);
-  }
+    member.bonus_balance = isTopUp
+      ? currentBonusBalance + bonusAmount
+      : currentBonusBalance - bonusAmount;
 
-  async createWithdrawTransaction(data) {
-    return await this._executeCounterTransaction(data, false);
-  }
+    await this.memberRepo.saveMember(member, t);
+
+    return this.transactionRepo.create({
+      type: isTopUp ? TransactionType.INCOME : TransactionType.EXPENSE,
+      category: TransactionCategory.OTHER,
+      amount: bonusAmount,
+      payment_method: 'CASH',
+      status: TransactionStatusEnum.COMPLETED,
+      description: description ||
+        `${isTopUp ? 'Tặng' : 'Trừ'} tiền miễn phí cho ${
+          member.userInfo ? member.userInfo.full_name : 'hội viên'
+        }`,
+      used_by: member.member_id,
+      processed_by,
+      created_at: new Date()
+    }, { transaction: t });
+  });
+}
+
+/**
+ * Bước 1: Xử lý Nạp Tiền Tự Động dùng chung cho mọi nguồn thanh toán
+ * (Internal Standard DTO).
+ *
+ * Giữ TransactionService thuần khiết 100%, không phụ thuộc cấu trúc
+ * của bất kỳ bên thứ 3 nào.
+ *
+ * @param {Object} payload
+ * @param {number} payload.memberId - ID của hội viên cần nạp
+ * @param {number} payload.amount - Số tiền nạp thực tế
+ * @param {string} [payload.paymentMethod='VIETQR'] - Phương thức thanh toán chuẩn
+ * @param {string} payload.referenceCode - Mã tham chiếu/Mã giao dịch ngân hàng duy nhất (Idempotency Key)
+ * @param {string} [payload.description] - Mô tả giao dịch
+ * @param {string} [payload.notes] - Ghi chú chi tiết
+ */
 
   async processAutoTopUp(payload = {}) {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {

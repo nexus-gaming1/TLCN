@@ -7,11 +7,21 @@ export const dashboardService = {
    */
   async getOverview() {
     try {
-      const res = await apiClient.get('/computers/grid');
+      const overviewRequest = apiClient.get('/computers/overview').catch((error) => {
+        console.warn('Không thể tải thông tin phiên máy:', error.message);
+        return null;
+      });
+      const [res, overviewRes] = await Promise.all([
+        apiClient.get('/computers/grid'),
+        overviewRequest
+      ]);
       if (res && res.status === 'success' && res.data) {
         const gridData = res.data;
         const summary = gridData.summary || {};
         const zonesData = gridData.zones || [];
+        const overviewByIp = new Map(
+          (overviewRes?.data || []).map((computer) => [computer.ipAddress, computer])
+        );
 
         const formattedZones = zonesData.map((z) => ({
           id: `zone-${z.zone_id}`,
@@ -19,7 +29,10 @@ export const dashboardService = {
           name: z.zone_name,
           description: z.description,
           price_per_hour: z.price_per_hour,
-          stations: (z.stations || []).map(mapComputerToMachineDTO)
+          stations: (z.stations || []).map((computer) => mapComputerToMachineDTO({
+            ...computer,
+            ...(overviewByIp.get(computer.ip_address) || {})
+          }))
         }));
 
         return {

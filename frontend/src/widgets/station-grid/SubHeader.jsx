@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpDown, Zap, Gauge, Grid, LayoutList, ChevronDown, Check } from 'lucide-react';
+import { ArrowUpDown, Zap, Gauge, Grid, LayoutList, ChevronDown, Check, Bell } from 'lucide-react';
 
 export default function SubHeader({
     viewMode,
@@ -7,7 +7,8 @@ export default function SubHeader({
     sortBy,
     setSortBy,
     onOpenBootromLogs,
-    onTriggerWakeOnLan
+    onTriggerWakeOnLan,
+    onOpenBroadcastModal
 }) {
     const [isSortOpen, setIsSortOpen] = useState(false);
     const [isWolConfirmOpen, setIsWolConfirmOpen] = useState(false);
@@ -113,6 +114,17 @@ export default function SubHeader({
                     >
                         <Zap className="w-3.5 h-3.5" />
                         <span>Bật tất cả (WOL)</span>
+                    </button>
+
+                    {/* Broadcast Notification Button */}
+                    <button
+                        type="button"
+                        onClick={() => onOpenBroadcastModal && onOpenBroadcastModal()}
+                        className="flex items-center gap-1 px-3 py-2 rounded-md bg-sky-600 hover:bg-sky-500 text-white shadow-flat transition font-bold cursor-pointer"
+                        title="Gửi thông báo toàn phòng máy"
+                    >
+                        <Bell className="w-3.5 h-3.5" />
+                        <span>Thông báo tất cả</span>
                     </button>
 
                     {/* Bootrom Technical Log Button */}

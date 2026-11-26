@@ -1,8 +1,8 @@
 import React from 'react';
-import { Power, Lock, Unlock, ArrowRightLeft, User, Gamepad2, Clock, Monitor, ExternalLink } from 'lucide-react';
+import { User, Gamepad2, Clock, Monitor, ExternalLink } from 'lucide-react';
 import { STATION_TYPES } from '../../shared/constants/stationConstants';
 
-export default function StationListView({ stations = [], onSelectStation, onAction, onSwitchModalOpen }) {
+export default function StationListView({ stations = [], onSelectStation, onContextMenu }) {
     if (!stations || stations.length === 0) {
         return (
             <div className="p-12 text-center text-slate-400 font-mono text-xs bg-white rounded-2xl border border-slate-200">
@@ -24,7 +24,7 @@ export default function StationListView({ stations = [], onSelectStation, onActi
                             <th className="p-3.5">Tựa Game / Tải</th>
                             <th className="p-3.5">Thời Gian Chơi</th>
                             <th className="p-3.5">IP & Telemetry</th>
-                            <th className="p-3.5 text-right">Điều Khiển Nhanh</th>
+                            <th className="p-3.5 text-right">Chi tiết</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
@@ -37,7 +37,7 @@ export default function StationListView({ stations = [], onSelectStation, onActi
                             };
 
                             return (
-                                <tr key={st.computer_id || st.id} className="hover:bg-slate-50/80 transition-colors">
+                                <tr key={st.computer_id || st.id} onContextMenu={(event) => onContextMenu?.(event, st)} className="hover:bg-slate-50/80 transition-colors">
                                     <td className="p-3.5 font-mono font-extrabold text-slate-900">
                                         <div className="flex items-center gap-2">
                                             <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs font-bold font-mono shadow-xs">
@@ -93,6 +93,12 @@ export default function StationListView({ stations = [], onSelectStation, onActi
                                         ) : (
                                             <span className="text-slate-400">00:00</span>
                                         )}
+                                        {st.remainingMinutes != null && (
+                                            <div className="text-[11px] text-amber-700 font-bold mt-0.5">
+                                                Còn {st.remainingMinutes} phút
+                                                {st.hasActiveCombo ? ' (Combo)' : ''}
+                                            </div>
+                                        )}
                                     </td>
 
                                     <td className="p-3.5 font-mono text-[11px]">
@@ -101,52 +107,11 @@ export default function StationListView({ stations = [], onSelectStation, onActi
                                     </td>
 
                                     <td className="p-3.5 text-right">
-                                        <div className="flex items-center justify-end gap-1">
-                                            {/* Quick Power On Button */}
-                                            <button
-                                                type="button"
-                                                onClick={() => onAction && onAction(st.computer_id || st.id, 'ONLINE')}
-                                                className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition cursor-pointer"
-                                                title="Bật máy"
-                                            >
-                                                <Power className="w-3.5 h-3.5" />
-                                            </button>
-
-                                            {/* Lock Button */}
-                                            <button
-                                                type="button"
-                                                onClick={() => onAction && onAction(st.computer_id || st.id, st.status === 'LOCKED' ? 'ONLINE' : 'LOCKED')}
-                                                className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition cursor-pointer"
-                                                title={st.status === 'LOCKED' ? 'Mở khóa máy' : 'Tạm khóa máy'}
-                                            >
-                                                {st.status === 'LOCKED' ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                                            </button>
-
-                                            {/* Switch Button */}
-                                            <button
-                                                type="button"
-                                                onClick={() => onSwitchModalOpen && onSwitchModalOpen(st)}
-                                                className="p-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition cursor-pointer"
-                                                title="Chuyển máy"
-                                            >
-                                                <ArrowRightLeft className="w-3.5 h-3.5" />
-                                            </button>
-
-                                            {/* Power Off Button */}
-                                            <button
-                                                type="button"
-                                                onClick={() => onAction && onAction(st.computer_id || st.id, 'OFFLINE')}
-                                                className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition cursor-pointer"
-                                                title="Tắt máy"
-                                            >
-                                                <Power className="w-3.5 h-3.5" />
-                                            </button>
-
-                                            {/* Drawer Detail Link */}
+                                        <div className="flex items-center justify-end">
                                             <button
                                                 type="button"
                                                 onClick={() => onSelectStation && onSelectStation(st)}
-                                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/90 transition cursor-pointer ml-1"
+                                                className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200/90 transition cursor-pointer"
                                                 title="Mở chi tiết Drawer"
                                             >
                                                 <ExternalLink className="w-3.5 h-3.5" />

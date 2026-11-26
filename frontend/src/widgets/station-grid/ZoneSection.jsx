@@ -6,7 +6,8 @@ export default function ZoneSection({
     filter = 'all',
     searchQuery = '',
     onSelectStation,
-    onEditZone
+    onEditZone,
+    onContextMenu
 }) {
     if (!zone) return null;
 
@@ -116,6 +117,7 @@ export default function ZoneSection({
                         key={station.id}
                         station={station}
                         onClick={(st) => onSelectStation && onSelectStation(st)}
+                        onContextMenu={onContextMenu}
                     />
                 ))}
             </div>

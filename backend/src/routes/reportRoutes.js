@@ -19,7 +19,7 @@ router.get(
 router.get(
   '/revenue',
   authenticateToken,
-  authorizeRoles(UserRole.ADMIN),
+  authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE),
   reportController.getRevenueReport.bind(reportController)
 );
 

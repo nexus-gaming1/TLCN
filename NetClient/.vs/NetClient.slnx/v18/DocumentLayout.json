@@ -3,20 +3,32 @@
   "WorkspaceRootPath": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclientapp\\forms\\mainscreen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|solutionrelative:netclientapp\\forms\\mainscreen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.ui\\forms\\notificationform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|solutionrelative:netclient.ui\\forms\\notificationform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclientapp\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|solutionrelative:netclientapp\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.ui\\services\\notificationstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|solutionrelative:netclient.ui\\services\\notificationstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclientapp\\services\\ipcclientservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|solutionrelative:netclientapp\\services\\ipcclientservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.ui\\services\\ipcclientservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|solutionrelative:netclient.ui\\services\\ipcclientservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.ui\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|solutionrelative:netclient.ui\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\socketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\socketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\ipcserverservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\ipcserverservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\sessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\sessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{874E3B94-E7B6-3779-E4D1-19DA855C8EBC}|NetClient.Shared\\NetClient.Shared.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.shared\\ipc\\ipcmessages.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{874E3B94-E7B6-3779-E4D1-19DA855C8EBC}|NetClient.Shared\\NetClient.Shared.csproj|solutionrelative:netclient.shared\\ipc\\ipcmessages.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.ui\\forms\\lockoverlay.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -27,8 +39,105 @@
       "RelativeMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|solutionrelative:netclient.ui\\forms\\lockoverlay.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.ui\\services\\ipcclientservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|solutionrelative:netclient.ui\\services\\ipcclientservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\performancemonitor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\performancemonitor.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{874E3B94-E7B6-3779-E4D1-19DA855C8EBC}|NetClient.Shared\\NetClient.Shared.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.shared\\models\\notificationitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{874E3B94-E7B6-3779-E4D1-19DA855C8EBC}|NetClient.Shared\\NetClient.Shared.csproj|solutionrelative:netclient.shared\\models\\notificationitem.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{874E3B94-E7B6-3779-E4D1-19DA855C8EBC}|NetClient.Shared\\NetClient.Shared.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.shared\\models\\notificationgroup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{874E3B94-E7B6-3779-E4D1-19DA855C8EBC}|NetClient.Shared\\NetClient.Shared.csproj|solutionrelative:netclient.shared\\models\\notificationgroup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.ui\\forms\\notificationform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|solutionrelative:netclient.ui\\forms\\notificationform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{CDF5211E-7F13-3995-7E5D-74441A298FC9}|NetClient.Tests\\NetClient.Tests.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.tests\\netclient.tests.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{CDF5211E-7F13-3995-7E5D-74441A298FC9}|NetClient.Tests\\NetClient.Tests.csproj|solutionrelative:netclient.tests\\netclient.tests.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\backend\\src\\sockets\\machineSocket.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.ui\\netclient.ui.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|solutionrelative:netclient.ui\\netclient.ui.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclientapp\\netclient.app.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|solutionrelative:netclientapp\\netclient.app.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\start-all.bat||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:start-all.bat||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\install-service.bat||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:install-service.bat||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\uninstall-service.bat||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:uninstall-service.bat||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\README.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:README.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\backend\\src\\stores\\machineStore.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\trinh\\source\\repos\\Client\\Client\\Form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\test-server\\server.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:test-server\\server.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\netclientapp\\mainscreen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:netclientapp\\mainscreen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\sunshineservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\sunshineservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\commandservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\commandservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\sunshinecredentialstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\sunshinecredentialstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\dto\\remotepairmessage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\dto\\remotepairmessage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\security\\sunshinecredentialsetup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\security\\sunshinecredentialsetup.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.ui\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|solutionrelative:netclient.ui\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclientapp\\forms\\mainscreen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|solutionrelative:netclientapp\\forms\\mainscreen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclientapp\\services\\ipcclientservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|solutionrelative:netclientapp\\services\\ipcclientservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclientapp\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|solutionrelative:netclientapp\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{874E3B94-E7B6-3779-E4D1-19DA855C8EBC}|NetClient.Shared\\NetClient.Shared.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.shared\\models\\socketcontracts.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -47,36 +156,8 @@
       "RelativeMoniker": "D:0:0:{874E3B94-E7B6-3779-E4D1-19DA855C8EBC}|NetClient.Shared\\NetClient.Shared.csproj|solutionrelative:netclient.shared\\models\\machineinfo.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{874E3B94-E7B6-3779-E4D1-19DA855C8EBC}|NetClient.Shared\\NetClient.Shared.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.shared\\ipc\\ipcmessages.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{874E3B94-E7B6-3779-E4D1-19DA855C8EBC}|NetClient.Shared\\NetClient.Shared.csproj|solutionrelative:netclient.shared\\ipc\\ipcmessages.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\ipcserverservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\ipcserverservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\commandservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\commandservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\socketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\socketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.service\\services\\sessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{28116A72-DAB9-9811-C7FA-06F979E2C318}|NetClient.Service\\NetClient.Service.csproj|solutionrelative:netclient.service\\services\\sessionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|D:\\TLCN\\TLCN\\TLCN\\NetClient\\netclientapp\\forms\\mainscreen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|solutionrelative:netclientapp\\forms\\mainscreen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.ui\\netclient.ui.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
-      "RelativeMoniker": "D:0:0:{0CC5A2E8-B4D0-FF38-C601-8961FFE02C19}|NetClient.UI\\NetClient.UI.csproj|solutionrelative:netclient.ui\\netclient.ui.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclientapp\\netclient.app.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
-      "RelativeMoniker": "D:0:0:{B64BFAEB-E80D-4C4F-AADE-A5141024EF3B}|NetClientApp\\NetClient.App.csproj|solutionrelative:netclientapp\\netclient.app.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CDF5211E-7F13-3995-7E5D-74441A298FC9}|NetClient.Tests\\NetClient.Tests.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.tests\\commandservicetests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -89,39 +170,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{CDF5211E-7F13-3995-7E5D-74441A298FC9}|NetClient.Tests\\NetClient.Tests.csproj|d:\\tlcn\\tlcn\\tlcn\\netclient\\netclient.tests\\ipccommunicationtests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CDF5211E-7F13-3995-7E5D-74441A298FC9}|NetClient.Tests\\NetClient.Tests.csproj|solutionrelative:netclient.tests\\ipccommunicationtests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\start-all.bat||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:start-all.bat||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|d:\\TLCN\\TLCN\\TLCN\\NetClient\\install-service.bat||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:install-service.bat||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\uninstall-service.bat||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:uninstall-service.bat||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\README.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:README.md||{EFC0BB08-EA7D-40C6-A696-C870411A895B}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|d:\\TLCN\\TLCN\\TLCN\\backend\\src\\sockets\\machineSocket.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\backend\\src\\stores\\machineStore.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|c:\\Users\\trinh\\source\\repos\\Client\\Client\\Form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\test-server\\server.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:test-server\\server.js||{14D17961-FE51-464D-9111-C4AF11D7D99A}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|D:\\TLCN\\TLCN\\TLCN\\NetClient\\netclientapp\\mainscreen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:netclientapp\\mainscreen.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     }
   ],
   "DocumentGroupContainers": [
@@ -131,7 +179,7 @@
       "DocumentGroups": [
         {
           "DockedWidth": 710,
-          "SelectedChildIndex": 9,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Bookmark",
@@ -142,50 +190,292 @@
               "Name": "ST:1:0:{3a0279d4-1a5c-4f7e-97c2-ec06915e7142}"
             },
             {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
-            },
-            {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 2,
               "Title": "IpcClientService.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Services\\IpcClientService.cs",
               "RelativeDocumentMoniker": "NetClient.UI\\Services\\IpcClientService.cs",
               "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Services\\IpcClientService.cs",
               "RelativeToolTip": "NetClient.UI\\Services\\IpcClientService.cs",
-              "ViewState": "AgIAAIEAAAAAAAAAAAAowIUAAAAhAAAAAAAAAA==",
+              "ViewState": "AgIAAJwAAAAAAAAAAAAYwBwAAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T17:51:39.67Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-20T18:57:37.904Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "NotificationStore.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Services\\NotificationStore.cs",
+              "RelativeDocumentMoniker": "NetClient.UI\\Services\\NotificationStore.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Services\\NotificationStore.cs",
+              "RelativeToolTip": "NetClient.UI\\Services\\NotificationStore.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAAwA0AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.127Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "NotificationForm.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\NotificationForm.cs",
+              "RelativeDocumentMoniker": "NetClient.UI\\Forms\\NotificationForm.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\NotificationForm.cs",
+              "RelativeToolTip": "NetClient.UI\\Forms\\NotificationForm.cs",
+              "ViewState": "AgIAADgAAAAAAAAAAAD4v0AAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:20:40.483Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "SocketService.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SocketService.cs",
+              "RelativeDocumentMoniker": "NetClient.Service\\Services\\SocketService.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SocketService.cs",
+              "RelativeToolTip": "NetClient.Service\\Services\\SocketService.cs",
+              "ViewState": "AgIAAHEBAAAAAAAAAAAMwH4BAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.27Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
               "DocumentIndex": 5,
+              "Title": "SessionService.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SessionService.cs",
+              "RelativeDocumentMoniker": "NetClient.Service\\Services\\SessionService.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SessionService.cs",
+              "RelativeToolTip": "NetClient.Service\\Services\\SessionService.cs",
+              "ViewState": "AgIAABAAAAAAAAAAAAA8wAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.459Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "IpcServerService.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\IpcServerService.cs",
+              "RelativeDocumentMoniker": "NetClient.Service\\Services\\IpcServerService.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\IpcServerService.cs",
+              "RelativeToolTip": "NetClient.Service\\Services\\IpcServerService.cs",
+              "ViewState": "AgIAAFgBAAAAAAAAAIAwwG0BAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.444Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "IpcMessages.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Ipc\\IpcMessages.cs",
+              "RelativeDocumentMoniker": "NetClient.Shared\\Ipc\\IpcMessages.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Ipc\\IpcMessages.cs",
+              "RelativeToolTip": "NetClient.Shared\\Ipc\\IpcMessages.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAApwAoAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.428Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "LockOverlay.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\LockOverlay.cs",
+              "RelativeDocumentMoniker": "NetClient.UI\\Forms\\LockOverlay.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\LockOverlay.cs",
+              "RelativeToolTip": "NetClient.UI\\Forms\\LockOverlay.cs",
+              "ViewState": "AgIAALsAAAAAAAAAAAAuwEUAAAAEAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.291Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
               "Title": "LockOverlay.cs [Design]",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\LockOverlay.cs",
               "RelativeDocumentMoniker": "NetClient.UI\\Forms\\LockOverlay.cs",
               "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\LockOverlay.cs [Design]",
               "RelativeToolTip": "NetClient.UI\\Forms\\LockOverlay.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T18:00:53.336Z",
-              "EditorCaption": " [Design]"
+              "WhenOpened": "2026-11-20T18:08:16.328Z",
+              "EditorCaption": " [Design]",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "LockOverlay.cs",
-              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\LockOverlay.cs",
-              "RelativeDocumentMoniker": "NetClient.UI\\Forms\\LockOverlay.cs",
-              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\LockOverlay.cs",
-              "RelativeToolTip": "NetClient.UI\\Forms\\LockOverlay.cs",
-              "ViewState": "AgIAADAAAAAAAAAAAAAgwE0AAAAJAAAAAAAAAA==",
+              "DocumentIndex": 9,
+              "Title": "PerformanceMonitor.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\PerformanceMonitor.cs",
+              "RelativeDocumentMoniker": "NetClient.Service\\Services\\PerformanceMonitor.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\PerformanceMonitor.cs",
+              "RelativeToolTip": "NetClient.Service\\Services\\PerformanceMonitor.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T17:51:39.158Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-20T18:51:06.465Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 10,
+              "Title": "NotificationItem.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Models\\NotificationItem.cs",
+              "RelativeDocumentMoniker": "NetClient.Shared\\Models\\NotificationItem.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Models\\NotificationItem.cs",
+              "RelativeToolTip": "NetClient.Shared\\Models\\NotificationItem.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.161Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "NotificationGroup.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Models\\NotificationGroup.cs",
+              "RelativeDocumentMoniker": "NetClient.Shared\\Models\\NotificationGroup.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Models\\NotificationGroup.cs",
+              "RelativeToolTip": "NetClient.Shared\\Models\\NotificationGroup.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAABAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.142Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "NotificationForm.cs [Design]",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\NotificationForm.cs",
+              "RelativeDocumentMoniker": "NetClient.UI\\Forms\\NotificationForm.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\NotificationForm.cs [Design]",
+              "RelativeToolTip": "NetClient.UI\\Forms\\NotificationForm.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:19:25.887Z",
+              "EditorCaption": " [Design]",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "NetClient.Tests.csproj",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Tests\\NetClient.Tests.csproj",
+              "RelativeDocumentMoniker": "NetClient.Tests\\NetClient.Tests.csproj",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Tests\\NetClient.Tests.csproj",
+              "RelativeToolTip": "NetClient.Tests\\NetClient.Tests.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2026-11-20T18:08:16.172Z",
+              "OwnerCaption": "NetClient.Tests.csproj"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 25,
+              "Title": "Program.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Program.cs",
+              "RelativeDocumentMoniker": "NetClient.Service\\Program.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Program.cs",
+              "RelativeToolTip": "NetClient.Service\\Program.cs",
+              "ViewState": "AgIAAFIAAAAAAAAAAADwv1gAAAAiAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.18Z",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 26,
+              "Title": "SunshineService.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SunshineService.cs",
+              "RelativeDocumentMoniker": "NetClient.Service\\Services\\SunshineService.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SunshineService.cs",
+              "RelativeToolTip": "NetClient.Service\\Services\\SunshineService.cs",
+              "ViewState": "AgIAACIAAAAAAAAAAADwvwUAAAAjAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.195Z",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 27,
+              "Title": "CommandService.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\CommandService.cs",
+              "RelativeDocumentMoniker": "NetClient.Service\\Services\\CommandService.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\CommandService.cs",
+              "RelativeToolTip": "NetClient.Service\\Services\\CommandService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAIwAwAAAAmAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.21Z",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 28,
+              "Title": "SunshineCredentialStore.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SunshineCredentialStore.cs",
+              "RelativeDocumentMoniker": "NetClient.Service\\Services\\SunshineCredentialStore.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SunshineCredentialStore.cs",
+              "RelativeToolTip": "NetClient.Service\\Services\\SunshineCredentialStore.cs",
+              "ViewState": "AgIAADMAAAAAAAAAAADgv0IAAAAYAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.227Z",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 29,
+              "Title": "RemotePairMessage.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\DTO\\RemotePairMessage.cs",
+              "RelativeDocumentMoniker": "NetClient.Service\\DTO\\RemotePairMessage.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\DTO\\RemotePairMessage.cs",
+              "RelativeToolTip": "NetClient.Service\\DTO\\RemotePairMessage.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.242Z",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 30,
+              "Title": "SunshineCredentialSetup.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Security\\SunshineCredentialSetup.cs",
+              "RelativeDocumentMoniker": "NetClient.Service\\Security\\SunshineCredentialSetup.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Security\\SunshineCredentialSetup.cs",
+              "RelativeToolTip": "NetClient.Service\\Security\\SunshineCredentialSetup.cs",
+              "ViewState": "AgIAABQAAAAAAAAAAIBJwBcAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.257Z",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "machineSocket.js",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\backend\\src\\sockets\\machineSocket.js",
+              "RelativeDocumentMoniker": "..\\backend\\src\\sockets\\machineSocket.js",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\backend\\src\\sockets\\machineSocket.js",
+              "RelativeToolTip": "..\\backend\\src\\sockets\\machineSocket.js",
+              "ViewState": "AgIAAAEAAAAAAAAAAADgvwwAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
+              "WhenOpened": "2026-11-20T18:08:16.282Z",
+              "OwnerCaption": "%3"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 31,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Program.cs",
               "RelativeDocumentMoniker": "NetClient.UI\\Program.cs",
@@ -193,12 +483,26 @@
               "RelativeToolTip": "NetClient.UI\\Program.cs",
               "ViewState": "AgIAAA0AAAAAAAAAAAAQwBsAAAAzAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T17:51:39.417Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-20T18:08:16.305Z",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 32,
+              "Title": "MainScreen.cs",
+              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\Forms\\MainScreen.cs",
+              "RelativeDocumentMoniker": "NetClientApp\\Forms\\MainScreen.cs",
+              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\Forms\\MainScreen.cs",
+              "RelativeToolTip": "NetClientApp\\Forms\\MainScreen.cs",
+              "ViewState": "AgIAAF0AAAAAAAAAAIBJwCgAAAARAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-11-20T18:08:16.319Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 33,
               "Title": "IpcClientService.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\Services\\IpcClientService.cs",
               "RelativeDocumentMoniker": "NetClientApp\\Services\\IpcClientService.cs",
@@ -206,38 +510,25 @@
               "RelativeToolTip": "NetClientApp\\Services\\IpcClientService.cs",
               "ViewState": "AgIAAHkAAAAAAAAAAAAkwIUAAAApAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-24T15:56:18.457Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-20T18:08:16.337Z",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 34,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\Program.cs",
               "RelativeDocumentMoniker": "NetClientApp\\Program.cs",
               "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\Program.cs",
               "RelativeToolTip": "NetClientApp\\Program.cs",
-              "ViewState": "AgIAAAMAAAAAAAAAAAAAABsAAAAkAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAIBJwBsAAAAkAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-24T15:49:34.067Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-20T18:08:16.352Z",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "MainScreen.cs",
-              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\Forms\\MainScreen.cs",
-              "RelativeDocumentMoniker": "NetClientApp\\Forms\\MainScreen.cs",
-              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\Forms\\MainScreen.cs",
-              "RelativeToolTip": "NetClientApp\\Forms\\MainScreen.cs",
-              "ViewState": "AgIAAGAAAAAAAAAAAAAAACgAAAARAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-24T17:00:41.512Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 35,
               "Title": "SocketContracts.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Models\\SocketContracts.cs",
               "RelativeDocumentMoniker": "NetClient.Shared\\Models\\SocketContracts.cs",
@@ -245,12 +536,12 @@
               "RelativeToolTip": "NetClient.Shared\\Models\\SocketContracts.cs",
               "ViewState": "AgIAADsAAAAAAAAAAAAswEYAAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T17:51:37.307Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-20T18:08:16.367Z",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 36,
               "Title": "PerformanceData.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Models\\PerformanceData.cs",
               "RelativeDocumentMoniker": "NetClient.Shared\\Models\\PerformanceData.cs",
@@ -258,12 +549,12 @@
               "RelativeToolTip": "NetClient.Shared\\Models\\PerformanceData.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T17:51:37.068Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-20T18:08:16.382Z",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 37,
               "Title": "MachineStatus.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Models\\MachineStatus.cs",
               "RelativeDocumentMoniker": "NetClient.Shared\\Models\\MachineStatus.cs",
@@ -271,12 +562,12 @@
               "RelativeToolTip": "NetClient.Shared\\Models\\MachineStatus.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T17:51:36.836Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-20T18:08:16.398Z",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 38,
               "Title": "MachineInfo.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Models\\MachineInfo.cs",
               "RelativeDocumentMoniker": "NetClient.Shared\\Models\\MachineInfo.cs",
@@ -284,100 +575,36 @@
               "RelativeToolTip": "NetClient.Shared\\Models\\MachineInfo.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T17:51:36.607Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "IpcMessages.cs",
-              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Ipc\\IpcMessages.cs",
-              "RelativeDocumentMoniker": "NetClient.Shared\\Ipc\\IpcMessages.cs",
-              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Shared\\Ipc\\IpcMessages.cs",
-              "RelativeToolTip": "NetClient.Shared\\Ipc\\IpcMessages.cs",
-              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAYAAAAEAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T17:51:36.366Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "IpcServerService.cs",
-              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\IpcServerService.cs",
-              "RelativeDocumentMoniker": "NetClient.Service\\Services\\IpcServerService.cs",
-              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\IpcServerService.cs",
-              "RelativeToolTip": "NetClient.Service\\Services\\IpcServerService.cs",
-              "ViewState": "AgIAAB8BAAAAAAAAAAAgwDEBAABGAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-31T05:11:06.993Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
-              "Title": "CommandService.cs",
-              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\CommandService.cs",
-              "RelativeDocumentMoniker": "NetClient.Service\\Services\\CommandService.cs",
-              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\CommandService.cs",
-              "RelativeToolTip": "NetClient.Service\\Services\\CommandService.cs",
-              "ViewState": "AgIAAEgAAAAAAAAAAAAkwFkAAAAvAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-31T05:17:51.647Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 14,
-              "Title": "SocketService.cs",
-              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SocketService.cs",
-              "RelativeDocumentMoniker": "NetClient.Service\\Services\\SocketService.cs",
-              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SocketService.cs",
-              "RelativeToolTip": "NetClient.Service\\Services\\SocketService.cs",
-              "ViewState": "AgIAAJQAAAAAAAAAAAAkwKsAAAA3AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-31T05:10:08.832Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-20T18:08:16.413Z",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
               "DocumentIndex": 15,
-              "Title": "SessionService.cs",
-              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SessionService.cs",
-              "RelativeDocumentMoniker": "NetClient.Service\\Services\\SessionService.cs",
-              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Service\\Services\\SessionService.cs",
-              "RelativeToolTip": "NetClient.Service\\Services\\SessionService.cs",
-              "ViewState": "AgIAABoAAAAAAAAAAAA9wAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-31T05:10:07.852Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 17,
               "Title": "NetClient.UI.csproj",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\NetClient.UI.csproj",
               "RelativeDocumentMoniker": "NetClient.UI\\NetClient.UI.csproj",
               "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\NetClient.UI.csproj",
               "RelativeToolTip": "NetClient.UI\\NetClient.UI.csproj",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAfAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA8AAAAfAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-10-04T13:03:48.033Z"
+              "WhenOpened": "2026-11-20T18:08:16.468Z",
+              "OwnerCaption": "NetClient.UI.csproj"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 39,
               "Title": "MainScreen.cs [Design]",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\Forms\\MainScreen.cs",
               "RelativeDocumentMoniker": "NetClientApp\\Forms\\MainScreen.cs",
               "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\Forms\\MainScreen.cs [Design]",
               "RelativeToolTip": "NetClientApp\\Forms\\MainScreen.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-24T17:00:33.054Z"
+              "WhenOpened": "2026-11-20T18:08:16.47Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 16,
               "Title": "NetClient.App.csproj",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\NetClient.App.csproj",
               "RelativeDocumentMoniker": "NetClientApp\\NetClient.App.csproj",
@@ -385,22 +612,23 @@
               "RelativeToolTip": "NetClientApp\\NetClient.App.csproj",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2026-10-24T15:56:56.992Z"
+              "WhenOpened": "2026-11-20T18:08:16.471Z",
+              "OwnerCaption": "NetClient.App.csproj"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 30,
+              "DocumentIndex": 24,
               "Title": "MainScreen.cs [Design]",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\MainScreen.cs",
               "RelativeDocumentMoniker": "NetClientApp\\MainScreen.cs",
               "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClientApp\\MainScreen.cs [Design]",
               "RelativeToolTip": "NetClientApp\\MainScreen.cs [Design]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-24T15:48:01.339Z"
+              "WhenOpened": "2026-11-20T18:08:16.475Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 40,
               "Title": "CommandServiceTests.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Tests\\CommandServiceTests.cs",
               "RelativeDocumentMoniker": "NetClient.Tests\\CommandServiceTests.cs",
@@ -408,11 +636,12 @@
               "RelativeToolTip": "NetClient.Tests\\CommandServiceTests.cs",
               "ViewState": "AgIAADEAAAAAAAAAAAAYwDYAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-10-04T13:13:27.17Z"
+              "WhenOpened": "2026-11-20T18:08:16.483Z",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 41,
               "Title": "LockOverlay.Designer.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.UI\\Forms\\LockOverlay.Designer.cs",
               "RelativeDocumentMoniker": "NetClient.UI\\Forms\\LockOverlay.Designer.cs",
@@ -420,12 +649,13 @@
               "RelativeToolTip": "NetClient.UI\\Forms\\LockOverlay.Designer.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAFwAAAALAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T17:51:38.814Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-20T18:08:16.499Z",
+              "EditorCaption": "",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 21,
+              "DocumentIndex": 42,
               "Title": "IpcCommunicationTests.cs",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\NetClient.Tests\\IpcCommunicationTests.cs",
               "RelativeDocumentMoniker": "NetClient.Tests\\IpcCommunicationTests.cs",
@@ -433,11 +663,12 @@
               "RelativeToolTip": "NetClient.Tests\\IpcCommunicationTests.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAApAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-11T06:07:36.27Z"
+              "WhenOpened": "2026-11-20T18:08:16.514Z",
+              "OwnerCaption": "%2"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 22,
+              "DocumentIndex": 17,
               "Title": "start-all.bat",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\start-all.bat",
               "RelativeDocumentMoniker": "start-all.bat",
@@ -445,23 +676,25 @@
               "RelativeToolTip": "start-all.bat",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAA==",
               "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAG7SURBVDhPzZTNSxtBHEBfPGipJ\u002B2iGFBjzJqu4nda0EO99CaCeBOEQlsotCCUakMO6sWrBz8QlZaWInjxXyjtQbNKwCqYUGObRKIosfFSKTazcXsQQWZXJOqhD4aB37x5cxu4TUzTlEc3xhHwD8bBdMkH18ORyLtOrLOr23YH00XAP2BmMplbWQH/gJl34WELuweHfF5eYz91JB9dim3wz8lf9G8Rfib2\u002BH18TGQ7xnJog1T66rBtMByNkzpMc3qaxdegkc0a7Ozuk9w7kFULtsEmzYNhGHhc5VRVOPG6KzEMQb2myqoF22A4GkOIDOGtH2zHdtiIRBFC8DUYklULtsGyUoWyEgUhBF\u002BWVskaBiVKEW2tjbJqwTZYqhTT0dZKg6ZypyCfWq\u002Bbx4/aiSeTvPIPsb4Z5lc6LV\u002BDy4LnVJY76e3pxFtdxeS7j8x8mKeuxsP49Cxz7z/JOlwVvEitWk1djYeXz55Qr91HVd2yArkEI9\u002B3WA2FGJuYIqivENR1WYFcgk/7eul/8RxdX\u002BHt635GR4ZlBXIJKveK8bU0s7gwz8MHPgoL78oKnH1fb\u002BLgyPnHscdMyJP/j39Wh9oGPXeiTgAAAABJRU5ErkJggg==",
-              "WhenOpened": "2026-09-10T17:51:40.295Z"
+              "WhenOpened": "2026-11-20T18:08:16.526Z",
+              "OwnerCaption": "%3"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 18,
               "Title": "install-service.bat",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\install-service.bat",
               "RelativeDocumentMoniker": "install-service.bat",
               "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\install-service.bat",
               "RelativeToolTip": "install-service.bat",
-              "ViewState": "AgIAAAUAAAAAAAAAAAAqwDcAAAAsAAAAAAAAAA==",
+              "ViewState": "AgIAAAUAAAAAAAAAAAAqwCoAAAAIAAAAAAAAAA==",
               "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAG7SURBVDhPzZTNSxtBHEBfPGipJ\u002B2iGFBjzJqu4nda0EO99CaCeBOEQlsotCCUakMO6sWrBz8QlZaWInjxXyjtQbNKwCqYUGObRKIosfFSKTazcXsQQWZXJOqhD4aB37x5cxu4TUzTlEc3xhHwD8bBdMkH18ORyLtOrLOr23YH00XAP2BmMplbWQH/gJl34WELuweHfF5eYz91JB9dim3wz8lf9G8Rfib2\u002BH18TGQ7xnJog1T66rBtMByNkzpMc3qaxdegkc0a7Ozuk9w7kFULtsEmzYNhGHhc5VRVOPG6KzEMQb2myqoF22A4GkOIDOGtH2zHdtiIRBFC8DUYklULtsGyUoWyEgUhBF\u002BWVskaBiVKEW2tjbJqwTZYqhTT0dZKg6ZypyCfWq\u002Bbx4/aiSeTvPIPsb4Z5lc6LV\u002BDy4LnVJY76e3pxFtdxeS7j8x8mKeuxsP49Cxz7z/JOlwVvEitWk1djYeXz55Qr91HVd2yArkEI9\u002B3WA2FGJuYIqivENR1WYFcgk/7eul/8RxdX\u002BHt635GR4ZlBXIJKveK8bU0s7gwz8MHPgoL78oKnH1fb\u002BLgyPnHscdMyJP/j39Wh9oGPXeiTgAAAABJRU5ErkJggg==",
-              "WhenOpened": "2026-09-11T05:02:58.501Z"
+              "WhenOpened": "2026-11-20T18:08:16.531Z",
+              "OwnerCaption": "%3"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 24,
+              "DocumentIndex": 19,
               "Title": "uninstall-service.bat",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\uninstall-service.bat",
               "RelativeDocumentMoniker": "uninstall-service.bat",
@@ -469,11 +702,12 @@
               "RelativeToolTip": "uninstall-service.bat",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAA==",
               "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAG7SURBVDhPzZTNSxtBHEBfPGipJ\u002B2iGFBjzJqu4nda0EO99CaCeBOEQlsotCCUakMO6sWrBz8QlZaWInjxXyjtQbNKwCqYUGObRKIosfFSKTazcXsQQWZXJOqhD4aB37x5cxu4TUzTlEc3xhHwD8bBdMkH18ORyLtOrLOr23YH00XAP2BmMplbWQH/gJl34WELuweHfF5eYz91JB9dim3wz8lf9G8Rfib2\u002BH18TGQ7xnJog1T66rBtMByNkzpMc3qaxdegkc0a7Ozuk9w7kFULtsEmzYNhGHhc5VRVOPG6KzEMQb2myqoF22A4GkOIDOGtH2zHdtiIRBFC8DUYklULtsGyUoWyEgUhBF\u002BWVskaBiVKEW2tjbJqwTZYqhTT0dZKg6ZypyCfWq\u002Bbx4/aiSeTvPIPsb4Z5lc6LV\u002BDy4LnVJY76e3pxFtdxeS7j8x8mKeuxsP49Cxz7z/JOlwVvEitWk1djYeXz55Qr91HVd2yArkEI9\u002B3WA2FGJuYIqivENR1WYFcgk/7eul/8RxdX\u002BHt635GR4ZlBXIJKveK8bU0s7gwz8MHPgoL78oKnH1fb\u002BLgyPnHscdMyJP/j39Wh9oGPXeiTgAAAABJRU5ErkJggg==",
-              "WhenOpened": "2026-09-10T17:51:40.888Z"
+              "WhenOpened": "2026-11-20T18:08:16.536Z",
+              "OwnerCaption": "%3"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 25,
+              "DocumentIndex": 20,
               "Title": "README.md",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\README.md",
               "RelativeDocumentMoniker": "README.md",
@@ -481,23 +715,12 @@
               "RelativeToolTip": "README.md",
               "ViewState": "AgIAAEAAAAAAAAAAAAAswCcAAAAHAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-09-10T17:51:39.915Z"
+              "WhenOpened": "2026-11-20T18:08:16.546Z",
+              "OwnerCaption": "%3"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 26,
-              "Title": "machineSocket.js",
-              "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\backend\\src\\sockets\\machineSocket.js",
-              "RelativeDocumentMoniker": "..\\backend\\src\\sockets\\machineSocket.js",
-              "ToolTip": "D:\\TLCN\\TLCN\\TLCN\\backend\\src\\sockets\\machineSocket.js",
-              "RelativeToolTip": "..\\backend\\src\\sockets\\machineSocket.js",
-              "ViewState": "AgIAAMkAAAAAAAAAAIBJwAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2026-09-11T04:21:48.38Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 27,
+              "DocumentIndex": 21,
               "Title": "machineStore.js",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\backend\\src\\stores\\machineStore.js",
               "RelativeDocumentMoniker": "..\\backend\\src\\stores\\machineStore.js",
@@ -505,21 +728,23 @@
               "RelativeToolTip": "..\\backend\\src\\stores\\machineStore.js",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2026-09-11T04:22:08.577Z"
+              "WhenOpened": "2026-11-20T18:08:16.551Z",
+              "OwnerCaption": "%3"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 28,
+              "DocumentIndex": 22,
               "Title": "Form1.cs",
               "DocumentMoniker": "C:\\Users\\trinh\\source\\repos\\Client\\Client\\Form1.cs",
               "ToolTip": "C:\\Users\\trinh\\source\\repos\\Client\\Client\\Form1.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-09-10T18:06:19.228Z"
+              "WhenOpened": "2026-11-20T18:08:16.559Z",
+              "OwnerCaption": "%3"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 29,
+              "DocumentIndex": 23,
               "Title": "server.js",
               "DocumentMoniker": "D:\\TLCN\\TLCN\\TLCN\\NetClient\\test-server\\server.js",
               "RelativeDocumentMoniker": "test-server\\server.js",
@@ -527,7 +752,18 @@
               "RelativeToolTip": "test-server\\server.js",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2026-09-10T17:51:40.484Z"
+              "WhenOpened": "2026-11-20T18:08:16.573Z",
+              "OwnerCaption": "%3"
+            }
+          ]
+        },
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
             }
           ]
         }
