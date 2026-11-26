@@ -1,6 +1,7 @@
 const db = require('../models');
 const rentalSessionMigration = require('../migrations/20241024000006-create-rental-session');
 const remotePairingMigration = require('../migrations/20241024000007-create-remote-pairing');
+const serviceItemTrackInventoryMigration = require('../migrations/20241024000008-add-track-inventory-to-service-item');
 
 /**
  * Migration Runner for NEXUS Cyber Command
@@ -129,6 +130,7 @@ const runMigrations = async () => {
     // sequelize-cli. The migration is idempotent and repairs partial schemas.
     await rentalSessionMigration.up(queryInterface, db.Sequelize);
     await remotePairingMigration.up(queryInterface, db.Sequelize);
+    await serviceItemTrackInventoryMigration.up(queryInterface, db.Sequelize);
     // 8. game: cover_image_url LONGTEXT, is_remote_supported, is_available
     await ensureColumn('game', null, 'is_remote_supported', 'TINYINT(1) DEFAULT 0');
     await ensureColumn('game', null, 'is_available', 'TINYINT(1) DEFAULT 1');

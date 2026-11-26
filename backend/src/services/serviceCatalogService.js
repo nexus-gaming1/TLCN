@@ -6,6 +6,18 @@
 */
 const serviceCatalogRepository = require('../repositories/serviceCatalogRepository');
 
+//helper ép kiểu boolean
+const toBoolean = (value, defaultValue = true) => {
+  if (value === undefined || value === null) return defaultValue;
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    return normalized !== 'false' && normalized !== '0' && normalized !== '';
+  }
+  return Boolean(value);
+};
+
+
 class ServiceCatalogService {
   constructor(repository = serviceCatalogRepository) {
     this.repository = repository;
@@ -149,7 +161,7 @@ class ServiceCatalogService {
   }
 
   //Tạo món dịch vụ mới (Validation giá, tồn kho, kiểm tra trùng tên và kiểm tra tồn tại của danh mục)
-  async createItem({ name, price, stock_quantity = 0, is_available = true, min_discount_rank = null, category_id }) {
+  async createItem({ name, price, stock_quantity = 0, is_available = true,track_inventory = true, min_discount_rank = null, category_id }) {
     try {
       if (!name || !name.trim()) {
         const err = new Error('Tên món dịch vụ không được để trống');
@@ -163,8 +175,9 @@ class ServiceCatalogService {
         throw err;
       }
 
-      const stock = parseInt(stock_quantity, 10);
-      if (isNaN(stock) || stock < 0) {
+      const trackInventory = toBoolean(track_inventory, true);
+      const stock = trackInventory ? parseInt(stock_quantity, 10) : 0;
+      if (trackInventory && (isNaN(stock) || stock < 0)) {
         const err = new Error('Số lượng tồn kho không hợp lệ (phải >= 0)');
         err.statusCode = 400;
         throw err;
@@ -190,14 +203,17 @@ class ServiceCatalogService {
         throw err;
       }
 
-      //nếu hết tồn kho thì is_available mặc định = false
-      const availableStatus = stock > 0 ? (is_available !== undefined ? Boolean(is_available) : true) : false;
-
+      const requestedAvailable = toBoolean(is_available, true);
+      // Chỉ ép is_available = false khi món có quản lý tồn kho và tồn kho bằng 0
+      const availableStatus = trackInventory
+        ? (stock > 0 ? requestedAvailable : false)
+        : requestedAvailable;
       return await this.repository.createItem({
         name: name.trim(),
         price: parseFloat(price),
         stock_quantity: stock,
         is_available: availableStatus,
+        track_inventory: trackInventory,
         min_discount_rank: min_discount_rank || null,
         category_id: parseInt(category_id, 10)
       });
@@ -218,7 +234,7 @@ class ServiceCatalogService {
         throw err;
       }
 
-      const { name, price, stock_quantity, is_available, min_discount_rank, category_id } = updateData;
+      const { name, price, stock_quantity, is_available, track_inventory, min_discount_rank, category_id } = updateData;
 
       if (name !== undefined) {
         if (!name.trim()) {
@@ -289,9 +305,9 @@ class ServiceCatalogService {
   async adjustStock(itemId, { quantity }) {
     try {
       const item = await this.repository.findItemById(itemId);
-      if (!item) {
-        const err = new Error('Không tìm thấy món dịch vụ');
-        err.statusCode = 404;
+      if (!item.track_inventory) {
+        const err = new Error('Món chế biến không quản lý số lượng tồn kho. Vui lòng bật/tắt trạng thái phục vụ thay thế.');
+        err.statusCode = 400;
         throw err;
       }
 

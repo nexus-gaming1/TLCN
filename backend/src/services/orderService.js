@@ -123,14 +123,18 @@ class OrderService {
       for (const dbItem of dbItems) {
         const requestedQty = itemQuantityMap.get(dbItem.service_item_id);
 
-        if (!dbItem.is_available || dbItem.stock_quantity <= 0) {
-          throw new BusinessLogicError(`Món "${dbItem.name}" hiện đã hết hàng`);
+        if (!dbItem.is_available) {
+          throw new BusinessLogicError(`Món "${dbItem.name}" hiện tạm ngưng phục vụ`);
         }
-
-        if (dbItem.stock_quantity < requestedQty) {
-          throw new BusinessLogicError(
-            `Món "${dbItem.name}" không đủ số lượng tồn kho (Còn lại: ${dbItem.stock_quantity}, Yêu cầu: ${requestedQty})`
-          );
+        if (dbItem.track_inventory) {
+          if (dbItem.stock_quantity <= 0) {
+            throw new BusinessLogicError(`Món "${dbItem.name}" hiện đã hết hàng`);
+          }
+          if (dbItem.stock_quantity < requestedQty) {
+            throw new BusinessLogicError(
+              `Món "${dbItem.name}" không đủ số lượng tồn kho (Còn lại: ${dbItem.stock_quantity}, Yêu cầu: ${requestedQty})`
+            );
+          }
         }
 
         const unitPrice = parseFloat(dbItem.price || 0);
@@ -171,15 +175,17 @@ class OrderService {
       }
 
       
-      // BƯỚC 3.4: Trừ số lượng tồn kho của các món
+      // BƯỚC 3.4: Trừ số lượng tồn kho (chỉ áp dụng cho món có quản lý tồn kho)
       for (const snap of orderItemsSnapshot) {
         const itemInstance = snap.dbItemInstance;
-        itemInstance.stock_quantity -= snap.quantity;
-        // Nếu kho chạm 0 thì tự động gỡ trạng thái sẵn sàng
-        if (itemInstance.stock_quantity === 0) {
-          itemInstance.is_available = false;
+        if (itemInstance.track_inventory) {
+          itemInstance.stock_quantity -= snap.quantity;
+          // Nếu kho chạm 0 thì tự động gỡ trạng thái sẵn sàng
+          if (itemInstance.stock_quantity === 0) {
+            itemInstance.is_available = false;
+          }
+          await this.orderRepo.save(itemInstance, t);
         }
-        await this.orderRepo.save(itemInstance, t);
       }
 
     
@@ -390,7 +396,7 @@ class OrderService {
           lock: t.LOCK ? t.LOCK.UPDATE : true,
           transaction: t
         });
-        if (item) {
+        if (item && item.track_inventory) {
           item.stock_quantity = (item.stock_quantity || 0) + oi.quantity;
           if (item.stock_quantity > 0) item.is_available = true;
           await this.orderRepo.save(item, t);
@@ -776,11 +782,16 @@ class OrderService {
   }
 
   // Lấy thực đơn sẵn sàng phục vụ
+  // Lấy thực đơn sẵn sàng phục vụ
   async getAvailableMenu() {
+    const { Op } = this.orderRepo.models.Sequelize;
     const items = await this.orderRepo.models.ServiceItem.findAll({
       where: {
         is_available: true,
-        stock_quantity: { [this.orderRepo.models.Sequelize.Op.gt]: 0 }
+        [Op.or]: [
+          { track_inventory: false },
+          { stock_quantity: { [Op.gt]: 0 } }
+        ]
       },
       include: [
         {
@@ -793,12 +804,12 @@ class OrderService {
         ['name', 'ASC']
       ]
     });
-
     return items.map(it => ({
       service_item_id: it.service_item_id,
       name: it.name,
       price: parseFloat(it.price || 0),
       stock_quantity: it.stock_quantity,
+      track_inventory: Boolean(it.track_inventory),
       category_id: it.category_id,
       category_name: it.ServiceCategory ? it.ServiceCategory.name : ''
     }));

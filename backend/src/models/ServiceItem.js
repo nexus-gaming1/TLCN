@@ -17,7 +17,7 @@ class ServiceItem extends Model {
   }
 
   isAvailable() {
-    return this.is_available && (this.stock_quantity > 0);
+    return this.is_available && (!this.track_inventory || this.stock_quantity > 0);
   }
 
   calculateFinalPrice(customerRank) {
@@ -36,6 +36,7 @@ module.exports = (sequelize) => {
     price: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
     stock_quantity: { type: DataTypes.INTEGER, defaultValue: 0 },
     is_available: { type: DataTypes.BOOLEAN, defaultValue: true },
+    track_inventory: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
     min_discount_rank: { type: DataTypes.INTEGER },
     category_id: { type: DataTypes.INTEGER, allowNull: false }
   }, {

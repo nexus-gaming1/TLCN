@@ -70,7 +70,7 @@ class ReportService {
       this.repository.getServiceOrderRevenueByDateRange(startDate, endDate),
       this.repository.getPaymentMethodDistribution(startDate, endDate),
       this.repository.getTopSellingItems(startDate, endDate, 50),
-      this.repository.getTopVipMembers(startDate, endDate, 5),
+      this.repository.getTopVipMembers(startDate, endDate, 50),
       this.repository.getRefundSummaryByDateRange(startDate, endDate),
       this.supportService.getStats().catch(() => ({ pendingRequests: 0 }))
     ]);
@@ -106,25 +106,38 @@ class ReportService {
       totalSold: parseInt(row.totalSold || 0, 10),
       revenue: parseFloat(row.revenue || 0)
     }));
-
+    const formattedAllMembers = topMemberRows.map((row) => ({
+      memberId: row.memberId,
+      name: row.name || 'Khách vãng lai',
+      username: row.username || '',
+      totalTopup: parseFloat(row.totalTopup || 0)
+    }));
+    const totalPaymentMethodAmount = paymentMethodRows.reduce(
+      (sum, row) => sum + parseFloat(row.total || 0),
+      0
+    );
     // 6. Format dữ liệu phân tích chuyên sâu
     const analytics = {
-      // Tỷ trọng phương thức thanh toán
-      paymentMethods: paymentMethodRows.map((row) => ({
-        method: row.method || 'OTHER',
-        total: parseFloat(row.total || 0)
-      })),
+      // Tỷ trọng phương thức thanh toán (kèm phần trăm phục vụ cả Biểu đồ & Excel)
+      paymentMethods: paymentMethodRows.map((row) => {
+        const total = parseFloat(row.total || 0);
+        const percentage = totalPaymentMethodAmount > 0
+          ? Number(((total / totalPaymentMethodAmount) * 100).toFixed(1))
+          : 0;
+        return {
+          method: row.method || 'OTHER',
+          total,
+          percentage
+        };
+      }),
       // Top 5 món ăn bán chạy (hiển thị dashboard & Excel)
       topItems: formattedAllItems.slice(0, 5),
       // Toàn bộ món ăn phát sinh bán trong kỳ (dùng cho Modal Xem tất cả)
       allItems: formattedAllItems,
-      // Top 5 hội viên nạp tiền nhiều nhất
-      topMembers: topMemberRows.map((row) => ({
-        memberId: row.memberId,
-        name: row.name || 'Khách vãng lai',
-        username: row.username || '',
-        totalTopup: parseFloat(row.totalTopup || 0)
-      }))
+      // Top 5 hội viên nạp tiền nhiều nhất (hiển thị card)
+      topMembers: formattedAllMembers.slice(0, 5),
+      // Danh sách mở rộng tối đa 50 hội viên nạp tiền trong kỳ (dùng cho Modal Xem tất cả)
+      allMembers: formattedAllMembers
     };
 
 
