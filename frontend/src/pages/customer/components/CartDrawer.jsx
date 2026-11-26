@@ -100,7 +100,7 @@ export default function CartDrawer({
                     </span>
                     <button
                       type="button"
-                      disabled={it.stock_quantity && it.quantity >= it.stock_quantity}
+                      disabled={it.track_inventory !== false && it.stock_quantity !== undefined && it.quantity >= it.stock_quantity}
                       onClick={() => onUpdateQuantity(it.service_item_id, it.quantity + 1)}
                       className="w-6 h-6 rounded bg-white hover:bg-slate-200 text-slate-700 flex items-center justify-center shadow-2xs transition disabled:opacity-40"
                     >

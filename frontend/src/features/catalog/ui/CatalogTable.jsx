@@ -1,47 +1,56 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   ChevronDown,
   ChevronRight,
   Utensils,
-  FolderPlus,
   Edit,
   Trash2,
   Plus,
-  Minus,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
-  Package
+  Package,
+  ChefHat
 } from 'lucide-react';
 
-//Component hiển thị badge trạng thái
-function ItemStatusBadge({ isAvailable, stockQuantity }) {
-  if (stockQuantity <= 0) {
+// Component hiển thị & chuyển đổi nhanh trạng thái phục vụ
+function ItemStatusBadge({ isAvailable, stockQuantity, trackInventory = true, onToggle }) {
+  const isTrackedOutOfStock = trackInventory && stockQuantity <= 0;
+  if (isTrackedOutOfStock) {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold whitespace-nowrap">
+      <span
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold whitespace-nowrap"
+        title="Nhập tồn kho > 0 để mở bán lại"
+      >
         <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
         <span>Hết Tồn Kho</span>
       </span>
     );
   }
-
-  if (isAvailable) {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200/80 text-xs font-bold whitespace-nowrap">
-        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-        <span>Sẵn Sàng</span>
-      </span>
-    );
-  }
-
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 text-xs font-bold whitespace-nowrap">
-      <XCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-      <span>Tạm Ngưng</span>
-    </span>
+    <button
+      type="button"
+      onClick={onToggle}
+      title={isAvailable ? 'Bấm để chuyển sang Tạm hết' : 'Bấm để mở bán lại (Còn món)'}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+        isAvailable
+          ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-200/80'
+          : 'bg-slate-100 hover:bg-slate-200 text-slate-600 border-slate-200'
+      }`}
+    >
+      {isAvailable ? (
+        <>
+          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+          <span>Còn món</span>
+        </>
+      ) : (
+        <>
+          <XCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          <span>Tạm hết</span>
+        </>
+      )}
+    </button>
   );
 }
-
 //CatalogTable Component
  
 export default function CatalogTable({
@@ -51,6 +60,7 @@ export default function CatalogTable({
   onEditItem,
   onDeleteItem,
   onAdjustStock,
+  onToggleAvailable,
   onAddNewItemToCategory
 }) {
   // Quản lý trạng thái đóng/mở Accordion của từng danh mục
@@ -193,46 +203,53 @@ export default function CatalogTable({
                             </span>
                           </td>
 
-                          {/* Tồn Kho + Nút Tăng/Giảm Kho Nhanh */}
-                          <td className="py-3 px-4 font-mono">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`font-bold text-xs px-2 py-0.5 rounded ${
-                                  item.stock_quantity <= 0
-                                    ? 'bg-rose-100 text-rose-800'
-                                    : item.stock_quantity <= 5
-                                    ? 'bg-amber-100 text-amber-800'
-                                    : 'bg-slate-100 text-slate-800'
-                                }`}
-                              >
-                                {item.stock_quantity}
+                           {/* Tồn Kho hoặc Badge Phục vụ theo món */}
+                          <td className="py-3 px-4">
+                            {item.track_inventory === false ? (
+                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-[11px] font-bold whitespace-nowrap">
+                                <ChefHat className="w-3.5 h-3.5 shrink-0" />
+                                <span>Phục vụ theo món</span>
                               </span>
+                            ) : (
+                              <div className="flex items-center gap-2 font-mono">
+                                <span
+                                  className={`font-bold text-xs px-2 py-0.5 rounded ${
+                                    item.stock_quantity <= 0
+                                      ? 'bg-rose-100 text-rose-800'
+                                      : item.stock_quantity <= 5
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-slate-100 text-slate-800'
+                                  }`}
+                                >
+                                  {item.stock_quantity}
+                                </span>
 
-                              {/* Quick stock increment/decrement buttons */}
-                              <div className="flex items-center gap-1">
-                                <button
+                              {/* Nút cộng/trừ nhanh tồn kho */}
+                                <div className="flex items-center gap-1">
+                                  <button
                                     type="button"
                                     onClick={() => onAdjustStock && onAdjustStock(item.service_item_id, -1)}
                                     disabled={item.stock_quantity <= 0}
-                                    className={`w-5 h-5 rounded flex items-center justify-center font-bold text-xs transition-colors
-                                        ${item.stock_quantity <= 0 
-                                        ? 'bg-slate-50 text-slate-300 cursor-not-allowed' 
-                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                                        }`}
+                                    className={`w-5 h-5 rounded flex items-center justify-center font-bold text-xs transition-colors ${
+                                      item.stock_quantity <= 0
+                                        ? 'bg-slate-50 text-slate-300 cursor-not-allowed'
+                                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer'
+                                    }`}
                                     title="Trừ 1 tồn kho"
-                                    >
-                                  -
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => onAdjustStock && onAdjustStock(item.service_item_id, 1)}
-                                  className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs"
-                                  title="Cộng 1 tồn kho"
-                                >
-                                  +
-                                </button>
+                                  >
+                                    -
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => onAdjustStock && onAdjustStock(item.service_item_id, 1)}
+                                    className="w-5 h-5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-xs cursor-pointer"
+                                    title="Cộng 1 tồn kho"
+                                  >
+                                    +
+                                  </button>
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </td>
 
                           {/* Trạng Thái Phục Vụ */}
@@ -240,6 +257,16 @@ export default function CatalogTable({
                             <ItemStatusBadge
                               isAvailable={item.is_available}
                               stockQuantity={item.stock_quantity}
+                            />
+                          </td>
+
+                          {/* Trạng Thái Phục Vụ (Bấm trực tiếp để bật/tắt nhanh) */}
+                          <td className="py-3 px-4">
+                            <ItemStatusBadge
+                              isAvailable={item.is_available}
+                              stockQuantity={item.stock_quantity}
+                              trackInventory={item.track_inventory !== false}
+                              onToggle={() => onToggleAvailable && onToggleAvailable(item)}
                             />
                           </td>
 

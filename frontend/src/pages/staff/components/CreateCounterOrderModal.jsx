@@ -242,7 +242,7 @@ export default function CreateCounterOrderModal({ isOpen, onClose, onOrderCreate
                   >
                     <div>
                       <p className="font-bold text-slate-800">{item.name}</p>
-                      <p className="text-[10px] text-slate-400 font-mono">Còn: {item.stock_quantity}</p>
+                       <p className="text-[10px] text-slate-400 font-mono">{item.track_inventory === false ? 'Phục vụ theo món' : `Còn: ${item.stock_quantity}`}</p>
                     </div>
                     <span className="font-mono font-bold text-cyan-700">
                       {parseFloat(item.price || 0).toLocaleString('vi-VN')}đ

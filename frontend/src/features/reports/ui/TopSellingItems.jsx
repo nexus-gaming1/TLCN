@@ -40,7 +40,7 @@ export default function TopSellingItems({ data = [], allItems = [] }) {
 
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col items-center justify-center min-h-[220px] text-center">
+      <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col items-center justify-center min-h-[280px] h-full text-center">
         <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
         <p className="text-xs font-bold text-slate-600">Chưa có đơn hàng F&amp;B nào</p>
         <p className="text-[11px] text-slate-400 mt-0.5">Dịch vụ ẩm thực chưa phát sinh giao dịch trong kỳ này</p>
@@ -50,7 +50,7 @@ export default function TopSellingItems({ data = [], allItems = [] }) {
 
   return (
     <>
-      <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between h-full">
+      <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-4">
           <div className="flex items-center gap-2">

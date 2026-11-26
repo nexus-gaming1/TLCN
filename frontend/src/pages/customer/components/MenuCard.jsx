@@ -8,7 +8,8 @@ export default function MenuCard({
   canOrder = true,
   disabledReason = '',
 }) {
-  const isOutOfStock = !item.stock_quantity || item.stock_quantity <= 0;
+  const trackInventory = item.track_inventory !== false;
+  const isOutOfStock = trackInventory && (!item.stock_quantity || item.stock_quantity <= 0);
   const quantityInCart = cartItem?.quantity || 0;
 
   return (
@@ -31,8 +32,12 @@ export default function MenuCard({
             </h4>
           </div>
 
-          <div className="shrink-0">
-            {isOutOfStock ? (
+           <div className="shrink-0">
+            {!trackInventory ? (
+              <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-bold">
+                Phục vụ theo món
+              </span>
+            ) : isOutOfStock ? (
               <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-700 text-[10px] font-black uppercase">
                 Hết hàng
               </span>
@@ -76,7 +81,7 @@ export default function MenuCard({
             </span>
             <button
               type="button"
-              disabled={quantityInCart >= item.stock_quantity}
+              disabled={trackInventory && quantityInCart >= item.stock_quantity}
               onClick={() => onUpdateQuantity(item.service_item_id, quantityInCart + 1)}
               className="w-7 h-7 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center shadow-xs transition disabled:opacity-40 disabled:cursor-not-allowed"
             >

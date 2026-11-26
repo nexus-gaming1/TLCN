@@ -203,6 +203,7 @@ export default function CustomerFoodPage({ user, onLogout }) {
           price: item.price,
           quantity: 1,
           stock_quantity: item.stock_quantity,
+          track_inventory: item.track_inventory !== false,
         },
       ];
     });

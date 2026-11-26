@@ -395,62 +395,57 @@ const handleExportExcel = async () => {
               </div>
             </div>
 
-            {/* Hàng1 Cặp Biểu đồ cân đối (8 cột Xu hướng — 4 cột phương thức thanh toán) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              <div className="lg:col-span-8 bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div className="flex flex-col">
-                    <h3 className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">
-                      <span>Biểu Đồ Xu Hướng Doanh Thu</span>
-                      <span className="font-mono text-xs font-semibold text-slate-400">
-                        ({summary.startDate} ➔ {summary.endDate})
-                      </span>
-                    </h3>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
-                      So sánh tương quan giữa dòng tiền nạp và doanh số bán hàng F&amp;B
-                    </p>
-                  </div>
+            {/* Hàng 1: Biểu Đồ Xu Hướng Doanh Thu toàn chiều rộng */}
+            <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex flex-col">
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <span>Biểu Đồ Xu Hướng Doanh Thu</span>
+                    <span className="font-mono text-xs font-semibold text-slate-400">
+                      ({summary.startDate} ➔ {summary.endDate})
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    So sánh tương quan giữa dòng tiền nạp và doanh số bán hàng F&amp;B
+                  </p>
                 </div>
-
-                {loading ? (
-                  <div className="w-full h-80 flex flex-col items-center justify-center gap-2 text-slate-400">
-                    <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-                    <span className="font-mono text-xs">Đang tổng hợp dữ liệu biểu đồ...</span>
-                  </div>
-                ) : (
-                  <RevenueChart data={chartData} />
-                )}
               </div>
+              {loading ? (
+                <div className="w-full h-80 flex flex-col items-center justify-center gap-2 text-slate-400">
+                  <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+                  <span className="font-mono text-xs">Đang tổng hợp dữ liệu biểu đồ...</span>
+                </div>
+              ) : (
+                <RevenueChart data={chartData} />
+              )}
+            </div>
 
-              <div className="lg:col-span-4 flex flex-col">
+            {/* Hàng 2: 3 cột cân đối (Phương thức thanh toán | Top Hội Viên | Top Món F&B) */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+              <div className="flex flex-col">
                 {loading ? (
-                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center flex-1 min-h-[340px]">
+                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center flex-1 min-h-[280px]">
                     <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
                   </div>
                 ) : (
                   <PaymentMethodChart data={analytics.paymentMethods} />
                 )}
               </div>
-            </div>
-
-            {/* Hàng 2: 2 bảng xếp hạng (6 cột Top Hội Viên — 6 cột Top Món F&B) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-              <div className="lg:col-span-6 flex flex-col">
+              <div className="flex flex-col">
                 {loading ? (
-                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center min-h-[240px]">
+                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center flex-1 min-h-[280px]">
                     <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
                   </div>
                 ) : (
                   <TopMembersTable
                     data={analytics.topMembers}
-                    onViewAll={() => navigate('/admin/members')}
+                    allMembers={analytics.allMembers || analytics.topMembers}
                   />
                 )}
               </div>
-
-              <div className="lg:col-span-6 flex flex-col">
+              <div className="flex flex-col">
                 {loading ? (
-                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center min-h-[240px]">
+                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center flex-1 min-h-[280px]">
                     <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
                   </div>
                 ) : (

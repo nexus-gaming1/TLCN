@@ -14,6 +14,7 @@ export default function ServiceCatalogPage({ user, onLogout }) {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [actionError, setActionError] = useState('');
 
   // Modal State cho Item
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
@@ -119,6 +120,18 @@ export default function ServiceCatalogPage({ user, onLogout }) {
       await fetchCatalog();
     } catch (err) {
       alert(err.message || 'Lỗi khi điều chỉnh tồn kho');
+    }
+  };
+
+    const handleToggleAvailable = async (item) => {
+    setActionError('');
+    try {
+      await catalogService.updateItem(item.service_item_id, {
+        is_available: !item.is_available
+      });
+      await fetchCatalog();
+    } catch (err) {
+      setActionError(err.response?.data?.message || err.message || 'Lỗi khi cập nhật trạng thái món');
     }
   };
 
@@ -231,6 +244,19 @@ export default function ServiceCatalogPage({ user, onLogout }) {
                 <span>Gói Combo Time &amp; Giờ Chơi</span>
               </button>
             </div>
+            
+            {actionError && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-between gap-2">
+                <span>{actionError}</span>
+                <button
+                  type="button"
+                  onClick={() => setActionError('')}
+                  className="text-rose-500 hover:text-rose-800 font-black cursor-pointer"
+                >
+                  Đóng
+                </button>
+              </div>
+            )}
 
             {/* TAB CONTENT */}
             {activeTab === 'fnb' ? (
@@ -250,6 +276,7 @@ export default function ServiceCatalogPage({ user, onLogout }) {
                   }}
                   onDeleteItem={handleDeleteItem}
                   onAdjustStock={handleAdjustStock}
+                  onToggleAvailable={handleToggleAvailable}
                   onAddNewItemToCategory={(catId) => {
                     setEditingItem(null);
                     setSelectedCategoryId(catId);
