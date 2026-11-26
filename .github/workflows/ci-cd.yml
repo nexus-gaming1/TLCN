@@ -2,9 +2,9 @@ name: NEXUS Cloud Cyber OS - 6-Stage CI/CD Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 env:
   REGISTRY: ghcr.io
@@ -84,6 +84,16 @@ jobs:
     needs: stage-2-lint
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: nexus_gaming_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=5
+
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
@@ -93,11 +103,23 @@ jobs:
         with:
           node-version: 22
 
-      - name: Execute Backend Unit Tests
+      - name: Execute Backend Unit & Integration Tests
+        env:
+          NODE_ENV: test
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: root
+          DB_PASSWORD: root_password
+          DB_NAME: nexus_gaming_test
+          JWT_SECRET: ci_test_jwt_secret_key_12345
+          SEPAY_WEBHOOK_TOKEN: test_sepay_token
         run: |
-          echo "🧪 Chạy Unit Test Backend..."
+          echo "🧪 Chuẩn bị CSDL MySQL, chạy Migration & Seeder..."
           cd backend
           npm ci
+          npx sequelize-cli db:migrate
+          node src/utils/seeder.js
+          echo "🧪 Chạy toàn bộ Unit & Integration Test Backend..."
           npm test
 
       - name: Execute Frontend Unit Tests
