@@ -180,7 +180,7 @@ export default function StaffSupportTicketSection({
                   isPending
                     ? 'bg-amber-50/50 border-amber-300 ring-1 ring-amber-200/60'
                     : isInProgress
-                    ? 'bg-blue-50/40 border-blue-300 ring-1 ring-blue-200/60'
+                    ? 'bg-cyan-50/30 border-cyan-300 ring-1 ring-cyan-200'
                     : isResolved
                     ? 'bg-emerald-50/20 border-emerald-200'
                     : 'bg-white border-slate-200 opacity-90'
@@ -208,7 +208,7 @@ export default function StaffSupportTicketSection({
                         isPending
                           ? 'bg-amber-100 text-amber-800 border border-amber-300 animate-pulse'
                           : isInProgress
-                          ? 'bg-blue-100 text-blue-800 border border-blue-300'
+                          ? 'bg-cyan-100 text-cyan-800 border border-cyan-300'
                           : isResolved
                           ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                           : 'bg-rose-100 text-rose-800 border border-rose-300'
@@ -253,7 +253,7 @@ export default function StaffSupportTicketSection({
                       <button
                         type="button"
                         onClick={() => onProcessTicket(t.request_id, 'IN_PROGRESS', null, '', t.type)}
-                        className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-2xs transition cursor-pointer"
+                        className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-extrabold text-xs shadow-2xs transition cursor-pointer"
                       >
                         Tiếp Nhận
                       </button>
@@ -278,7 +278,7 @@ export default function StaffSupportTicketSection({
                         <button
                           type="button"
                           onClick={() => handleOpenRefundModal(t)}
-                          className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
                         >
                           <RotateCcw className="w-3.5 h-3.5" />
                           <span>Duyệt Hoàn Tiền</span>
@@ -497,7 +497,7 @@ export default function StaffSupportTicketSection({
                     </button>
                     <button
                       type="submit"
-                      className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-xs flex items-center gap-1.5 transition cursor-pointer"
+                      className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs shadow-xs flex items-center gap-1.5 transition cursor-pointer"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Xác Nhận Hoàn Tiền</span>

@@ -413,14 +413,18 @@ class OrderService {
           order_id: order.order_id,
           used_by: parsedMemberId,
           processed_by: null,
-          description: `[Khách tự hủy #${order.order_id}] Hoàn tiền ví tự động do khách hủy khi đơn đang chờ xử lý`
+          description: `[Khách tự hủy #${order.order_id}] Hoàn tiền ví tự động do khách hủy khi đơn đang chờ xử lý`,
+          notes: 'Khách hàng chủ động hủy đơn khi đang chờ xử lý'
         }, { transaction: t });
       }
       order.status = OrderStatus.CANCELLED;
       await this.orderRepo.save(order, t);
+      const selfCancelReason = 'Khách hàng chủ động hủy đơn khi đang chờ xử lý';
+      this.cancelReasonCache.set(order.order_id, selfCancelReason);
       return {
         order_id: order.order_id,
         status: order.status,
+        reason: selfCancelReason,
         used_by: parsedMemberId,
         message: 'Đã tự hủy đơn hàng và hoàn tiền ví (nếu có) thành công'
       };
@@ -736,6 +740,9 @@ class OrderService {
       }
       if (!extractedCancelReason) {
         extractedCancelReason = this.cancelReasonCache.get(order.order_id) || null;
+      }
+      if (!extractedCancelReason && order.status === OrderStatus.CANCELLED && !order.processed_by) {
+        extractedCancelReason = 'Khách hàng chủ động hủy đơn';
       }
       const memberObj = order.member || order.Member;
       const staffObj = order.processedBy || order.User;
