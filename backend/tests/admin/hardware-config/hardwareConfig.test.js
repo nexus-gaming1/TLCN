@@ -18,7 +18,25 @@ const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const HTTP_INTERNAL_ERROR = 500;
 
-const DEFAULT_ZONE_ID = 1;
+let DEFAULT_ZONE_ID = 1;
+let dedicatedTestZone = null;
+
+test.before(async () => {
+  dedicatedTestZone = await db.ComputerZone.create({
+    zone_name: `Test Zone ${Date.now()}`,
+    description: 'Zone for isolated test execution',
+    tier_level: 1,
+    is_deleted: false
+  });
+  DEFAULT_ZONE_ID = dedicatedTestZone.zone_id;
+});
+
+test.after(async () => {
+  if (dedicatedTestZone) {
+    await dedicatedTestZone.destroy();
+  }
+});
+
 const NON_EXISTENT_PROFILE_ID = 'NON_EXISTENT_PROFILE_99999';
 const DTO_PROFILE_NAME = 'DTO Test Profile';
 const MOCK_PROFILE_NAME = 'Mock Profile';
@@ -64,6 +82,10 @@ async function safeDestroy(entity) {
 async function safeCleanupProfile(profileId) {
   if (profileId) {
     try {
+      await db.Computer.update(
+        { hardware_profile_id: null },
+        { where: { hardware_profile_id: profileId } }
+      );
       await computerService.deleteHardwareSpec(profileId);
     } catch (_ignoredTeardownError) {
       // Intentional no-op: suppress teardown cleanup exceptions in test environments
@@ -392,7 +414,34 @@ test('Hardware Config - createHardwareSpec throws 409 Conflict when profileName 
   }
 });
 
-test('Hardware Config - deleteHardwareSpec unlinks computers and destroys profile without deleting physical computers', async () => {
+test('Hardware Config - enforces 1-1 Zone to Profile mapping and rejects duplicate zone assignments with 409', async () => {
+  const profileNameA = `Zone_Lock_A_${Date.now()}`;
+  const profileNameB = `Zone_Lock_B_${Date.now()}`;
+  let profileA = null;
+
+  try {
+    const resA = await computerService.createHardwareSpec({
+      profileName: profileNameA,
+      zoneId: DEFAULT_ZONE_ID
+    });
+    profileA = resA.profile;
+
+    await assertRejection(
+      () => computerService.createHardwareSpec({
+        profileName: profileNameB,
+        zoneId: DEFAULT_ZONE_ID
+      }),
+      HTTP_CONFLICT,
+      'Mỗi phân khu chỉ được có 1 cấu hình chuẩn'
+    );
+  } finally {
+    if (profileA) {
+      await safeCleanupProfile(profileA.profile_id);
+    }
+  }
+});
+
+test('Hardware Config - deleteHardwareSpec enforces Phuong an A: rejects deletion when computers assigned, allows soft delete when unassigned', async () => {
   const testComp = await createIsolatedTestComputer('DELETE');
   const uniqueProfileName = `Test_Delete_Profile_${Date.now()}`;
 
@@ -404,18 +453,26 @@ test('Hardware Config - deleteHardwareSpec unlinks computers and destroys profil
   const profileId = createResult.profile.profile_id;
 
   try {
-    const deleteSuccess = await computerService.deleteHardwareSpec(profileId);
-    assert.strictEqual(deleteSuccess, true, 'Deleting created profile should return true');
+    // 1. Should reject with 400 when computers are actively assigned
+    await assertRejection(
+      () => computerService.deleteHardwareSpec(profileId),
+      HTTP_BAD_REQUEST,
+      'đang có 1 máy trạm liên kết'
+    );
 
-    const postDeleteComp = await db.Computer.findOne({ where: { computer_name: testComp.computer_name } });
-    assert.ok(postDeleteComp, 'Physical computer record must NOT be deleted');
-    assert.strictEqual(postDeleteComp.hardware_profile_id, null, 'Computer hardware_profile_id must be reset to null');
-    assert.strictEqual(postDeleteComp.is_deleted, false, 'Physical computer record must remain active');
+    // 2. Unassign the computer
+    testComp.hardware_profile_id = null;
+    await testComp.save();
+
+    // 3. Deleting unassigned profile should now succeed (soft delete)
+    const deleteSuccess = await computerService.deleteHardwareSpec(profileId);
+    assert.strictEqual(deleteSuccess, true, 'Deleting unassigned profile should return true');
 
     const softDeletedProfile = await db.HardwareProfile.findByPk(profileId);
     assert.ok(softDeletedProfile, 'Soft-deleted hardware profile must remain in DB');
     assert.strictEqual(softDeletedProfile.is_deleted, true, 'is_deleted flag must be set to true');
     assert.strictEqual(softDeletedProfile.is_active, false, 'is_active flag must be set to false on soft delete');
+    assert.strictEqual(softDeletedProfile.zone_id, null, 'zone_id must be unlinked to release zone slot');
     assert.ok(softDeletedProfile.deleted_at, 'deleted_at timestamp must be populated');
 
     const activeList = await computerService.getHardwareSpecs();

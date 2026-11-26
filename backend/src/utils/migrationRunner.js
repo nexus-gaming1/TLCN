@@ -59,21 +59,39 @@ const runMigrations = async () => {
     await ensureColumn('pricing_plan', null, 'priority', 'INT DEFAULT 0');
     await ensureColumn('pricing_plan', null, 'start_time', 'TIME NULL');
     await ensureColumn('pricing_plan', null, 'end_time', 'TIME NULL');
+
+    // 4. computer_zone: max_capacity, code_prefix, is_deleted, deleted_at
+    await ensureColumn('computer_zone', null, 'max_capacity', 'INT NULL DEFAULT NULL');
+    await ensureColumn('computer_zone', null, 'code_prefix', 'VARCHAR(20) NULL DEFAULT "PC-"');
+    await ensureColumn('computer_zone', null, 'is_deleted', 'TINYINT(1) NOT NULL DEFAULT 0');
+    await ensureColumn('computer_zone', null, 'deleted_at', 'DATETIME NULL DEFAULT NULL');
     await ensureColumn('pricing_plan', null, 'apply_date', 'DATE NULL');
     await ensureColumn('pricing_plan', null, 'is_active', 'TINYINT(1) DEFAULT 1');
 
     // 3.1. computer_zone: tier_level
     await ensureColumn('computer_zone', null, 'tier_level', 'INT NOT NULL DEFAULT 1');
     try {
-      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 2 WHERE `zone_id` IN (1, 2)");
+      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 2, `code_prefix` = 'ESP-' WHERE `zone_id` = 1");
+      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 2, `code_prefix` = 'VIP-' WHERE `zone_id` = 2");
       await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 1 WHERE `zone_id` = 3");
-      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 3 WHERE `zone_id` = 4");
-      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 4 WHERE `zone_id` = 5");
+      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 3, `code_prefix` = 'STR-' WHERE `zone_id` = 4");
+      await db.sequelize.query("UPDATE `computer_zone` SET `tier_level` = 4, `code_prefix` = 'CLD-' WHERE `zone_id` = 5");
     } catch (e) { 
       // Ignore if table/column does not exist yet
     }
 
 
+
+    // 4.1. Auto-sanitize malformed MAC addresses in computer table (e.g. 3-character octets like :16B)
+    try {
+      await db.sequelize.query(`
+        UPDATE \`computer\` 
+        SET \`mac_address\` = CONCAT('F4:D4:88:5A:', LPAD(FLOOR(computer_id / 100) % 100, 2, '0'), ':', LPAD(computer_id % 100, 2, '0'))
+        WHERE CHAR_LENGTH(\`mac_address\`) > 17 OR \`mac_address\` REGEXP ':[0-9A-Fa-f]{3,}$'
+      `);
+    } catch (e) {
+      // Ignore if table does not exist yet
+    }
 
     // 4. combo_package: duration_time -> duration_minutes, description
     await ensureColumn('combo_package', 'duration_time', 'duration_minutes', 'INT NOT NULL DEFAULT 60');

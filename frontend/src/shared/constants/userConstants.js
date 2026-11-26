@@ -16,6 +16,28 @@ export const UserStatus = Object.freeze({
   BANNED: 'BANNED',
 });
 
+export const MEMBER_TIERS = Object.freeze({
+  DIAMOND: 'diamond',
+  GOLD: 'gold',
+  SILVER: 'silver',
+  NORMAL: 'normal'
+});
+
+export const TIER_CONFIGS = Object.freeze({
+  [MEMBER_TIERS.DIAMOND]: { label: 'Kim Cương', badgeClass: 'bg-cyan-100 text-cyan-950 border-cyan-300', iconColor: 'text-cyan-700' },
+  [MEMBER_TIERS.GOLD]: { label: 'Vàng', badgeClass: 'bg-amber-100 text-amber-950 border-amber-400', iconColor: 'text-amber-800' },
+  [MEMBER_TIERS.SILVER]: { label: 'Bạc', badgeClass: 'bg-slate-200 text-slate-900 border-slate-300', iconColor: 'text-slate-700' },
+  [MEMBER_TIERS.NORMAL]: { label: 'Đồng', badgeClass: 'bg-orange-100 text-orange-950 border-orange-300', iconColor: 'text-orange-800' }
+});
+
+export const getMemberRankLabel = (tier, rankName) => {
+  if (rankName && typeof rankName === 'string' && rankName.trim()) {
+    return rankName;
+  }
+  const normalizedTier = (tier || '').toLowerCase();
+  return TIER_CONFIGS[normalizedTier]?.label || 'Đồng';
+};
+
 export const USER_STATUS_LABELS = Object.freeze({
   [UserStatus.ACTIVE]: {
     label: 'Hoạt động',

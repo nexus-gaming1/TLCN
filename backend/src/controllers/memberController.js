@@ -14,6 +14,19 @@ class MemberController {
     }
   }
 
+  async getRanks(req, res, next) {
+    try {
+      const ranks = await memberService.getAllRanks();
+      return res.json({
+        status: 'success',
+        data: ranks,
+        message: 'Lấy danh sách hạng hội viên thành công'
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getMemberById(req, res, next) {
     try {
       const { id } = req.params;

@@ -29,9 +29,11 @@ const seedData = async (db) => {
       { rank_id: 2, name: 'Bạc', required_point: 500, rank_level: 2, discount_percent: 5.00 },
       { rank_id: 3, name: 'Vàng', required_point: 1500, rank_level: 3, discount_percent: 10.00 },
       { rank_id: 4, name: 'Kim Cương', required_point: 3000, rank_level: 4, discount_percent: 15.00 }
-    ]);
+    ], ['name', 'required_point', 'rank_level', 'discount_percent']);
 
     // 1.5. Seed Users & Customer Members
+    // Ràng buộc nghiệp vụ: Chỉ người dùng vai trò MEMBER mới có hồ sơ ví/hội viên trong bảng Member.
+    // Điểm tích lũy (point) tương thích 100% với rank_id theo MembershipRank.
     if (db.User && db.Member) {
       await safeSeed(db.User, [
         {
@@ -75,7 +77,7 @@ const seedData = async (db) => {
           username: 'customer',
           avatar_url: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAs8dBAUHnsFAlRsHsjgaT6wrKt-GrttfGiw1_eIniAUOa-8Njbsfgqvj8LCwo2GG725KkvX-7UNAQWJU9OuU_WzUP2CgXPbJRiUV2hQPM7ZklsLgfjfm4Z126zsxn16iDfJkNt5VahCr6FbdbVPCJ1uVXn-eawT4Ch_6ofpZq9gypCMIlKT5S6zHbGA5K0ArpqFJa2jp1YtccknO3eEtqIE2EFI4SYJqeoQORRG8KlTgY0AUReON8',
           password_hash: hashedPassword,
-          full_name: 'Khách Hàng VIP',
+          full_name: 'Nguyễn Hoàng Long',
           role: UserRole.MEMBER,
           status: UserStatus.ACTIVE
         },
@@ -135,37 +137,23 @@ const seedData = async (db) => {
         }
       ], ['username', 'password_hash', 'full_name', 'role', 'status']);
 
+      // Ràng buộc: Nhân viên (user_id 3, 4) KHÔNG có trong bảng Member.
+      // Tất cả hội viên thật (user_id 2, 5, 6, 7, 8, 9, 10, 11) đều có hồ sơ Member tương ứng.
       await safeSeed(db.Member, [
         {
           member_id: 2,
           phone: '+84 900 000 002',
           real_balance: 500000.00,
           bonus_balance: 50000.00,
-          point: 100,
+          point: 1800, // Vàng (1500-2999)
           rank_id: 3
-        },
-        {
-          member_id: 3,
-          phone: '+84 912 849 201',
-          real_balance: 1250000.00,
-          bonus_balance: 350000.00,
-          point: 2850,
-          rank_id: 3
-        },
-        {
-          member_id: 4,
-          phone: '+84 988 777 666',
-          real_balance: 500000.00,
-          bonus_balance: 100000.00,
-          point: 1200,
-          rank_id: 2
         },
         {
           member_id: 5,
           phone: '+84 977 111 222',
           real_balance: 3200000.00,
           bonus_balance: 800000.00,
-          point: 4500,
+          point: 4500, // Kim Cương (>= 3000)
           rank_id: 4
         },
         {
@@ -173,7 +161,7 @@ const seedData = async (db) => {
           phone: '+84 933 444 555',
           real_balance: 150000.00,
           bonus_balance: 20000.00,
-          point: 350,
+          point: 350, // Đồng (0-499)
           rank_id: 1
         },
         {
@@ -181,44 +169,185 @@ const seedData = async (db) => {
           phone: '+84 905 666 777',
           real_balance: 850000.00,
           bonus_balance: 150000.00,
-          point: 1800,
+          point: 1600, // Vàng (1500-2999)
           rank_id: 3
+        },
+        {
+          member_id: 8,
+          phone: '+84 912 849 201',
+          real_balance: 1250000.00,
+          bonus_balance: 350000.00,
+          point: 2850, // Vàng (1500-2999)
+          rank_id: 3
+        },
+        {
+          member_id: 9,
+          phone: '+84 988 777 666',
+          real_balance: 500000.00,
+          bonus_balance: 100000.00,
+          point: 1200, // Bạc (500-1499)
+          rank_id: 2
+        },
+        {
+          member_id: 10,
+          phone: '+84 944 888 999',
+          real_balance: 950000.00,
+          bonus_balance: 200000.00,
+          point: 2100, // Vàng (1500-2999)
+          rank_id: 3
+        },
+        {
+          member_id: 11,
+          phone: '+84 966 333 111',
+          real_balance: 300000.00,
+          bonus_balance: 50000.00,
+          point: 650, // Bạc (500-1499)
+          rank_id: 2
         }
-      ]);
+      ], ['phone', 'real_balance', 'bonus_balance', 'point', 'rank_id']);
     }
 
-    // 2. Seed Pricing Plans
-    await safeSeed(db.PricingPlan, [
-      { pricing_plan_id: 1, name: 'Gói Tiêu Chuẩn', price_per_hour: 10000.00, plan_type: SessionType.LOCAL, priority: 1, is_active: true },
-      { pricing_plan_id: 2, name: 'Gói VIP', price_per_hour: 15000.00, plan_type: SessionType.LOCAL, priority: 2, is_active: true },
-      { pricing_plan_id: 3, name: 'Gói Streamer Pro', price_per_hour: 20000.00, plan_type: SessionType.LOCAL, priority: 3, is_active: true },
-      { pricing_plan_id: 4, name: 'Gói Cloud vGPU Remote', price_per_hour: 25000.00, plan_type: SessionType.REMOTE, priority: 4, is_active: true }
-    ]);
+    // 2. Seed Pricing Plans (Định nghĩa bảng giá máy & Giờ vàng duy nhất, không ghi đè)
+    if (db.PricingPlan) {
+      await safeSeed(db.PricingPlan, [
+        {
+          pricing_plan_id: 1,
+          name: 'Giá Tiêu Chuẩn Tại Quán',
+          price_per_hour: 10000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 0,
+          start_time: null,
+          end_time: null,
+          apply_date: null,
+          is_active: true
+        },
+        {
+          pricing_plan_id: 2,
+          name: 'Giá VIP Gaming Suite',
+          price_per_hour: 15000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 1,
+          start_time: null,
+          end_time: null,
+          apply_date: null,
+          is_active: true
+        },
+        {
+          pricing_plan_id: 3,
+          name: 'Giá Stream Studio Pro',
+          price_per_hour: 20000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 2,
+          start_time: null,
+          end_time: null,
+          apply_date: null,
+          is_active: true
+        },
+        {
+          pricing_plan_id: 4,
+          name: 'Giá Cloud Remote Stream',
+          price_per_hour: 25000.00,
+          plan_type: SessionType.REMOTE,
+          priority: 3,
+          start_time: null,
+          end_time: null,
+          apply_date: null,
+          is_active: true
+        },
+        {
+          pricing_plan_id: 5,
+          name: 'Giờ Vàng Buổi Chiều',
+          price_per_hour: 6000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 10,
+          start_time: '13:00:00',
+          end_time: '17:00:00',
+          apply_date: null,
+          is_active: true
+        },
+        {
+          pricing_plan_id: 6,
+          name: 'Gói Chơi Xuyên Đêm',
+          price_per_hour: 4000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 20,
+          start_time: '23:00:00',
+          end_time: '06:00:00',
+          apply_date: null,
+          is_active: true
+        },
+        {
+          pricing_plan_id: 7,
+          name: 'Ưu Đãi Ngày Cuối Tuần',
+          price_per_hour: 8000.00,
+          plan_type: SessionType.LOCAL,
+          priority: 5,
+          start_time: null,
+          end_time: null,
+          apply_date: '2026-10-18',
+          is_active: true
+        }
+      ], ['name', 'price_per_hour', 'plan_type', 'priority', 'start_time', 'end_time', 'apply_date', 'is_active']);
+    }
 
-    // 3. Seed Service Categories & Game Categories
+    // 3. Seed Service Categories & Game Categories (Duy nhất 1 lần)
     await safeSeed(db.ServiceCategory, [
       { category_id: 1, name: 'Đồ Uống & Nước Giải Khát' },
       { category_id: 2, name: 'Đồ Ăn Nhanh & Ẩm Thực' },
       { category_id: 3, name: 'Thẻ Game & Dịch Vụ' }
-    ]);
+    ], ['name']);
 
     await safeSeed(db.GameCategory, [
       { category_id: 1, name: 'Esports - Bắn Súng (FPS)' },
       { category_id: 2, name: 'Esports - MOBA' },
       { category_id: 3, name: 'AAA Trải Nghiệm & Nhập Vai' }
-    ]);
+    ], ['name']);
 
-    // 4. Seed Computer Zones
+    // 4. Seed Computer Zones (Đồng bộ code_prefix và cấu hình khớp với HardwareProfile)
     await safeSeed(db.ComputerZone, [
-      { zone_id: 1, zone_name: 'Zone 1: Esports Pro Arena', description: 'Máy thi đấu 360Hz BenQ ZOWIE, CPU i9 14900K, RTX 4080', tier_level: 2 },
-      { zone_id: 2, zone_name: 'Zone 2: VIP Gaming Suite', description: 'Phòng VIP riêng biệt, ghế da cao cấp, RTX 4070 Ti Super', tier_level: 2 },
-      { zone_id: 3, zone_name: 'Zone 3: Tiêu Chuẩn Combat', description: 'Khu vực phổ thông i5 14400F, RTX 4060, Màn 240Hz', tier_level: 1 },
-      { zone_id: 4, zone_name: 'Zone 4: Stream Studio', description: 'Phòng Studio cách âm, Cam 4K, GoXLR, RTX 4090 24GB', tier_level: 3 },
-      { zone_id: 5, zone_name: 'Zone 5: Cloud Remote Nodes', description: 'Cụm Cloud vGPU stream WebRTC 1.1ms AV1 Dual EPYC', tier_level: 4 }
-    ], ['zone_name', 'description', 'tier_level']);
+      { zone_id: 1, zone_name: 'Zone 1: Esports Pro Arena', description: 'Máy thi đấu 240Hz Fast-IPS BenQ ZOWIE, CPU i9 14900K, RTX 4080 Super', tier_level: 2, code_prefix: 'ESP-', is_deleted: false, deleted_at: null },
+      { zone_id: 2, zone_name: 'Zone 2: VIP Gaming Suite', description: 'Phòng VIP riêng biệt, ghế da cao cấp, RTX 4070 Ti Super', tier_level: 2, code_prefix: 'VIP-', is_deleted: false, deleted_at: null },
+      { zone_id: 3, zone_name: 'Zone 3: Tiêu Chuẩn Combat', description: 'Khu vực phổ thông i5 13400F, RTX 4060, Màn 180Hz ViewSonic Gaming', tier_level: 1, code_prefix: 'STD-', is_deleted: false, deleted_at: null },
+      { zone_id: 4, zone_name: 'Zone 4: Stream Studio', description: 'Phòng Studio cách âm, Cam 4K, Ryzen 9 7950X, RTX 4090 24GB, Màn 360Hz BenQ', tier_level: 3, code_prefix: 'STR-', is_deleted: false, deleted_at: null },
+      { zone_id: 5, zone_name: 'Zone 5: Cloud Remote Nodes', description: 'Cụm Cloud vGPU stream WebRTC 1.1ms AV1 Dual EPYC', tier_level: 4, code_prefix: 'CLOUD-', is_deleted: false, deleted_at: null }
+    ], ['zone_name', 'description', 'tier_level', 'code_prefix', 'is_deleted', 'deleted_at']);
 
-    // 4.5. Seed Hardware Profiles into MySQL CSDL
+    // 4.1 Liên kết bảng giá cho từng Phân khu
+    if (db.ZonePricingPlan) {
+      await safeSeed(db.ZonePricingPlan, [
+        // Zone 1: Esports Pro Arena
+        { zone_id: 1, pricing_plan_id: 1 },
+        { zone_id: 1, pricing_plan_id: 5 },
+        { zone_id: 1, pricing_plan_id: 6 },
+        // Zone 2: VIP Gaming Suite
+        { zone_id: 2, pricing_plan_id: 2 },
+        { zone_id: 2, pricing_plan_id: 5 },
+        { zone_id: 2, pricing_plan_id: 6 },
+        { zone_id: 2, pricing_plan_id: 7 },
+        // Zone 3: Tiêu Chuẩn Combat
+        { zone_id: 3, pricing_plan_id: 1 },
+        { zone_id: 3, pricing_plan_id: 5 },
+        { zone_id: 3, pricing_plan_id: 6 },
+        { zone_id: 3, pricing_plan_id: 7 },
+        // Zone 4: Stream Studio
+        { zone_id: 4, pricing_plan_id: 3 },
+        // Zone 5: Cloud Remote Nodes
+        { zone_id: 5, pricing_plan_id: 4 }
+      ]);
+    }
+
+    // 4.5. Seed Hardware Profiles into MySQL CSDL (Khớp 100% với mô tả phân khu)
     if (db.HardwareProfile) {
+      // Dọn dẹp profile rác sinh ra từ test tự động (ID > 5)
+      await db.Computer.update(
+        { hardware_profile_id: null },
+        { where: { hardware_profile_id: { [db.Sequelize.Op.gt]: 5 } } }
+      ).catch(() => {});
+      await db.HardwareProfile.destroy({
+        where: { profile_id: { [db.Sequelize.Op.gt]: 5 } },
+        force: true
+      }).catch(() => {});
+
       await safeSeed(
         db.HardwareProfile,
         [
@@ -232,7 +361,10 @@ const seedData = async (db) => {
             storage_type: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)',
             monitor: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)',
             gear: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II',
-            zone_id: 1
+            zone_id: 1,
+            is_active: true,
+            is_deleted: false,
+            deleted_at: null
           },
           {
             profile_id: 2,
@@ -244,7 +376,10 @@ const seedData = async (db) => {
             storage_type: 'High Throughput Cache 1TB SAN Boot',
             monitor: '27" 2K OLED 240Hz (ASUS ROG Swift PG27AQDM)',
             gear: 'Chuột Razer DeathAdder V3 + Phím Huntsman + Tai Kraken',
-            zone_id: 2
+            zone_id: 2,
+            is_active: true,
+            is_deleted: false,
+            deleted_at: null
           },
           {
             profile_id: 3,
@@ -256,7 +391,10 @@ const seedData = async (db) => {
             storage_type: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)',
             monitor: '24" Full HD 180Hz (ViewSonic Gaming)',
             gear: 'Bộ Peripherals Standard Cyber Gaming',
-            zone_id: 3
+            zone_id: 3,
+            is_active: true,
+            is_deleted: false,
+            deleted_at: null
           },
           {
             profile_id: 4,
@@ -268,7 +406,10 @@ const seedData = async (db) => {
             storage_type: 'Dual NVMe 2TB PCIe 4.0 Direct Capture',
             monitor: '25" 360Hz BenQ ZOWIE XL2566K',
             gear: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II',
-            zone_id: 4
+            zone_id: 4,
+            is_active: true,
+            is_deleted: false,
+            deleted_at: null
           },
           {
             profile_id: 5,
@@ -280,127 +421,135 @@ const seedData = async (db) => {
             storage_type: '40Gbps Fiber SAN (Direct RDMA Ultra-low Latency)',
             monitor: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)',
             gear: 'Bộ Peripherals Standard Cyber Gaming',
-            zone_id: 5
+            zone_id: 5,
+            is_active: true,
+            is_deleted: false,
+            deleted_at: null
           }
         ],
-        ['profile_name', 'description', 'cpu_model', 'gpu_model', 'ram_capacity', 'storage_type', 'monitor', 'gear', 'zone_id']
+        ['profile_name', 'description', 'cpu_model', 'gpu_model', 'ram_capacity', 'storage_type', 'monitor', 'gear', 'zone_id', 'is_active', 'is_deleted', 'deleted_at']
       );
     }
 
-    // 4.6. Seed Hardware Component Presets (CPUs, GPUs, RAMs, Storages, Monitors, Gears)
+    // 4.6. Seed Hardware Component Presets (Duy nhất 1 danh mục đầy đủ 26 linh kiện, không trùng lặp ID)
     if (db.HardwareComponent) {
       await safeSeed(
         db.HardwareComponent,
         [
-          // CPU
+          // CPUs (1-6)
           { component_id: 1, category: 'cpu', name: 'Intel Core i9-14900K (24 Cores / 32 Threads @ 5.8GHz)' },
           { component_id: 2, category: 'cpu', name: 'Intel Core i7-14700K (20 Cores / 28 Threads @ 5.6GHz)' },
           { component_id: 3, category: 'cpu', name: 'Intel Core i5-13400F (10 Cores / 16 Threads @ 4.6GHz)' },
-          { component_id: 4, category: 'cpu', name: 'AMD Ryzen 9 7950X (16 Cores / 32 Threads @ 5.7GHz)' },
-          { component_id: 5, category: 'cpu', name: 'AMD EPYC 7763 (64 Cores / 128 Threads Hypervisor)' },
-          // GPU
-          { component_id: 6, category: 'gpu', name: 'RTX 4090 24GB (Gigabyte AORUS Master)' },
-          { component_id: 7, category: 'gpu', name: 'RTX 4080 Super 16GB (ASUS ROG Strix OC)' },
-          { component_id: 8, category: 'gpu', name: 'RTX 4070 Ti Super 16GB (MSI Gaming X Slim)' },
-          { component_id: 9, category: 'gpu', name: 'RTX 4060 8GB (Zotac Gaming Twin Edge)' },
-          // RAM
-          { component_id: 10, category: 'ram', name: '64GB DDR5 6000MHz CL30 (Kingston Beast)' },
-          { component_id: 11, category: 'ram', name: '32GB DDR5 6000MHz CL30 (Kingston Beast)' },
-          { component_id: 12, category: 'ram', name: '32GB DDR4 3200MHz Dual Channel TeamGroup' },
-          { component_id: 13, category: 'ram', name: '128GB ECC Reg Quad-Channel Server' },
-          // Storage
-          { component_id: 14, category: 'storage', name: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)' },
-          { component_id: 15, category: 'storage', name: 'High Throughput Cache 1TB SAN Boot' },
-          { component_id: 16, category: 'storage', name: 'Dual NVMe 2TB PCIe 4.0 Direct Capture' },
-          { component_id: 17, category: 'storage', name: '40Gbps Fiber SAN (Direct RDMA Ultra-low Latency)' },
-          // Monitor
-          { component_id: 18, category: 'monitor', name: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)' },
-          { component_id: 19, category: 'monitor', name: '27" 2K OLED 240Hz (ASUS ROG Swift PG27AQDM)' },
-          { component_id: 20, category: 'monitor', name: '24" Full HD 180Hz (ViewSonic Gaming)' },
-          { component_id: 21, category: 'monitor', name: '25" 360Hz BenQ ZOWIE XL2566K' },
-          // Gear
-          { component_id: 22, category: 'gear', name: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II' },
-          { component_id: 23, category: 'gear', name: 'Chuột Razer DeathAdder V3 + Phím Huntsman + Tai Kraken' },
-          { component_id: 24, category: 'gear', name: 'Bộ Peripherals Standard Cyber Gaming' }
+          { component_id: 4, category: 'cpu', name: 'AMD Ryzen 7 7800X3D (8 Cores / 16 Threads @ 5.0GHz)' },
+          { component_id: 5, category: 'cpu', name: 'AMD Ryzen 9 7950X (16 Cores / 32 Threads @ 5.7GHz)' },
+          { component_id: 6, category: 'cpu', name: 'AMD EPYC 7763 (64 Cores / 128 Threads Hypervisor)' },
+          // GPUs (7-11)
+          { component_id: 7, category: 'gpu', name: 'RTX 4090 24GB (Gigabyte AORUS Master)' },
+          { component_id: 8, category: 'gpu', name: 'RTX 4080 Super 16GB (ASUS ROG Strix OC)' },
+          { component_id: 9, category: 'gpu', name: 'RTX 4070 Ti Super 16GB (MSI Gaming X Slim)' },
+          { component_id: 10, category: 'gpu', name: 'RTX 4060 8GB (Zotac Gaming Twin Edge)' },
+          { component_id: 11, category: 'gpu', name: 'RTX 3060 12GB Dual Fan' },
+          // RAMs (12-16)
+          { component_id: 12, category: 'ram', name: '32GB DDR5 6000MHz CL30 (Kingston Beast)' },
+          { component_id: 13, category: 'ram', name: '64GB DDR5 6000MHz CL30 (Kingston Beast)' },
+          { component_id: 14, category: 'ram', name: '64GB DDR5 6000MHz (G.Skill Trident Z5 Neo)' },
+          { component_id: 15, category: 'ram', name: '32GB DDR4 3200MHz Dual Channel TeamGroup' },
+          { component_id: 16, category: 'ram', name: '128GB ECC Reg Quad-Channel' },
+          // Storages (17-20)
+          { component_id: 17, category: 'storage', name: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)' },
+          { component_id: 18, category: 'storage', name: 'High Throughput Cache 1TB SAN Boot' },
+          { component_id: 19, category: 'storage', name: 'Dual NVMe 2TB PCIe 4.0 Direct Capture' },
+          { component_id: 20, category: 'storage', name: '40Gbps Fiber SAN (Direct RDMA Ultra-low Latency)' },
+          // Monitors (21-24)
+          { component_id: 21, category: 'monitor', name: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)' },
+          { component_id: 22, category: 'monitor', name: '27" 2K OLED 240Hz (ASUS ROG Swift PG27AQDM)' },
+          { component_id: 23, category: 'monitor', name: '24" Full HD 180Hz (ViewSonic Gaming)' },
+          { component_id: 24, category: 'monitor', name: '25" 360Hz BenQ ZOWIE XL2566K' },
+          // Gears (25-27)
+          { component_id: 25, category: 'gear', name: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II' },
+          { component_id: 26, category: 'gear', name: 'Chuột Razer DeathAdder V3 + Phím Huntsman + Tai Kraken' },
+          { component_id: 27, category: 'gear', name: 'Bộ Peripherals Standard Cyber Gaming' }
         ],
         ['category', 'name', 'is_active']
       );
     }
 
-    // 6. Seed Computers (Rich set of 36 computers with MAC addresses & Hardware Profile mapping)
-    await safeSeed(db.Computer, [
-      // Zone 1: Esports Pro Arena (8 trạm)
-      { computer_id: 1, computer_name: 'ESP-01', ip_address: '192.168.1.101', mac_address: 'F4:D4:88:5A:01:01', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 2, computer_name: 'ESP-02', ip_address: '192.168.1.102', mac_address: 'F4:D4:88:5A:01:02', status: ComputerStatus.IN_USE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 3, computer_name: 'ESP-03', ip_address: '192.168.1.103', mac_address: 'F4:D4:88:5A:01:03', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 4, computer_name: 'ESP-04', ip_address: '192.168.1.104', mac_address: 'F4:D4:88:5A:01:04', status: ComputerStatus.IN_USE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 5, computer_name: 'ESP-05', ip_address: '192.168.1.105', mac_address: 'F4:D4:88:5A:01:05', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 6, computer_name: 'ESP-06', ip_address: '192.168.1.106', mac_address: 'F4:D4:88:5A:01:06', status: ComputerStatus.IN_USE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 7, computer_name: 'ESP-07', ip_address: '192.168.1.107', mac_address: 'F4:D4:88:5A:01:07', status: ComputerStatus.MAINTENANCE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 8, computer_name: 'ESP-08', ip_address: '192.168.1.108', mac_address: 'F4:D4:88:5A:01:08', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 1, hardware_profile_id: 1 },
-
-      // Zone 2: VIP Gaming Suite (8 trạm)
-      { computer_id: 9, computer_name: 'VIP-01', ip_address: '192.168.1.201', mac_address: 'F4:D4:88:5A:02:01', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 10, computer_name: 'VIP-02', ip_address: '192.168.1.202', mac_address: 'F4:D4:88:5A:02:02', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 11, computer_name: 'VIP-03', ip_address: '192.168.1.203', mac_address: 'F4:D4:88:5A:02:03', status: ComputerStatus.LOCKED, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 12, computer_name: 'VIP-04', ip_address: '192.168.1.204', mac_address: 'F4:D4:88:5A:02:04', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 13, computer_name: 'VIP-05', ip_address: '192.168.1.205', mac_address: 'F4:D4:88:5A:02:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 14, computer_name: 'VIP-06', ip_address: '192.168.1.206', mac_address: 'F4:D4:88:5A:02:06', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 15, computer_name: 'VIP-07', ip_address: '192.168.1.207', mac_address: 'F4:D4:88:5A:02:07', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 16, computer_name: 'VIP-08', ip_address: '192.168.1.208', mac_address: 'F4:D4:88:5A:02:08', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-
-      // Zone 3: Tiêu Chuẩn Combat (10 trạm)
-      { computer_id: 17, computer_name: 'STD-01', ip_address: '192.168.1.301', mac_address: 'F4:D4:88:5A:03:01', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 18, computer_name: 'STD-02', ip_address: '192.168.1.302', mac_address: 'F4:D4:88:5A:03:02', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 19, computer_name: 'STD-03', ip_address: '192.168.1.303', mac_address: 'F4:D4:88:5A:03:03', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 20, computer_name: 'STD-04', ip_address: '192.168.1.304', mac_address: 'F4:D4:88:5A:03:04', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 21, computer_name: 'STD-05', ip_address: '192.168.1.305', mac_address: 'F4:D4:88:5A:03:05', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 22, computer_name: 'STD-06', ip_address: '192.168.1.306', mac_address: 'F4:D4:88:5A:03:06', status: ComputerStatus.MAINTENANCE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 23, computer_name: 'STD-07', ip_address: '192.168.1.307', mac_address: 'F4:D4:88:5A:03:07', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 24, computer_name: 'STD-08', ip_address: '192.168.1.308', mac_address: 'F4:D4:88:5A:03:08', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 25, computer_name: 'STD-09', ip_address: '192.168.1.309', mac_address: 'F4:D4:88:5A:03:09', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 26, computer_name: 'STD-10', ip_address: '192.168.1.310', mac_address: 'F4:D4:88:5A:03:10', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-
-      // Zone 4: Stream Studio (4 trạm)
-      { computer_id: 27, computer_name: 'STR-01', ip_address: '192.168.1.401', mac_address: 'F4:D4:88:5A:04:01', status: ComputerStatus.IN_USE, is_remote_enabled: true, zone_id: 4, hardware_profile_id: 4 },
-      { computer_id: 28, computer_name: 'STR-02', ip_address: '192.168.1.402', mac_address: 'F4:D4:88:5A:04:02', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 4, hardware_profile_id: 4 },
-      { computer_id: 29, computer_name: 'STR-03', ip_address: '192.168.1.403', mac_address: 'F4:D4:88:5A:04:03', status: ComputerStatus.IN_USE, is_remote_enabled: true, zone_id: 4, hardware_profile_id: 4 },
-      { computer_id: 30, computer_name: 'STR-04', ip_address: '192.168.1.404', mac_address: 'F4:D4:88:5A:04:04', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 4, hardware_profile_id: 4 },
-
-      // Zone 5: Cloud Remote Nodes (6 trạm)
-      { computer_id: 31, computer_name: 'CLOUD-01', ip_address: '192.168.1.501', mac_address: 'F4:D4:88:5A:05:01', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 },
-      { computer_id: 32, computer_name: 'CLOUD-02', ip_address: '192.168.1.502', mac_address: 'F4:D4:88:5A:05:02', status: ComputerStatus.IN_USE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 },
-      { computer_id: 33, computer_name: 'CLOUD-03', ip_address: '192.168.1.503', mac_address: 'F4:D4:88:5A:05:03', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 },
-      { computer_id: 34, computer_name: 'CLOUD-04', ip_address: '192.168.1.504', mac_address: 'F4:D4:88:5A:05:04', status: ComputerStatus.IN_USE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 },
-      { computer_id: 35, computer_name: 'CLOUD-05', ip_address: '192.168.1.505', mac_address: 'F4:D4:88:5A:05:05', status: ComputerStatus.REMOTE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 },
-      { computer_id: 36, computer_name: 'CLOUD-06', ip_address: '192.168.1.506', mac_address: 'F4:D4:88:5A:05:06', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 }
-    ]);
-
-    // Seed Status Logs for active machines
-    await safeSeed(db.ComputerStatusLog, [
-      { computer_id: 2, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 45 * 60 * 1000), notes: 'Valorant Ranked' },
-      { computer_id: 4, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 120 * 60 * 1000), notes: 'Counter-Strike 2' },
-      { computer_id: 6, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 35 * 60 * 1000), notes: 'League of Legends' },
-      { computer_id: 10, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 90 * 60 * 1000), notes: 'FC Online 4' },
-      { computer_id: 12, member_id: 7, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 50 * 60 * 1000), notes: 'Cyberpunk 2077 RT' },
-      { computer_id: 14, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 15 * 60 * 1000), notes: 'Dota 2 Ranked' },
-      { computer_id: 19, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 75 * 60 * 1000), notes: 'Grand Theft Auto V' },
-      { computer_id: 21, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 110 * 60 * 1000), notes: 'Apex Legends' },
-      { computer_id: 25, member_id: 7, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 40 * 60 * 1000), notes: 'PUBG Battlegrounds' },
-      { computer_id: 27, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 180 * 60 * 1000), notes: 'OBS 4K Stream • Cyberpunk 2077 RT' },
-      { computer_id: 29, member_id: 4, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 65 * 60 * 1000), notes: 'VTuber Live Stream' },
-      { computer_id: 32, member_id: 3, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 25 * 60 * 1000), notes: 'Cloud Stream WebRTC' },
-      { computer_id: 34, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 85 * 60 * 1000), notes: 'Elden Ring Shadow of Erdtree' }
-    ]);
-
-    // 6.5. Seed Game Categories
-    if (db.GameCategory) {
-      await safeSeed(db.GameCategory, [
-        { category_id: 1, name: 'Esports - Bắn Súng (FPS)' },
-        { category_id: 2, name: 'Esports - MOBA' },
-        { category_id: 3, name: 'AAA Trải Nghiệm & Nhập Vai' }
-      ], ['name']);
+    // 6. Seed Computers (36 trạm máy - Trạng thái máy khớp với RentalSession & StatusLog)
+    // Các máy Stream (STR-01..04) hoạt động tại chỗ (LOCAL) nên is_remote_enabled: false.
+    // Các máy Cloud (CLOUD-01..06) hoạt động từ xa nên is_remote_enabled: true.
+    // Dọn dẹp máy trạm rác sinh ra từ test tự động (ID > 36)
+    if (db.Computer) {
+      await db.ComputerStatusLog.destroy({
+        where: { computer_id: { [db.Sequelize.Op.gt]: 36 } }
+      }).catch(() => {});
+      await db.ComputerGame.destroy({
+        where: { computer_id: { [db.Sequelize.Op.gt]: 36 } }
+      }).catch(() => {});
+      await db.Computer.destroy({
+        where: { computer_id: { [db.Sequelize.Op.gt]: 36 } },
+        force: true
+      }).catch(() => {});
     }
+
+    await safeSeed(db.Computer, [
+      // Zone 1: Esports Pro Arena (8 trạm: ESP-01 đến ESP-08)
+      { computer_id: 1, computer_name: 'ESP-01', ip_address: '192.168.1.101', mac_address: 'F4:D4:88:5A:01:01', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 2, computer_name: 'ESP-02', ip_address: '192.168.1.102', mac_address: 'F4:D4:88:5A:01:02', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 3, computer_name: 'ESP-03', ip_address: '192.168.1.103', mac_address: 'F4:D4:88:5A:01:03', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 4, computer_name: 'ESP-04', ip_address: '192.168.1.104', mac_address: 'F4:D4:88:5A:01:04', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 5, computer_name: 'ESP-05', ip_address: '192.168.1.105', mac_address: 'F4:D4:88:5A:01:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 6, computer_name: 'ESP-06', ip_address: '192.168.1.106', mac_address: 'F4:D4:88:5A:01:06', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 7, computer_name: 'ESP-07', ip_address: '192.168.1.107', mac_address: 'F4:D4:88:5A:01:07', status: ComputerStatus.MAINTENANCE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 8, computer_name: 'ESP-08', ip_address: '192.168.1.108', mac_address: 'F4:D4:88:5A:01:08', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+
+      // Zone 2: VIP Gaming Suite (8 trạm: VIP-01 đến VIP-08)
+      { computer_id: 9, computer_name: 'VIP-01', ip_address: '192.168.1.201', mac_address: 'F4:D4:88:5A:02:01', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 10, computer_name: 'VIP-02', ip_address: '192.168.1.202', mac_address: 'F4:D4:88:5A:02:02', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 11, computer_name: 'VIP-03', ip_address: '192.168.1.203', mac_address: 'F4:D4:88:5A:02:03', status: ComputerStatus.LOCKED, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 12, computer_name: 'VIP-04', ip_address: '192.168.1.204', mac_address: 'F4:D4:88:5A:02:04', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 13, computer_name: 'VIP-05', ip_address: '192.168.1.205', mac_address: 'F4:D4:88:5A:02:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 14, computer_name: 'VIP-06', ip_address: '192.168.1.206', mac_address: 'F4:D4:88:5A:02:06', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 15, computer_name: 'VIP-07', ip_address: '192.168.1.207', mac_address: 'F4:D4:88:5A:02:07', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 16, computer_name: 'VIP-08', ip_address: '192.168.1.208', mac_address: 'F4:D4:88:5A:02:08', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+
+      // Zone 3: Tiêu Chuẩn Combat (10 trạm: STD-01 đến STD-10; dải IP: 192.168.1.111 - 192.168.1.120)
+      { computer_id: 17, computer_name: 'STD-01', ip_address: '192.168.1.111', mac_address: 'F4:D4:88:5A:03:01', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 18, computer_name: 'STD-02', ip_address: '192.168.1.112', mac_address: 'F4:D4:88:5A:03:02', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 19, computer_name: 'STD-03', ip_address: '192.168.1.113', mac_address: 'F4:D4:88:5A:03:03', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 20, computer_name: 'STD-04', ip_address: '192.168.1.114', mac_address: 'F4:D4:88:5A:03:04', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 21, computer_name: 'STD-05', ip_address: '192.168.1.115', mac_address: 'F4:D4:88:5A:03:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 22, computer_name: 'STD-06', ip_address: '192.168.1.116', mac_address: 'F4:D4:88:5A:03:06', status: ComputerStatus.MAINTENANCE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 23, computer_name: 'STD-07', ip_address: '192.168.1.117', mac_address: 'F4:D4:88:5A:03:07', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 24, computer_name: 'STD-08', ip_address: '192.168.1.118', mac_address: 'F4:D4:88:5A:03:08', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 25, computer_name: 'STD-09', ip_address: '192.168.1.119', mac_address: 'F4:D4:88:5A:03:09', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 26, computer_name: 'STD-10', ip_address: '192.168.1.120', mac_address: 'F4:D4:88:5A:03:10', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+
+      // Zone 4: Stream Studio (4 trạm: STR-01 đến STR-04; dải IP: 192.168.1.141 - 192.168.1.144)
+      { computer_id: 27, computer_name: 'STR-01', ip_address: '192.168.1.141', mac_address: 'F4:D4:88:5A:04:01', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4, is_deleted: false, deleted_at: null },
+      { computer_id: 28, computer_name: 'STR-02', ip_address: '192.168.1.142', mac_address: 'F4:D4:88:5A:04:02', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4, is_deleted: false, deleted_at: null },
+      { computer_id: 29, computer_name: 'STR-03', ip_address: '192.168.1.143', mac_address: 'F4:D4:88:5A:04:03', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4, is_deleted: false, deleted_at: null },
+      { computer_id: 30, computer_name: 'STR-04', ip_address: '192.168.1.144', mac_address: 'F4:D4:88:5A:04:04', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4, is_deleted: false, deleted_at: null },
+
+      // Zone 5: Cloud Remote Nodes (6 trạm: CLOUD-01 đến CLOUD-06; dải IP: 192.168.1.151 - 192.168.1.156)
+      { computer_id: 31, computer_name: 'CLOUD-01', ip_address: '192.168.1.151', mac_address: 'F4:D4:88:5A:05:01', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null },
+      { computer_id: 32, computer_name: 'CLOUD-02', ip_address: '192.168.1.152', mac_address: 'F4:D4:88:5A:05:02', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null },
+      { computer_id: 33, computer_name: 'CLOUD-03', ip_address: '192.168.1.153', mac_address: 'F4:D4:88:5A:05:03', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null },
+      { computer_id: 34, computer_name: 'CLOUD-04', ip_address: '192.168.1.154', mac_address: 'F4:D4:88:5A:05:04', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null },
+      { computer_id: 35, computer_name: 'CLOUD-05', ip_address: '192.168.1.155', mac_address: 'F4:D4:88:5A:05:05', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null },
+      { computer_id: 36, computer_name: 'CLOUD-06', ip_address: '192.168.1.156', mac_address: 'F4:D4:88:5A:05:06', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null }
+    ], ['computer_name', 'ip_address', 'mac_address', 'status', 'is_remote_enabled', 'zone_id', 'hardware_profile_id', 'is_deleted', 'deleted_at']);
+
+    // Seed Status Logs cho 8 máy trạm đang IN_USE (Phân bổ chuẩn: 1 hội viên chỉ đăng nhập 1 máy tại 1 thời điểm)
+    await safeSeed(db.ComputerStatusLog, [
+      { computer_id: 2, member_id: 8, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 45 * 60 * 1000), recorded_at: new Date(Date.now() - 45 * 60 * 1000), notes: 'Valorant Ranked' },
+      { computer_id: 4, member_id: 9, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 120 * 60 * 1000), recorded_at: new Date(Date.now() - 120 * 60 * 1000), notes: 'Counter-Strike 2' },
+      { computer_id: 6, member_id: 5, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 35 * 60 * 1000), recorded_at: new Date(Date.now() - 35 * 60 * 1000), notes: 'League of Legends' },
+      { computer_id: 9, member_id: 2, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 60 * 60 * 1000), recorded_at: new Date(Date.now() - 60 * 60 * 1000), notes: 'Black Myth: Wukong' },
+      { computer_id: 10, member_id: 6, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 90 * 60 * 1000), recorded_at: new Date(Date.now() - 90 * 60 * 1000), notes: 'FC Online 4' },
+      { computer_id: 12, member_id: 7, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 50 * 60 * 1000), recorded_at: new Date(Date.now() - 50 * 60 * 1000), notes: 'Cyberpunk 2077 RT' },
+      { computer_id: 19, member_id: 11, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 75 * 60 * 1000), recorded_at: new Date(Date.now() - 75 * 60 * 1000), notes: 'Grand Theft Auto V' },
+      { computer_id: 27, member_id: 10, status: ComputerStatus.IN_USE, session_type: SessionType.MEMBER, start_time: new Date(Date.now() - 180 * 60 * 1000), recorded_at: new Date(Date.now() - 180 * 60 * 1000), notes: 'OBS 4K Stream • Cyberpunk 2077 RT' }
+    ]);
 
     // 7. Seed Games
     await safeSeed(db.Game, [
@@ -418,7 +567,7 @@ const seedData = async (db) => {
       { game_id: 12, name: 'Naraka: Bladepoint', category_id: 3, cover_image_url: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=600&auto=format&fit=crop&q=80', executable_path: 'D:\\Games\\Steam\\steamapps\\common\\NARAKA BLADEPOINT\\NarakaBladepoint.exe', is_remote_supported: true, is_available: false }
     ], ['name', 'category_id', 'cover_image_url', 'executable_path', 'is_remote_supported', 'is_available']);
 
-    // 7.1 Seed ComputerGame (Gán game vào toàn bộ trạm máy hiện có trong hệ thống)
+    // 7.1 Seed ComputerGame (Gán game vào toàn bộ 36 trạm máy trong hệ thống)
     if (db.ComputerGame && db.Computer && db.Game) {
       const [allComputers, allGames] = await Promise.all([
         db.Computer.findAll({ attributes: ['computer_id'] }).catch(() => []),
@@ -442,154 +591,30 @@ const seedData = async (db) => {
       await safeSeed(db.ComputerGame, computerGameMappings);
     }
 
-    // 8. Seed Service Items
+    // 8. Seed Service Items (Tách bạch đồ ăn F&B thực tế, không nhầm lẫn với gói Combo máy)
     await safeSeed(db.ServiceItem, [
       { service_item_id: 1, name: 'Mì Trứng Bò Hầm ProGamer', price: 35000.00, stock_quantity: 50, is_available: true, category_id: 2 },
       { service_item_id: 2, name: 'Sting Dâu Ướp Lạnh', price: 15000.00, stock_quantity: 100, is_available: true, category_id: 1 },
       { service_item_id: 3, name: 'Cà Phê Muối Cháy Đêm', price: 25000.00, stock_quantity: 40, is_available: true, category_id: 1 },
-      { service_item_id: 4, name: 'Combo Đêm 6 TIẾNG + Sting', price: 65000.00, stock_quantity: 999, is_available: true, category_id: 2 }
-    ]);
+      { service_item_id: 4, name: 'Cơm Gà Xối Mỡ Giòn Cay', price: 45000.00, stock_quantity: 40, is_available: true, category_id: 2 }
+    ], ['name', 'price', 'stock_quantity', 'is_available', 'category_id']);
 
-    // 9. Seed Combo Packages
+    // 9. Seed Combo Packages (Bao gồm Combo Đêm Hoàng Kim khớp với giao dịch TXN-00004)
     await safeSeed(db.ComboPackage, [
       { combo_id: 1, name: 'Combo Đêm Xuyên Màn Đêm', description: 'Gói xuyên đêm 6 tiếng dành cho cú đêm chiến game thả ga', price: 50000.00, duration_minutes: 360, allowed_tier: 1, is_active: true },
-      { combo_id: 2, name: 'Combo Chiến Game 3H + Nước', description: 'Gói 3 tiếng chơi game kèm 1 phần nước Sting dâu mát lạnh', price: 40000.00, duration_minutes: 180, allowed_tier: 1, is_active: true }
-    ]);
+      { combo_id: 2, name: 'Combo Chiến Game 3H + Nước', description: 'Gói 3 tiếng chơi game kèm 1 phần nước Sting dâu mát lạnh', price: 40000.00, duration_minutes: 180, allowed_tier: 1, is_active: true },
+      { combo_id: 3, name: 'Combo Đêm Hoàng Kim', description: 'Combo Đêm Hoàng Kim (6h chơi + Bò Húc + Mì cay)', price: 120000.00, duration_minutes: 360, allowed_tier: 3, is_active: true }
+    ], ['name', 'description', 'price', 'duration_minutes', 'allowed_tier', 'is_active']);
 
-    // 9.1 Seed Combo Items (Dịch vụ đi kèm thực tế: Combo 2 kèm 1x Sting Dâu Ướp Lạnh)
+    // 9.1 Seed Combo Items (Combo 2 kèm 1x Sting Dâu Ướp Lạnh)
     if (db.ComboItem) {
       await safeSeed(db.ComboItem, [
         { combo_id: 2, service_item_id: 2, quantity: 1 }
       ]);
     }
 
-    // 10. Seed Hardware Components Catalog directly into MySQL CSDL
-    if (db.HardwareComponent) {
-      await safeSeed(db.HardwareComponent, [
-        // CPUs
-        { component_id: 1, category: 'cpu', name: 'Intel Core i9-14900K (24 Cores / 32 Threads @ 5.8GHz)' },
-        { component_id: 2, category: 'cpu', name: 'Intel Core i7-14700K (20 Cores / 28 Threads @ 5.6GHz)' },
-        { component_id: 3, category: 'cpu', name: 'Intel Core i5-13400F (10 Cores / 16 Threads @ 4.6GHz)' },
-        { component_id: 4, category: 'cpu', name: 'AMD Ryzen 7 7800X3D (8 Cores / 16 Threads @ 5.0GHz)' },
-        { component_id: 5, category: 'cpu', name: 'AMD Ryzen 9 7950X (16 Cores / 32 Threads @ 5.7GHz)' },
-        { component_id: 6, category: 'cpu', name: 'AMD EPYC 7763 (64 Cores / 128 Threads Hypervisor)' },
-
-        // GPUs
-        { component_id: 7, category: 'gpu', name: 'RTX 4090 24GB (Gigabyte AORUS Master)' },
-        { component_id: 8, category: 'gpu', name: 'RTX 4080 Super 16GB (ASUS ROG Strix OC)' },
-        { component_id: 9, category: 'gpu', name: 'RTX 4070 Ti Super 16GB (MSI Gaming X Slim)' },
-        { component_id: 10, category: 'gpu', name: 'RTX 4060 8GB (Zotac Gaming Twin Edge)' },
-        { component_id: 11, category: 'gpu', name: 'RTX 3060 12GB Dual Fan' },
-
-        // RAMs
-        { component_id: 12, category: 'ram', name: '32GB DDR5 6000MHz CL30 (Kingston Beast)' },
-        { component_id: 13, category: 'ram', name: '64GB DDR5 6000MHz (G.Skill Trident Z5 Neo)' },
-        { component_id: 14, category: 'ram', name: '32GB DDR4 3200MHz Dual Channel TeamGroup' },
-        { component_id: 15, category: 'ram', name: '128GB ECC Reg Quad-Channel' },
-
-        // Storages
-        { component_id: 16, category: 'storage', name: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)' },
-        { component_id: 17, category: 'storage', name: 'High Throughput Cache 1TB SAN Boot' },
-        { component_id: 18, category: 'storage', name: 'Dual NVMe 2TB PCIe 4.0 Direct Capture' },
-        { component_id: 19, category: 'storage', name: '40Gbps Fiber SAN (Direct RDMA Ultra-low Latency)' },
-
-        // Monitors
-        { component_id: 20, category: 'monitor', name: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)' },
-        { component_id: 21, category: 'monitor', name: '27" 2K OLED 240Hz (ASUS ROG Swift PG27AQDM)' },
-        { component_id: 22, category: 'monitor', name: '24" Full HD 180Hz (ViewSonic Gaming)' },
-        { component_id: 23, category: 'monitor', name: '25" 360Hz BenQ ZOWIE XL2566K' },
-
-        // Gears
-        { component_id: 24, category: 'gear', name: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II' },
-        { component_id: 25, category: 'gear', name: 'Chuột Razer DeathAdder V3 + Phím Huntsman + Tai Kraken' },
-        { component_id: 26, category: 'gear', name: 'Bộ Peripherals Standard Cyber Gaming' }
-      ]);
-    }
-    // Seed Pricing Plans & Zone Associations (Bảng giá máy & Giờ vàng)
-    if (db.PricingPlan) {
-      await safeSeed(db.PricingPlan, [
-        {
-          pricing_plan_id: 1,
-          name: 'Giá Tiêu Chuẩn Tại Quán',
-          price_per_hour: 10000.00,
-          plan_type: SessionType.LOCAL,
-          priority: 0,
-          start_time: null,
-          end_time: null,
-          apply_date: null,
-          is_active: true
-        },
-        {
-          pricing_plan_id: 2,
-          name: 'Giờ Vàng Buổi Chiều',
-          price_per_hour: 6000.00,
-          plan_type: SessionType.LOCAL,
-          priority: 10,
-          start_time: '13:00:00',
-          end_time: '17:00:00',
-          apply_date: null,
-          is_active: true
-        },
-        {
-          pricing_plan_id: 3,
-          name: 'Gói Chơi Xuyên Đêm',
-          price_per_hour: 4000.00,
-          plan_type: SessionType.LOCAL,
-          priority: 20,
-          start_time: '23:00:00',
-          end_time: '06:00:00',
-          apply_date: null,
-          is_active: true
-        },
-        {
-          pricing_plan_id: 4,
-          name: 'Giá Tiêu Chuẩn Từ Xa',
-          price_per_hour: 15000.00,
-          plan_type: SessionType.REMOTE,
-          priority: 0,
-          start_time: null,
-          end_time: null,
-          apply_date: null,
-          is_active: true
-        },
-        {
-          pricing_plan_id: 5,
-          name: 'Ưu Đãi Ngày Cuối Tuần',
-          price_per_hour: 8000.00,
-          plan_type: SessionType.LOCAL,
-          priority: 5,
-          start_time: null,
-          end_time: null,
-          apply_date: '2026-10-18',
-          is_active: true
-        }
-      ], ['name', 'price_per_hour', 'plan_type', 'priority', 'start_time', 'end_time', 'apply_date', 'is_active']);
-    }
-
-    if (db.ZonePricingPlan) {
-      await safeSeed(db.ZonePricingPlan, [
-        { zone_id: 1, pricing_plan_id: 1 },
-        { zone_id: 2, pricing_plan_id: 1 },
-        { zone_id: 3, pricing_plan_id: 1 },
-        { zone_id: 4, pricing_plan_id: 1 },
-        { zone_id: 5, pricing_plan_id: 1 },
-        { zone_id: 1, pricing_plan_id: 2 },
-        { zone_id: 2, pricing_plan_id: 2 },
-        { zone_id: 3, pricing_plan_id: 2 },
-        { zone_id: 1, pricing_plan_id: 3 },
-        { zone_id: 2, pricing_plan_id: 3 },
-        { zone_id: 3, pricing_plan_id: 3 },
-        { zone_id: 1, pricing_plan_id: 4 },
-        { zone_id: 2, pricing_plan_id: 4 },
-        { zone_id: 3, pricing_plan_id: 4 },
-        { zone_id: 4, pricing_plan_id: 4 },
-        { zone_id: 5, pricing_plan_id: 4 },
-        { zone_id: 2, pricing_plan_id: 5 },
-        { zone_id: 3, pricing_plan_id: 5 }
-      ]);
-    }
-
-    // 10. Seed dữ liệu mẫu cho Sổ Cái Giao Dịch & 4 thẻ KPI Tài Chính (Đảm bảo có giao dịch hôm nay và hôm qua)
+    // 10. Seed dữ liệu mẫu cho Sổ Cái Giao Dịch & KPI Tài Chính
+    // Tên máy trạm tồn tại trong hệ thống (ESP-*, VIP-*, STD-*, STR-*, CLOUD-*), used_by chỉ dùng Member thật
     if (db.FinancialTransaction) {
       const { Op } = require('sequelize');
       const todayStart = new Date();
@@ -626,10 +651,10 @@ const seedData = async (db) => {
             amount: 50000.00,
             payment_method: 'VIETQR',
             status: 'COMPLETED',
-            description: '[SePay Auto Topup] Tự động nạp qua VietQR cho hội viên #3',
+            description: '[SePay Auto Topup] Tự động nạp qua VietQR cho hội viên #8',
             computer_name: 'VIP-02',
             staff_name: 'Hệ thống SePay',
-            used_by: 3,
+            used_by: 8,
             processed_by: null,
             created_at: hoursAgo(3)
           },
@@ -655,9 +680,9 @@ const seedData = async (db) => {
             payment_method: 'VIETQR',
             status: 'COMPLETED',
             description: 'Combo Đêm Hoàng Kim (6h chơi + Bò Húc + Mì cay)',
-            computer_name: 'STREAM-01',
+            computer_name: 'STR-01',
             staff_name: 'Quản Trị Viên',
-            used_by: 4,
+            used_by: 10,
             processed_by: 1,
             created_at: hoursAgo(4)
           },
@@ -669,9 +694,9 @@ const seedData = async (db) => {
             payment_method: 'CASH',
             status: 'COMPLETED',
             description: 'Nạp tài khoản hội viên thân thiết VIP',
-            computer_name: 'FPS-05',
+            computer_name: 'ESP-05',
             staff_name: 'Quản Trị Viên',
-            used_by: 3,
+            used_by: 8,
             processed_by: 1,
             created_at: hoursAgo(0.5)
           },
@@ -685,7 +710,7 @@ const seedData = async (db) => {
             description: 'Chờ đối soát SePay biến động số dư ngân hàng',
             computer_name: '—',
             staff_name: 'Hệ thống SePay',
-            used_by: 4,
+            used_by: 9,
             processed_by: null,
             created_at: hoursAgo(0.2)
           },
@@ -708,13 +733,13 @@ const seedData = async (db) => {
             txn_code: 'TXN-00008',
             type: TransactionType.INCOME,
             category: TransactionCategory.SERVICE_SALE,
-            amount: 60000.00,
+            amount: 90000.00,
             payment_method: 'CASH',
             status: 'COMPLETED',
             description: '2x Cơm gà xối mỡ giòn cay',
-            computer_name: 'FPS-02',
+            computer_name: 'ESP-02',
             staff_name: 'Quản Trị Viên',
-            used_by: 3,
+            used_by: 8,
             processed_by: 1,
             created_at: daysAgo(1, 6)
           },
@@ -726,9 +751,9 @@ const seedData = async (db) => {
             payment_method: 'VIETQR',
             status: 'COMPLETED',
             description: 'Nạp tiền tài khoản hội viên qua QR',
-            computer_name: 'STREAM-02',
+            computer_name: 'STR-02',
             staff_name: 'Hệ thống SePay',
-            used_by: 4,
+            used_by: 10,
             processed_by: null,
             created_at: daysAgo(1, 8)
           },
@@ -758,7 +783,7 @@ const seedData = async (db) => {
             notes: 'Lý do hoàn: Thu ngân hoàn tiền mặt tại quầy',
             computer_name: 'VIP-02',
             staff_name: 'Quản Trị Viên',
-            used_by: 3,
+            used_by: 8,
             processed_by: 1,
             created_at: daysAgo(4, 5)
           },
@@ -770,7 +795,7 @@ const seedData = async (db) => {
             payment_method: 'VIETQR',
             status: 'COMPLETED',
             description: 'Combo trà đào cam sả + Bắp rang bơ',
-            computer_name: 'COUPLE-01',
+            computer_name: 'VIP-03',
             staff_name: 'Quản Trị Viên',
             used_by: 2,
             processed_by: 1,
@@ -778,51 +803,50 @@ const seedData = async (db) => {
           }
         ]);
 
-
-      // 11. Giả lập Mua đồ ăn F&B và Thanh toán hỗn hợp
+        // 11. Giả lập Mua đồ ăn F&B và Thanh toán hỗn hợp
         if (db.ServiceOrder && db.ServiceOrderItem) {
           const orderCount = await db.ServiceOrder.count();
           if (orderCount === 0) {
             // A. Tạo 1 Đơn hàng mẫu
             await db.ServiceOrder.create({
-              order_id: 101, // ID cứng để dễ tham chiếu
+              order_id: 101,
               status: 'COMPLETED',
               payment_status: 'PAID',
-              used_by: 2, // Hội viên có member_id = 2
-              processed_by: 1, // Nhân viên thu ngân
+              used_by: 2, // Hội viên member_id = 2
+              processed_by: 1, // Nhân viên thu ngân admin
               created_at: hoursAgo(2)
             });
 
             // B. Thêm 2 món ăn vào đơn 101 (Tổng tiền = 85.000đ)
             await db.ServiceOrderItem.bulkCreate([
-              { order_id: 101, service_item_id: 1, item_name: 'Mì Trứng Bò Hầm ProGamer', price: 35000, quantity: 2 }, // 70.000
-              { order_id: 101, service_item_id: 2, item_name: 'Sting Dâu Ướp Lạnh', price: 15000, quantity: 1 } // 15.000
+              { order_id: 101, service_item_id: 1, item_name: 'Mì Trứng Bò Hầm ProGamer', price: 35000, quantity: 2 },
+              { order_id: 101, service_item_id: 2, item_name: 'Sting Dâu Ướp Lạnh', price: 15000, quantity: 1 }
             ]);
 
             // C. Giả lập Thanh toán cho đơn 101 (Trả 50k bằng VÍ, 35k bằng TIỀN MẶT)
             await db.FinancialTransaction.bulkCreate([
               {
                 txn_code: 'TXN-SPLIT-01',
-                type: TransactionType.EXPENSE, // Tiền ví bị trừ
+                type: TransactionType.EXPENSE,
                 category: TransactionCategory.SERVICE_SALE,
                 amount: 50000.00,
-                payment_method: 'WALLET', // Trừ bằng ví hội viên
+                payment_method: 'WALLET',
                 status: 'COMPLETED',
                 description: 'Thanh toán đơn F&B #101 bằng số dư ví',
                 used_by: 2,
-                order_id: 101, // Liên kết với đơn hàng
+                order_id: 101,
                 created_at: hoursAgo(2)
               },
               {
                 txn_code: 'TXN-SPLIT-02',
-                type: TransactionType.INCOME, // Tiền mặt thu thêm vào két
+                type: TransactionType.INCOME,
                 category: TransactionCategory.SERVICE_SALE,
                 amount: 35000.00,
-                payment_method: 'CASH', // Thu thêm tiền mặt
+                payment_method: 'CASH',
                 status: 'COMPLETED',
                 description: 'Thu thêm tiền mặt cho đơn F&B #101',
                 used_by: 2,
-                order_id: 101, // Liên kết với đơn hàng
+                order_id: 101,
                 created_at: hoursAgo(2)
               }
             ]);
@@ -834,33 +858,39 @@ const seedData = async (db) => {
       }
     }
 
-    // Seed 1 phiên chơi đang hoạt động tại máy VIP-01 cho tài khoản demo 'user' (member_id = 2)
-    if (db.RentalSession) {
-      const activeSession = await db.RentalSession.findOne({
-        where: { member_id: 2, status: 'ACTIVE' }
-      });
-      if (!activeSession) {
-        const now = new Date();
-        await db.RentalSession.create({
-          member_id: 2,
-          computer_id: 9, // Máy VIP-01
-          billing_mode: 'PAY_AS_YOU_GO',
-          status: 'ACTIVE',
-          started_at: now,
-          last_billed_at: now, 
-          total_amount: 0.00
+    // 12. Seed các phiên chơi RentalSession đang ACTIVE cho 8 máy trạm trạng thái IN_USE
+    // Phân bổ chuẩn: Mỗi hội viên chỉ đăng nhập duy nhất 1 máy tại 1 thời điểm.
+    // Đồng bộ 100% giữa Computer.status = IN_USE, ComputerStatusLog và RentalSession.status = ACTIVE
+    if (db.RentalSession && db.Computer) {
+      const activeSessionsConfig = [
+        { computer_id: 2, member_id: 8, minutesAgo: 45 },
+        { computer_id: 4, member_id: 9, minutesAgo: 120 },
+        { computer_id: 6, member_id: 5, minutesAgo: 35 },
+        { computer_id: 9, member_id: 2, minutesAgo: 60 },
+        { computer_id: 10, member_id: 6, minutesAgo: 90 },
+        { computer_id: 12, member_id: 7, minutesAgo: 50 },
+        { computer_id: 19, member_id: 11, minutesAgo: 75 },
+        { computer_id: 27, member_id: 10, minutesAgo: 180 }
+      ];
+
+      for (const item of activeSessionsConfig) {
+        const existingSession = await db.RentalSession.findOne({
+          where: { computer_id: item.computer_id, status: 'ACTIVE' }
         });
-
-        // Cập nhật trạng thái máy VIP-01 sang IN_USE (Đang có người chơi)
-        if (db.Computer) {
-          await db.Computer.update(
-            { status: ComputerStatus.IN_USE },
-            { where: { computer_id: 9 } }
-          );
+        if (!existingSession) {
+          const startTime = new Date(Date.now() - item.minutesAgo * 60 * 1000);
+          await db.RentalSession.create({
+            member_id: item.member_id,
+            computer_id: item.computer_id,
+            billing_mode: 'PAY_AS_YOU_GO',
+            status: 'ACTIVE',
+            started_at: startTime,
+            last_billed_at: startTime,
+            total_amount: 0.00
+          });
         }
-
-        console.log('✅ Seeded 1 Active RentalSession for user (member_id: 2) on computer VIP-01.');
       }
+      console.log('✅ Seeded Active RentalSessions synchronized with 8 IN_USE computers (1 member = 1 computer).');
     }
 
     console.log('✅ Database Seeding Completed Successfully.');

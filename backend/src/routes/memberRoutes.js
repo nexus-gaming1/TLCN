@@ -6,6 +6,7 @@ const { UserRole } = require('../constants/enums');
 
 // Quản lý hội viên: Bắt buộc đăng nhập & yêu cầu vai trò ADMIN hoặc EMPLOYEE
 router.get('/', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), memberController.getMembers);
+router.get('/ranks', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), memberController.getRanks);
 router.post('/', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), memberController.createMember);
 router.get('/:id', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), memberController.getMemberById);
 router.put('/:id/info', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), memberController.updateMemberInfo);

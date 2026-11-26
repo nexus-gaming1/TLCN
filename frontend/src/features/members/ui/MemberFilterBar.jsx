@@ -4,6 +4,7 @@ import { USER_STATUS_LABELS } from '../../../shared/constants/userConstants';
 
 export default function MemberFilterBar({
   members = [],
+  ranks = [],
   searchQuery,
   onSearchChange,
   tierFilter,
@@ -19,23 +20,28 @@ export default function MemberFilterBar({
   const selectedStatus = statusFilter;
   const setSelectedStatus = onStatusChange;
 
-  // Tính toán số lượng từng tầng hạng động từ dữ liệu thực tế, không hardcode
-  const tierCounts = useMemo(() => {
-    const all = members.length;
-    const diamond = members.filter((m) => m.tier === 'diamond').length;
-    const gold = members.filter((m) => m.tier === 'gold').length;
-    const silver = members.filter((m) => m.tier === 'silver').length;
-    const normal = members.filter((m) => m.tier === 'normal').length;
-    return { all, diamond, gold, silver, normal };
-  }, [members]);
-
-  const tierOptions = [
-    { id: 'all', label: `Tất cả (${tierCounts.all})` },
-    { id: 'diamond', label: `💎 Kim Cương (${tierCounts.diamond})` },
-    { id: 'gold', label: `⭐ Vàng (${tierCounts.gold})` },
-    { id: 'silver', label: `🥈 Bạc (${tierCounts.silver})` },
-    { id: 'normal', label: `🥉 Đồng (${tierCounts.normal})` },
-  ];
+  // Xây dựng danh sách tùy chọn lọc hạng động từ bảng CSDL membership_rank
+  const tierOptions = useMemo(() => {
+    const list = [{ id: 'all', label: `Tất cả hạng (${members.length})` }];
+    if (ranks && ranks.length > 0) {
+      ranks.forEach((r) => {
+        const count = members.filter(
+          (m) => m.rankId === r.rank_id || m.rankName === r.name
+        ).length;
+        list.push({
+          id: String(r.rank_id),
+          label: `${r.name} (${count})`
+        });
+      });
+    } else {
+      const uniqueRankNames = [...new Set(members.map((m) => m.rankName).filter(Boolean))];
+      uniqueRankNames.forEach((name) => {
+        const count = members.filter((m) => m.rankName === name).length;
+        list.push({ id: name, label: `${name} (${count})` });
+      });
+    }
+    return list;
+  }, [ranks, members]);
 
   return (
     <div className="bg-white p-3.5 rounded-lg shadow-flat border border-slate-200 space-y-3">
@@ -87,41 +93,43 @@ export default function MemberFilterBar({
         </div>
       </div>
 
-      {/* Filter Pills Strip */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 pt-2.5 border-t border-slate-100">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="font-mono text-[10px] uppercase text-slate-600 font-bold mr-1">Tầng Hạng:</span>
-          {tierOptions.map((tier) => (
-            <button
-              key={tier.id}
-              type="button"
-              onClick={() => setSelectedTier && setSelectedTier(tier.id)}
-              className={`px-2.5 py-1 rounded-lg font-mono text-xs font-bold transition-colors ${
-                selectedTier === tier.id
-                  ? 'bg-sky-600 text-white shadow-xs'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-              }`}
+      {/* Filter Dropdowns Row */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2.5 border-t border-slate-100">
+        <div className="flex items-center gap-4 flex-wrap">
+          {/* Dropdown Tầng Hạng */}
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] uppercase text-slate-600 font-bold">Tầng Hạng:</span>
+            <select
+              value={selectedTier || 'all'}
+              onChange={(e) => setSelectedTier && setSelectedTier(e.target.value)}
+              aria-label="Lọc theo tầng hạng hội viên"
+              className="h-8 pl-3 pr-8 py-1 bg-slate-50 hover:bg-white text-slate-800 font-sans text-xs font-bold rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 shadow-2xs cursor-pointer transition-all"
             >
-              {tier.label}
-            </button>
-          ))}
-        </div>
+              {tierOptions.map((tier) => (
+                <option key={tier.id} value={tier.id}>
+                  {tier.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-mono text-[11px] uppercase text-slate-600 font-bold mr-1">Trạng thái:</span>
-          <select
-            value={selectedStatus || 'all'}
-            onChange={(e) => setSelectedStatus && setSelectedStatus(e.target.value)}
-            aria-label="Lọc theo trạng thái tài khoản"
-            className="h-8 pl-3 pr-8 py-1 bg-slate-50 hover:bg-white text-slate-800 font-sans text-xs font-bold rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 shadow-2xs cursor-pointer transition-all"
-          >
-            <option value="all">Tất cả trạng thái</option>
-            {Object.entries(USER_STATUS_LABELS).map(([statusKey, config]) => (
-              <option key={statusKey} value={statusKey}>
-                {config.label}
-              </option>
-            ))}
-          </select>
+          {/* Dropdown Trạng Thái */}
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] uppercase text-slate-600 font-bold">Trạng thái:</span>
+            <select
+              value={selectedStatus || 'all'}
+              onChange={(e) => setSelectedStatus && setSelectedStatus(e.target.value)}
+              aria-label="Lọc theo trạng thái tài khoản"
+              className="h-8 pl-3 pr-8 py-1 bg-slate-50 hover:bg-white text-slate-800 font-sans text-xs font-bold rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-500 shadow-2xs cursor-pointer transition-all"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              {Object.entries(USER_STATUS_LABELS).map(([statusKey, config]) => (
+                <option key={statusKey} value={statusKey}>
+                  {config.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
     </div>

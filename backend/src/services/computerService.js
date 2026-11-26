@@ -4,6 +4,7 @@ const { ComputerStatus } = require('../constants/enums');
 
 const HardwareProfileService = require('./hardwareProfileService');
 const TelemetryService = require('./telemetryService');
+const { ComputerZoneService } = require('./computerZoneService');
 const { SessionType } = require('../constants/enums');
 const { Op } = require('sequelize');
 
@@ -14,11 +15,13 @@ class ComputerService {
   constructor(
     models = defaultDb,
     hardwareProfileService = new HardwareProfileService(models),
-    telemetryService = new TelemetryService(models)
+    telemetryService = new TelemetryService(models),
+    computerZoneService = new ComputerZoneService(models)
   ) {
     this.models = models;
     this.hardwareProfileService = hardwareProfileService;
     this.telemetryService = telemetryService;
+    this.computerZoneService = computerZoneService;
   }
 
   /**
@@ -34,7 +37,12 @@ class ComputerService {
           {
             model: db.ComputerZone,
             include: [{ model: db.PricingPlan, required: false, attributes: ['pricing_plan_id', 'name', 'price_per_hour', 'plan_type', 'is_active'] }]
-          }
+          },
+          ...(db.HardwareProfile ? [{
+            model: db.HardwareProfile,
+            required: false,
+            attributes: ['profile_id', 'profile_name', 'cpu_model', 'gpu_model', 'ram_capacity', 'storage_type', 'monitor', 'gear', 'description']
+          }] : [])
         ],
         order: [['computer_id', 'ASC']]
       });
@@ -218,14 +226,9 @@ class ComputerService {
         throw err;
       }
 
-      // Validate zone exists if provided
+      // Validate zone exists and capacity limit via dedicated computerZoneService
       if (zone_id) {
-        const zoneExists = await db.ComputerZone.findByPk(Number(zone_id));
-        if (!zoneExists) {
-          const err = new Error('Phân khu máy trạm không tồn tại');
-          err.statusCode = 400;
-          throw err;
-        }
+        await this.computerZoneService.validateCapacity(Number(zone_id));
       }
 
       // Check duplicate computer_name
@@ -264,6 +267,20 @@ class ComputerService {
         }
       }
 
+      let resolvedHardwareProfileId = Number(computerData.hardware_profile_id) || null;
+      if (!resolvedHardwareProfileId && zone_id && db.HardwareProfile) {
+        const zoneProfile = await db.HardwareProfile.findOne({
+          where: { zone_id: Number(zone_id), is_deleted: false }
+        });
+        if (zoneProfile) {
+          resolvedHardwareProfileId = zoneProfile.profile_id;
+        }
+      }
+      if (!resolvedHardwareProfileId && db.HardwareProfile) {
+        const defaultProfile = await db.HardwareProfile.findOne({ where: { is_deleted: false } });
+        resolvedHardwareProfileId = defaultProfile ? defaultProfile.profile_id : 1;
+      }
+
       const runTransaction = async () => {
         return await db.sequelize.transaction(async (t) => {
           // If computer_name, ip_address, mac_address are fully provided
@@ -273,6 +290,7 @@ class ComputerService {
               ip_address: ip_address.trim(),
               mac_address: mac_address.trim(),
               zone_id: Number(zone_id) || 1,
+              hardware_profile_id: resolvedHardwareProfileId,
               status: status || ComputerStatus.OFFLINE,
               is_remote_enabled: Boolean(is_remote_enabled)
             }, { transaction: t });
@@ -285,12 +303,12 @@ class ComputerService {
             ip_address: ip_address ? ip_address.trim() : null,
             mac_address: mac_address ? mac_address.trim() : null,
             zone_id: Number(zone_id) || 1,
+            hardware_profile_id: resolvedHardwareProfileId,
             status: status || ComputerStatus.OFFLINE,
             is_remote_enabled: Boolean(is_remote_enabled)
           }, { transaction: t });
 
           const nextId = newComputer.computer_id;
-          const hexId = (nextId * 3).toString(16).padStart(2, '0').toUpperCase();
 
           let updated = false;
           if (!computer_name) {
@@ -304,8 +322,9 @@ class ComputerService {
             updated = true;
           }
           if (!mac_address) {
-            const octet4 = String(nextId % 100).padStart(2, '0');
-            newComputer.mac_address = `F4:D4:88:5A:${octet4}:${hexId}`;
+            const octet5 = String(Math.floor(nextId / 100) % 100).padStart(2, '0');
+            const octet6 = String(nextId % 100).padStart(2, '0');
+            newComputer.mac_address = `F4:D4:88:5A:${octet5}:${octet6}`;
             updated = true;
           }
 
@@ -346,14 +365,9 @@ class ComputerService {
       const computer = await db.Computer.findByPk(computerId);
       if (!computer) return null;
 
-      // Validate zone if changing
-      if (updateData.zone_id) {
-        const zoneExists = await db.ComputerZone.findByPk(Number(updateData.zone_id));
-        if (!zoneExists) {
-          const err = new Error('Phân khu máy trạm không tồn tại');
-          err.statusCode = 400;
-          throw err;
-        }
+      // Validate zone and check capacity via dedicated computerZoneService if changing zone
+      if (updateData.zone_id && Number(updateData.zone_id) !== computer.zone_id) {
+        await this.computerZoneService.validateCapacity(Number(updateData.zone_id));
         computer.zone_id = Number(updateData.zone_id);
       }
 
@@ -447,6 +461,17 @@ class ComputerService {
         computer.is_remote_enabled = Boolean(updateData.is_remote_enabled);
       }
 
+      if (updateData.zone_id !== undefined) {
+        computer.zone_id = Number(updateData.zone_id);
+        if (updateData.hardware_profile_id === undefined) {
+          computer.hardware_profile_id = Number(updateData.zone_id);
+        }
+      }
+
+      if (updateData.hardware_profile_id !== undefined) {
+        computer.hardware_profile_id = Number(updateData.hardware_profile_id);
+      }
+
       await computer.save();
       return computer;
     } catch (error) {
@@ -485,18 +510,29 @@ class ComputerService {
     }
   }
 
-  /**
-   * Fetch all zones with pricing plans
-   */
+  // =========================================================================
+  // Delegated Computer Zone Methods (Single Responsibility Principle)
+  // Maintains 100% backward compatibility for existing callers & controllers
+  // =========================================================================
+
   async getAllZones() {
-    try {
-      return await this.models.ComputerZone.findAll({
-        include: [{ model: this.models.PricingPlan, required: false, attributes: ['pricing_plan_id', 'name', 'price_per_hour', 'plan_type', 'is_active'] }]
-      });
-    } catch (error) {
-      if (!error.statusCode) error.statusCode = 500;
-      throw error;
-    }
+    return await this.computerZoneService.getAllZones();
+  }
+
+  async createZone(zoneData) {
+    return await this.computerZoneService.createZone(zoneData);
+  }
+
+  async updateZone(zoneId, updateData) {
+    return await this.computerZoneService.updateZone(zoneId, updateData);
+  }
+
+  async deleteZone(zoneId) {
+    return await this.computerZoneService.deleteZone(zoneId);
+  }
+
+  async restoreZone(zoneId) {
+    return await this.computerZoneService.restoreZone(zoneId);
   }
 
   /**
@@ -508,6 +544,7 @@ class ComputerService {
       const db = this.models;
       const [zones, computers] = await Promise.all([
         db.ComputerZone.findAll({
+          where: { is_deleted: false },
           include: [{ model: db.PricingPlan, required: false, attributes: ['pricing_plan_id', 'name', 'price_per_hour', 'plan_type', 'is_active'] }],
           order: [['zone_id', 'ASC']]
         }),
@@ -542,6 +579,10 @@ class ComputerService {
         return {
           zone_id: zone.zone_id,
           zone_name: zone.zone_name,
+          description: zone.description || '',
+          max_capacity: zone.max_capacity ?? null,
+          code_prefix: zone.code_prefix || 'PC-',
+          tier_level: zone.tier_level || 1,
           price_per_hour: activePlan.price_per_hour ? Number(activePlan.price_per_hour) : 0,
           total_stations: zoneStations.length,
           stations: zoneStations

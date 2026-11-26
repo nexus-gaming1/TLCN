@@ -59,6 +59,14 @@ class AuthService {
     const accessToken = generateAccessToken(tokenPayload);
     const refreshToken = generateRefreshToken(tokenPayload);
 
+    // Cập nhật mốc thời gian đăng nhập gần nhất (last_login)
+    try {
+      user.last_login = new Date();
+      await user.save();
+    } catch (_saveErr) {
+      // Bỏ qua lỗi cập nhật last_login nếu không ảnh hưởng luồng chính
+    }
+
     // Lưu trữ hashed Refresh Token vào CSDL nếu có bảng RefreshToken
     if (db.RefreshToken) {
       const expiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // 2 ngày

@@ -236,7 +236,6 @@ export default function PricingPlanManagementPage({ user, onLogout }) {
                 setEditingPlan(null);
                 setIsCreateModalOpen(true);
               }}
-              onExport={() => alert('Xuất danh sách bảng giá máy thành công!')}
             />
 
             {/* Pricing Plans Table */}

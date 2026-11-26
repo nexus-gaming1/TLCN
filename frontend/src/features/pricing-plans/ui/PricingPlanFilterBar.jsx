@@ -1,8 +1,7 @@
 import {
   Search,
   Filter,
-  PlusCircle,
-  Download
+  PlusCircle
 } from 'lucide-react';
 
 /**
@@ -18,8 +17,7 @@ export default function PricingPlanFilterBar({
   onPlanTypeChange,
   hourTypeFilter,
   onHourTypeChange,
-  onOpenCreateModal,
-  onExport
+  onOpenCreateModal
 }) {
   return (
     <div className="bg-white p-4 rounded-xl shadow-xs border border-slate-200/90">
@@ -81,19 +79,8 @@ export default function PricingPlanFilterBar({
           </div>
         </div>
 
-        {/* Cụm 2: Nút hành động Xuất Excel & Thêm Bảng Giá */}
+        {/* Cụm 2: Nút Thêm Bảng Giá */}
         <div className="flex items-center gap-2 w-full lg:w-auto justify-end">
-          {onExport && (
-            <button
-              onClick={onExport}
-              className="h-10 px-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition flex items-center gap-2 cursor-pointer shadow-xs"
-              title="Xuất danh sách bảng giá"
-            >
-              <Download className="w-4 h-4 text-slate-600" />
-              <span>Xuất Danh Sách</span>
-            </button>
-          )}
-
           <button
             onClick={onOpenCreateModal}
             className="h-10 px-4 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-lg shadow-sm hover:shadow-md transition flex items-center gap-2 cursor-pointer shrink-0"

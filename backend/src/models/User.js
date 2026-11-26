@@ -42,6 +42,7 @@ module.exports = (sequelize) => {
     full_name: { type: DataTypes.STRING(100), allowNull: false },
     role: { type: DataTypes.ENUM(...Object.values(UserRole)), allowNull: false },
     status: { type: DataTypes.ENUM(...Object.values(UserStatus)), defaultValue: UserStatus.ACTIVE },
+    last_login: { type: DataTypes.DATE, allowNull: true },
     is_deleted: { type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false },
     deleted_at: { type: DataTypes.DATE, allowNull: true, defaultValue: null }
   }, {

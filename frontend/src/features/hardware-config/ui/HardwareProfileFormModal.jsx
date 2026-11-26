@@ -84,7 +84,8 @@ export default function HardwareProfileFormModal({
   hardware = null,
   zones = [],
   computers = [],
-  hardwarePresets = {}
+  hardwarePresets = {},
+  existingProfiles = []
 }) {
   const isEditMode = mode === 'edit';
   const presets = hardwarePresets || {};
@@ -142,16 +143,19 @@ export default function HardwareProfileFormModal({
         });
         setSelectedComputers(hardware.assignedComputers || (hardware.id ? [hardware.id] : []));
       } else {
+        const firstAvailableZone = zones.find(
+          (z) => !existingProfiles.some((p) => String(p.zoneId) === String(z.zone_id))
+        );
         setFormData({
           profileName: '',
-          zoneId: zones[0]?.zone_id ? String(zones[0].zone_id) : '1',
+          zoneId: firstAvailableZone ? String(firstAvailableZone.zone_id) : (zones[0]?.zone_id ? String(zones[0].zone_id) : '1'),
           description: ''
         });
         setSelectedComputers([]);
       }
       setErrorNotice('');
     }
-  }, [isOpen, mode, hardware, hardwarePresets, zones, isEditMode]);
+  }, [isOpen, mode, hardware, hardwarePresets, zones, isEditMode, existingProfiles]);
 
   if (!isOpen) return null;
   if (isEditMode && !hardware) return null;
@@ -234,6 +238,24 @@ export default function HardwareProfileFormModal({
         setErrorNotice(`${field.label} chứa nội dung không an toàn!`);
         return;
       }
+    }
+
+    // Kiểm tra quy tắc 1 Zone = 1 Dàn cấu hình chuẩn
+    const conflictProfile = existingProfiles.find((p) => {
+      const isSameZone = String(p.zoneId) === String(formData.zoneId);
+      if (!isSameZone) return false;
+      if (!isEditMode) return true;
+      const isCurrentEditing = (hardware?.profile_id && p.profile_id === hardware.profile_id) ||
+        (hardware?.id && p.id === hardware.id) ||
+        (hardware?.profileName && p.profileName === hardware.profileName);
+      return !isCurrentEditing;
+    });
+
+    if (conflictProfile) {
+      setErrorNotice(
+        `Phân khu này đã được gán cho mẫu cấu hình "${conflictProfile.profileName || conflictProfile.id}". Hệ thống áp dụng quy tắc 1 Phân Khu = 1 Dàn Cấu Hình Chuẩn.`
+      );
+      return;
     }
 
     const selectedZone = zones.find((z) => String(z.zone_id) === String(formData.zoneId)) || {};
@@ -378,18 +400,42 @@ export default function HardwareProfileFormModal({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1 text-[11px]">Phân khu mặc định (Zone)</label>
+                <label className="block font-bold text-slate-700 mb-1 text-[11px] flex items-center justify-between">
+                  <span>Phân khu chuẩn (Zone) <span className="text-rose-500">*</span></span>
+                  <span className="text-[10px] text-sky-600 font-bold">1 Phân khu = 1 Cấu hình</span>
+                </label>
                 <select
                   value={formData.zoneId}
                   onChange={(e) => setFormData({ ...formData, zoneId: e.target.value })}
                   className="w-full px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:ring-2 focus:ring-sky-500/30 outline-none cursor-pointer"
                 >
-                  {zones.map((z) => (
-                    <option key={z.zone_id} value={z.zone_id} className="text-xs">
-                      {z.zone_name}
-                    </option>
-                  ))}
+                  {zones.map((z) => {
+                    const assignedProfile = existingProfiles.find((p) => {
+                      const isSameZone = String(p.zoneId) === String(z.zone_id);
+                      if (!isSameZone) return false;
+                      if (!isEditMode) return true;
+                      const isCurrentEditing = (hardware?.profile_id && p.profile_id === hardware.profile_id) ||
+                        (hardware?.id && p.id === hardware.id) ||
+                        (hardware?.profileName && p.profileName === hardware.profileName);
+                      return !isCurrentEditing;
+                    });
+                    const isTaken = Boolean(assignedProfile);
+
+                    return (
+                      <option
+                        key={z.zone_id}
+                        value={z.zone_id}
+                        disabled={isTaken}
+                        className={isTaken ? 'text-slate-400 bg-slate-100 italic' : 'text-slate-900 font-medium'}
+                      >
+                        {z.zone_name} {isTaken ? `(Đã có cấu hình: ${assignedProfile.profileName || assignedProfile.id})` : '✓ Sẵn sàng'}
+                      </option>
+                    );
+                  })}
                 </select>
+                <p className="text-[10px] text-slate-400 mt-1 font-medium">
+                  Mỗi phân khu phòng máy gắn liền với 1 cấu hình phần cứng và 1 bản Image BootROM duy nhất.
+                </p>
               </div>
             </div>
 

@@ -201,6 +201,18 @@ class TransactionRepository {
             CASE WHEN \`status\` = 'PENDING' THEN 1 ELSE 0 END
           `)),
           'pendingCount'
+        ],
+        [
+          this.sequelize.fn('SUM', this.sequelize.literal(`
+            CASE WHEN \`status\` = 'REFUNDED' THEN 1 ELSE 0 END
+          `)),
+          'refundedCount'
+        ],
+        [
+          this.sequelize.fn('SUM', this.sequelize.literal(`
+            CASE WHEN \`status\` = 'FAILED' THEN 1 ELSE 0 END
+          `)),
+          'failedCount'
         ]
       ],
       where: whereClause,
