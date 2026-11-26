@@ -114,11 +114,10 @@ jobs:
           JWT_SECRET: ci_test_jwt_secret_key_12345
           SEPAY_WEBHOOK_TOKEN: test_sepay_token
         run: |
-          echo "🧪 Chuẩn bị CSDL MySQL, chạy Migration & Seeder..."
+          echo "🧪 Chuẩn bị CSDL MySQL, đồng bộ Schema & Seeder..."
           cd backend
           npm ci
-          npx sequelize-cli db:migrate
-          node src/utils/seeder.js
+          node src/utils/initTestDb.js
           echo "🧪 Chạy toàn bộ Unit & Integration Test Backend..."
           npm test
 
