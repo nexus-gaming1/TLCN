@@ -175,11 +175,6 @@ jobs:
       - name: SonarQube Code Quality & Security Analysis
         if: env.SONAR_TOKEN != ''
         uses: sonarsource/sonarqube-scan-action@13990a695682794b53148ff9f6a8b6e22e43955e # v3.1.0
-        with:
-          args: >
-            -Dsonar.projectKey=nexus-gaming1_TLCN
-            -Dsonar.organization=nexus-gaming1
-            -Dsonar.projectName="NEXUS Cloud Cyber OS"
 
       - name: SonarQube Configuration Notice
         if: env.SONAR_TOKEN == ''
