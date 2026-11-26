@@ -132,16 +132,20 @@ export default function CustomerFoodPage({ user, onLogout }) {
 
     const handleOrderUpdated = (updatedOrder) => {
       playNotifySound();
+      const isCancelled = updatedOrder.status === 'CANCELLED';
+      const cancelReasonSuffix =
+        isCancelled && updatedOrder.reason ? ` — Lý do: ${updatedOrder.reason}` : '';
+
       setToast({
-        type: 'success',
-        title: 'Trạng thái đơn hàng cập nhật!',
+        type: isCancelled ? 'error' : 'success',
+        title: isCancelled ? 'Đơn hàng đã bị hủy' : 'Trạng thái đơn hàng cập nhật!',
         message: `Đơn #${updatedOrder.order_id} hiện tại: ${
           updatedOrder.status === 'PREPARING'
             ? 'Đang nấu trong bếp 🍳'
             : updatedOrder.status === 'COMPLETED'
             ? 'Đã phục vụ hoàn tất 🎉'
-            : updatedOrder.status === 'CANCELLED'
-            ? 'Đã hủy đơn ❌'
+            : isCancelled
+            ? `Đã hủy đơn ❌${cancelReasonSuffix}`
             : updatedOrder.status
         }`,
       });
@@ -259,12 +263,8 @@ export default function CustomerFoodPage({ user, onLogout }) {
     }
   };
 
-  // 8. Hủy đơn hàng PENDING
+  // 8. Hủy đơn hàng PENDING (xác nhận đã qua Confirm Modal tại ActiveOrderTracker)
   const handleCancelOrder = async (orderId) => {
-    if (!window.confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${orderId} không?`)) {
-      return;
-    }
-
     setCancellingOrderId(orderId);
     try {
       await orderService.customerCancelOrder(orderId);

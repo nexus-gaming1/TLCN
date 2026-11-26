@@ -15,6 +15,12 @@ export default function StaffOrderCard({
   const isPreparing = order.status === 'PREPARING';
   const isCompleted = order.status === 'COMPLETED';
   const isLoading = actionLoadingId === order.order_id;
+  const remainingRefundable =
+    order.remaining_refundable !== undefined
+      ? parseFloat(order.remaining_refundable)
+      : parseFloat(order.total_amount || 0);
+  const alreadyRefunded = parseFloat(order.already_refunded || 0);
+  const isFullyRefunded = isCompleted && remainingRefundable <= 0;
 
   return (
     <div
@@ -143,14 +149,29 @@ export default function StaffOrderCard({
           )}
 
           {isCompleted && (
-            <button
-              type="button"
-              onClick={() => onOpenRefundModal(order)}
-              className="w-full py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-amber-50 text-slate-700 hover:text-amber-700 font-extrabold text-xs border border-slate-200 hover:border-amber-200 transition flex items-center justify-center gap-1 cursor-pointer"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Hoàn Tiền Sự Cố</span>
-            </button>
+            isFullyRefunded ? (
+              <button
+                type="button"
+                disabled
+                className="w-full py-1.5 px-3 rounded-xl bg-emerald-50 text-emerald-700 font-extrabold text-xs border border-emerald-200 flex items-center justify-center gap-1.5 cursor-not-allowed opacity-90"
+              >
+                <CheckCheck className="w-3.5 h-3.5" />
+                <span>Đã hoàn đủ 100%</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onOpenRefundModal(order)}
+                className="w-full py-1.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-extrabold text-xs border border-amber-300 transition flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+                <span>
+                  {alreadyRefunded > 0
+                    ? `Hoàn Tiếp (Còn ${remainingRefundable.toLocaleString('vi-VN')}đ)`
+                    : 'Hoàn Tiền Sự Cố'}
+                </span>
+              </button>
+            )
           )}
         </div>
       </div>

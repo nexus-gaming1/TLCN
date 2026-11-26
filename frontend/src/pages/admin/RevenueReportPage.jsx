@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef} from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -12,17 +13,13 @@ import ViewAllFeedbacksModal from '../../features/reports/ui/ViewAllFeedbacksMod
 import supportService from '../../shared/api/support.service';
 
 import {
-  Gamepad2,
-  Utensils,
-  RefreshCw,
-  Loader2,
-  TrendingUp,
-  Download,
-  Star, 
-  MessageSquare
+  Gamepad2,Utensils,RefreshCw,
+  Loader2,TrendingUp,Download,Star, 
+  MessageSquare,RotateCcw, ShieldCheck, BellRing
 } from 'lucide-react';
 
 export default function RevenueReportPage({ user, onLogout }) {
+  const navigate = useNavigate();
   const [daysFilter, setDaysFilter] = useState(7); // Mặc định 7 ngày gần nhất
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -72,6 +69,10 @@ export default function RevenueReportPage({ user, onLogout }) {
     totalRevenue: 0,
     totalTopupRevenue: 0,
     totalServiceRevenue: 0,
+    totalRefundAmount: 0,
+    refundCount: 0,
+    netRevenue: 0,
+    pendingSupportRequests: 0,
     days: daysFilter
   };
 
@@ -79,6 +80,7 @@ export default function RevenueReportPage({ user, onLogout }) {
   const analytics = reportData?.analytics || {
     paymentMethods: [],
     topItems: [],
+    allItems: [],
     topMembers: []
   };
 
@@ -164,19 +166,9 @@ const handleExportExcel = async () => {
             {/* Lọc theo thời gian*/}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex flex-col">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="font-mono text-[11px] uppercase text-emerald-700 font-extrabold tracking-wider bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    Financial Analytics v2.0
-                  </span>
-                  <span className="text-slate-400 font-bold">•</span>
-                  <span className="text-slate-500 font-semibold">Báo Cáo Kế Toán</span>
-                </div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight">
                   Báo Cáo &amp; Thống Kê Doanh Thu
                 </h1>
-                <p className="text-xs text-slate-500 font-medium max-w-2xl mt-0.5">
-                  Thống kê tổng dòng tiền nạp tài khoản và doanh thu dịch vụ ăn uống F&amp;B theo chu kỳ thời gian.
-                </p>
               </div>
 
               {/* Bộ lọc thời gian gợi ý sẵn */}
@@ -254,9 +246,6 @@ const handleExportExcel = async () => {
                 </div>
                 <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500">
                   <span>Chu kỳ: {summary.days} ngày gần nhất</span>
-                  <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    Realtime Synced
-                  </span>
                 </div>
               </div>
 
@@ -349,122 +338,181 @@ const handleExportExcel = async () => {
 
             </div>
 
-            {/* bố cục 2 cột chính( 8 cột trái -4 cột phải ) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              
-              {/* Cột trái (8 Cột): Biểu đồ miền xu hướng + Bảng top member */}
-              <div className="lg:col-span-8 flex flex-col gap-6">
-                {/* 1. Biểu đồ xu hướng doanh thu*/}
-                <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex flex-col">
-                      <h3 className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">
-                        <span>Biểu Đồ Xu Hướng Doanh Thu</span>
-                        <span className="font-mono text-xs font-semibold text-slate-400">
-                          ({summary.startDate} ➔ {summary.endDate})
-                        </span>
-                      </h3>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
-                        So sánh tương quan giữa dòng tiền nạp và doanh số bán hàng F&amp;B
-                      </p>
-                    </div>
+            {/* Dải tóm tắt Dòng tiền thực thu và Vận hành sự cố */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-100">
+                    <ShieldCheck className="w-4 h-4" />
                   </div>
-
-                  {loading ? (
-                    <div className="w-full h-80 flex flex-col items-center justify-center gap-2 text-slate-400">
-                      <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
-                      <span className="font-mono text-xs">Đang tổng hợp dữ liệu biểu đồ...</span>
-                    </div>
-                  ) : (
-                    <RevenueChart data={chartData} />
-                  )}
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase">Doanh Thu Sau Hoàn Tiền</p>
+                    <p className="text-sm font-black font-mono text-emerald-700">
+                      {(summary.netRevenue ?? Math.max(0, summary.totalRevenue - (summary.totalRefundAmount || 0))).toLocaleString('vi-VN')} ₫
+                    </p>
+                  </div>
                 </div>
-
-                {/* 2. Bảng xếp hạng khách nạp tiền*/}
-                {loading ? (
-                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center min-h-[220px]">
-                    <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
-                  </div>
-                ) : (
-                  <TopMembersTable data={analytics.topMembers} />
-                )}
-
-                {/* Khối danh sách Đánh giá của khách hàng */}
-                <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-cyan-600" />
-                      <h3 className="text-sm font-black text-slate-900 tracking-tight">
-                        Ý Kiến &amp; Đánh Giá Mới Nhất Từ Khách Hàng
-                      </h3>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-slate-400">5 đánh giá gần nhất</span>
-                      <button
-                        type="button"
-                        onClick={() => setIsAllFeedbacksModalOpen(true)}
-                        className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 font-extrabold text-xs border border-cyan-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
-                        title="Xem danh sách toàn bộ đánh giá của khách hàng"
-                      >
-                        <span>Xem tất cả ({csatStats.totalReviews || allFeedbacks.length}) ➔</span>
-                      </button>
-                    </div>
-                  </div>
-                  {recentFeedbacks.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-slate-400 font-medium">
-                      Chưa có đánh giá nào từ khách hàng.
-                    </div>
-                  ) : (
-                    <div className="divide-y divide-slate-100">
-                      {recentFeedbacks.map((fb) => (
-                        <div key={fb.request_id} className="py-3 flex items-start justify-between gap-4">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-extrabold text-slate-800">
-                                @{fb.member?.userInfo?.username || 'khach'}
-                              </span>
-                              <span className="text-[11px] text-amber-500 font-black">
-                                {'⭐'.repeat(fb.rating || 5)}
-                              </span>
-                              <span className="text-[10px] font-mono text-slate-400">
-                                {new Date(fb.created_at).toLocaleDateString('vi-VN')}
-                              </span>
-                            </div>
-                            {fb.description && (
-                              <p className="text-xs text-slate-600 italic font-medium">
-                                "{fb.description}"
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
               </div>
 
-              {/* Cột phải( 4 cột ): Biểu đồ tròn phương thức thanh toán + top món ăn, đồ uống */}
-              <div className="lg:col-span-4 flex flex-col gap-6">
-                {/* 1. Donut Chart phương thức thanh toán*/}
+              <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-100">
+                    <RotateCcw className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase">Hoàn Tiền Sự Cố Kỳ Này</p>
+                    <p className="text-sm font-black font-mono text-rose-600">
+                      -{(summary.totalRefundAmount || 0).toLocaleString('vi-VN')} ₫{' '}
+                      <span className="text-[11px] font-sans font-semibold text-slate-400">
+                        ({summary.refundCount || 0} lượt)
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200/90 shadow-2xs flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-amber-50 text-amber-600 border border-amber-100">
+                    <BellRing className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold text-slate-500 uppercase">Phiếu Hỗ Trợ Đang Chờ</p>
+                    <p className="text-sm font-black font-mono text-amber-700">
+                      {summary.pendingSupportRequests ?? csatStats.pendingRequests ?? 0}{' '}
+                      <span className="text-[11px] font-sans font-semibold text-slate-400">phiếu mở</span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => navigate('/staff?tab=TICKETS')}
+                  className="px-2.5 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-extrabold text-xs border border-amber-200 transition-all cursor-pointer shrink-0 shadow-2xs"
+                  title="Đi tới danh sách Hỗ Trợ / Khiếu Nại đang chờ xử lý"
+                >
+                  Xem chi tiết ➔
+                </button>
+              </div>
+            </div>
+
+            {/* Hàng1 Cặp Biểu đồ cân đối (8 cột Xu hướng — 4 cột phương thức thanh toán) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              <div className="lg:col-span-8 bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div className="flex flex-col">
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-2">
+                      <span>Biểu Đồ Xu Hướng Doanh Thu</span>
+                      <span className="font-mono text-xs font-semibold text-slate-400">
+                        ({summary.startDate} ➔ {summary.endDate})
+                      </span>
+                    </h3>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      So sánh tương quan giữa dòng tiền nạp và doanh số bán hàng F&amp;B
+                    </p>
+                  </div>
+                </div>
+
                 {loading ? (
-                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center min-h-[340px]">
+                  <div className="w-full h-80 flex flex-col items-center justify-center gap-2 text-slate-400">
+                    <Loader2 className="w-8 h-8 text-emerald-600 animate-spin" />
+                    <span className="font-mono text-xs">Đang tổng hợp dữ liệu biểu đồ...</span>
+                  </div>
+                ) : (
+                  <RevenueChart data={chartData} />
+                )}
+              </div>
+
+              <div className="lg:col-span-4 flex flex-col">
+                {loading ? (
+                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center flex-1 min-h-[340px]">
                     <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
                   </div>
                 ) : (
                   <PaymentMethodChart data={analytics.paymentMethods} />
                 )}
+              </div>
+            </div>
 
-                {/* 2. Bảng top dồ ăn, đồ uống */}
+            {/* Hàng 2: 2 bảng xếp hạng (6 cột Top Hội Viên — 6 cột Top Món F&B) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+              <div className="lg:col-span-6 flex flex-col">
                 {loading ? (
-                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center min-h-[220px]">
+                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center min-h-[240px]">
                     <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
                   </div>
                 ) : (
-                  <TopSellingItems data={analytics.topItems} />
+                  <TopMembersTable
+                    data={analytics.topMembers}
+                    onViewAll={() => navigate('/admin/members')}
+                  />
                 )}
               </div>
 
+              <div className="lg:col-span-6 flex flex-col">
+                {loading ? (
+                  <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex items-center justify-center min-h-[240px]">
+                    <Loader2 className="w-6 h-6 text-slate-400 animate-spin" />
+                  </div>
+                ) : (
+                  <TopSellingItems
+                    data={analytics.topItems}
+                    allItems={analytics.allItems || analytics.topItems}
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Hàng 3: Khối đánh giá khách hàng toàn chiều rộng (không khoảng trắng trống) */}
+            <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-cyan-600" />
+                  <h3 className="text-sm font-black text-slate-900 tracking-tight">
+                    Ý Kiến &amp; Đánh Giá Mới Nhất Từ Khách Hàng
+                  </h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-bold text-slate-400">5 đánh giá gần nhất</span>
+                  <button
+                    type="button"
+                    onClick={() => setIsAllFeedbacksModalOpen(true)}
+                    className="px-2.5 py-1 rounded-lg bg-cyan-50 hover:bg-cyan-100 text-cyan-700 font-extrabold text-xs border border-cyan-200 transition-all cursor-pointer flex items-center gap-1 shadow-2xs"
+                    title="Xem danh sách toàn bộ đánh giá của khách hàng"
+                  >
+                    <span>Xem tất cả ({csatStats.totalReviews || allFeedbacks.length}) ➔</span>
+                  </button>
+                </div>
+              </div>
+              {recentFeedbacks.length === 0 ? (
+                <div className="py-8 text-center text-xs text-slate-400 font-medium">
+                  Chưa có đánh giá nào từ khách hàng.
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {recentFeedbacks.map((fb) => (
+                    <div key={fb.request_id} className="py-3 flex items-start justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-extrabold text-slate-800">
+                            @{fb.member?.userInfo?.username || 'khach'}
+                          </span>
+                          <span className="text-[11px] text-amber-500 font-black">
+                            {'⭐'.repeat(fb.rating || 5)}
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-400">
+                            {new Date(fb.created_at).toLocaleDateString('vi-VN')}
+                          </span>
+                        </div>
+                        {fb.description && (
+                          <p className="text-xs text-slate-600 italic font-medium">
+                            "{fb.description}"
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
           </div>

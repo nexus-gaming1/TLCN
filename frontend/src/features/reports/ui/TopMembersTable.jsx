@@ -1,5 +1,4 @@
-import React from 'react';
-import { Crown, Trophy, UserCheck, AlertCircle } from 'lucide-react';
+import { Crown, Trophy, AlertCircle } from 'lucide-react';
 
 
 // Component hiển thị huy hiệu thứ hạng
@@ -32,33 +31,53 @@ function RankBadge({ rank }) {
   );
 }
 
-export default function TopMembersTable({ data = [] }) {
+export default function TopMembersTable({ data = [], onViewAll }) {
   if (!data || data.length === 0) {
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col items-center justify-center min-h-[220px] text-center">
-        <AlertCircle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+      <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col items-center justify-center min-h-[220px] text-center gap-2">
+        <AlertCircle className="w-8 h-8 text-slate-300 mx-auto" />
         <p className="text-xs font-bold text-slate-600">Chưa có dữ liệu hội viên</p>
-        <p className="text-[11px] text-slate-400 mt-0.5">Không phát sinh giao dịch nạp trong kỳ thống kê này</p>
+        <p className="text-[11px] text-slate-400">Không phát sinh giao dịch nạp trong kỳ thống kê này</p>
+        {onViewAll && (
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="mt-1 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-extrabold text-xs border border-amber-200 transition-all cursor-pointer"
+          >
+            Xem danh sách hội viên ➔
+          </button>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between">
+    <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-200/90 flex flex-col justify-between h-full">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+      <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-4">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 font-bold">
             <Trophy className="w-4 h-4" />
           </div>
           <div>
             <h3 className="text-sm font-black text-slate-900 leading-tight">Top Hội Viên Nạp Tiền</h3>
-            <p className="text-[11px] text-slate-400 font-medium">Khách hàng chi tiêu hàng đầu (VIP Spenders)</p>
+            <p className="text-[11px] text-slate-400 font-medium">Khách hàng chi tiêu hàng đầu trong kỳ</p>
           </div>
         </div>
-        <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-          Top 5 Spenders
-        </span>
+        {onViewAll ? (
+          <button
+            type="button"
+            onClick={onViewAll}
+            className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-700 font-extrabold text-xs border border-amber-200 transition-all cursor-pointer shrink-0 shadow-2xs"
+            title="Đi tới trang Quản Lý Hội Viên"
+          >
+            Xem tất cả ➔
+          </button>
+        ) : (
+          <span className="font-mono text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+            Top 5
+          </span>
+        )}
       </div>
 
       {/* danh sách member */}

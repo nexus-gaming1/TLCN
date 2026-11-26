@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Search, Plus, Minus, ShoppingBag, Banknote, CreditCard, AlertCircle } from 'lucide-react';
 import orderService from '../../../shared/api/order.service';
 
@@ -8,6 +9,7 @@ export default function CreateCounterOrderModal({ isOpen, onClose, onOrderCreate
   const [menu, setMenu] = useState([]);
   const [loadingMenu, setLoadingMenu] = useState(false);
   const [searchItem, setSearchItem] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedItems, setSelectedItems] = useState([]); // [{ service_item_id, name, price, quantity }]
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -23,6 +25,8 @@ export default function CreateCounterOrderModal({ isOpen, onClose, onOrderCreate
         .finally(() => setLoadingMenu(false));
     } else {
       // Reset form khi đóng
+      setSelectedCategory('ALL'); 
+      setSearchItem(''); 
       setCustomerUsername('');
       setSelectedItems([]);
       setPaymentMethod('CASH');
@@ -30,12 +34,23 @@ export default function CreateCounterOrderModal({ isOpen, onClose, onOrderCreate
     }
   }, [isOpen]);
 
-  // Lọc món theo ô tìm kiếm
+  // Rút danh sách danh mục duy nhất từ menu trả về
+  const categories = useMemo(() => {
+    const set = new Set();
+    menu.forEach((item) => {
+      if (item.category_name) set.add(item.category_name);
+    });
+    return ['ALL', ...Array.from(set)];
+  }, [menu]);
+
+  // Lọc món kết hợp Danh mục + Từ khóa tìm kiếm
   const filteredMenu = useMemo(() => {
-    return menu.filter((item) =>
-      item.name?.toLowerCase().includes(searchItem.toLowerCase().trim())
-    );
-  }, [menu, searchItem]);
+    return menu.filter((item) => {
+      const matchCategory = selectedCategory === 'ALL' || item.category_name === selectedCategory;
+      const matchSearch = item.name?.toLowerCase().includes(searchItem.toLowerCase().trim());
+      return matchCategory && matchSearch;
+    });
+}, [menu, selectedCategory, searchItem]);
 
   // Thêm món vào đơn
   const handleAddItem = (item) => {
@@ -100,8 +115,8 @@ export default function CreateCounterOrderModal({ isOpen, onClose, onOrderCreate
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
       <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
@@ -196,6 +211,26 @@ export default function CreateCounterOrderModal({ isOpen, onClose, onOrderCreate
                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2" />
               </div>
 
+              {/* Dải pill lọc nhanh theo danh mục */}
+              {categories.length > 1 && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-1 shrink-0">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition cursor-pointer ${
+                        selectedCategory === cat
+                          ? 'bg-cyan-600 text-white shadow-2xs'
+                          : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {cat === 'ALL' ? 'Tất cả' : cat}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
                 {loadingMenu ? (
                   <p className="text-center text-slate-400 text-xs py-8">Đang tải thực đơn...</p>
@@ -286,5 +321,5 @@ export default function CreateCounterOrderModal({ isOpen, onClose, onOrderCreate
         </form>
       </div>
     </div>
-  );
+  , document.body);
 }

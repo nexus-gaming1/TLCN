@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -18,7 +19,8 @@ import {
   WifiOff,
   ShoppingBag,
   Megaphone,
-  History
+  History,
+  X
 } from 'lucide-react';
 
 import StaffOrderCard from './components/StaffOrderCard';
@@ -28,13 +30,21 @@ import CreateCounterOrderModal from './components/CreateCounterOrderModal';
 import AnnouncementManagementModal from './components/AnnouncementManagementModal';
 import StaffSupportTicketSection from './components/StaffSupportTicketSection';
 
+const VALID_STAFF_TABS = ['PENDING', 'PREPARING', 'COMPLETED', 'TICKETS'];
+
 export default function StaffDashboardPage({ user, onLogout }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTabParam = (searchParams.get('tab') || '').toUpperCase();
+
   const [topupAmount, setTopupAmount] = useState('');
   const [targetMember, setTargetMember] = useState('');
   const [topupSuccess, setTopupSuccess] = useState(false);
 
   const [orders, setOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState('PENDING');
+  const [activeTab, setActiveTab] = useState(
+    VALID_STAFF_TABS.includes(initialTabParam) ? initialTabParam : 'PENDING'
+  );
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [actionLoadingId, setActionLoadingId] = useState(null);
   const [toast, setToast] = useState(null);
@@ -162,6 +172,15 @@ export default function StaffDashboardPage({ user, onLogout }) {
     }
   };
 
+  // Đồng bộ query param ?tab=TICKETS (khi điều hướng từ trang Báo cáo sang)
+  useEffect(() => {
+    const tabParam = (searchParams.get('tab') || '').toUpperCase();
+    if (VALID_STAFF_TABS.includes(tabParam) && tabParam !== activeTab) {
+      setActiveTab(tabParam);
+      setHistorySearchQuery('');
+    }
+  }, [searchParams, activeTab]);
+
   // Khởi chạy khi mount hoặc khi tab thay đổi
   useEffect(() => {
     fetchOrders();
@@ -282,24 +301,29 @@ export default function StaffDashboardPage({ user, onLogout }) {
 
   const handleConfirmRefundSubmit = async (e) => {
     e.preventDefault();
-    if (!refundModalOrder || !refundReason.trim() || !refundAmount) return;
+    const parsedAmount = parseFloat(refundAmount);
+    if (!refundModalOrder || !refundReason.trim() || isNaN(parsedAmount) || parsedAmount <= 0) return;
     setRefundSubmitting(true);
     try {
       await orderService.refundCompletedOrder(refundModalOrder.order_id, {
-        amount: parseFloat(refundAmount),
+        amount: parsedAmount,
         reason: refundReason.trim(),
       });
       setToast({
         type: 'success',
         title: 'Hoàn tiền thành công',
-        message: `Đã hoàn ${parseFloat(refundAmount).toLocaleString('vi-VN')}đ.`,
+        message: `Đã hoàn ${parsedAmount.toLocaleString('vi-VN')}đ.`,
       });
       setRefundModalOrder(null);
       setRefundAmount('');
       setRefundReason('');
       fetchOrders(true);
     } catch (error) {
-      setToast({ type: 'error', title: 'Hoàn tiền thất bại', message: 'Đơn đã hoàn tiền'});
+      setToast({
+        type: 'error',
+        title: 'Hoàn tiền thất bại',
+        message: error.message || 'Không thể thực hiện hoàn tiền đơn hàng',
+      });
     } finally {
       setRefundSubmitting(false);
     }
@@ -321,7 +345,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
     }, 3000);
   };
 
-  // Mảng tab điều phối bao gồm cả Tab Tickets
+  // Mảng tab điều phối bao gồm cả Tab Hỗ Trợ / Khiếu Nại
   const pendingTicketsCount = supportTickets.filter((t) => t.status === 'PENDING').length;
   const tabs = [
     { id: 'PENDING', label: 'Chờ Xử Lý' },
@@ -329,10 +353,43 @@ export default function StaffDashboardPage({ user, onLogout }) {
     { id: 'COMPLETED', label: 'Lịch Sử Đã Giao' },
     {
       id: 'TICKETS',
-      label: 'Yêu Cầu / Khiếu Nại',
+      label: 'Hỗ Trợ / Khiếu Nại',
       badge: pendingTicketsCount,
     },
   ];
+
+  // Lọc nhanh đơn đã giao theo mã đơn, tên khách hoặc tên máy (pure Frontend)
+  const displayedOrders = useMemo(() => {
+    if (activeTab !== 'COMPLETED') return orders;
+    const keyword = historySearchQuery.trim().toLowerCase().replace(/^#/, '');
+    if (!keyword) return orders;
+
+    return orders.filter((order) => {
+      const orderIdText = String(order.order_id || '').toLowerCase();
+      const customerText = String(order.customer_name || '').toLowerCase();
+      const computerText = String(order.computer_name || '').toLowerCase();
+      return (
+        orderIdText.includes(keyword) ||
+        customerText.includes(keyword) ||
+        computerText.includes(keyword)
+      );
+    });
+  }, [orders, activeTab, historySearchQuery]);
+
+  const handleSelectTab = (tabId) => {
+    setActiveTab(tabId);
+    setHistorySearchQuery('');
+    if (searchParams.get('tab')) {
+      const nextParams = new URLSearchParams(searchParams);
+      if (tabId === 'PENDING') {
+        nextParams.delete('tab');
+      } else {
+        nextParams.set('tab', tabId);
+      }
+      setSearchParams(nextParams, { replace: true });
+    }
+    if (tabId === 'TICKETS') fetchSupportTickets();
+  };
 
   return (
     <div className="bg-[#F8F9FA] min-h-screen text-slate-800 font-sans antialiased">
@@ -398,7 +455,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
                 <button
                   type="submit"
                   disabled={!targetMember || !topupAmount}
-                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-extrabold text-xs transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  className="h-9 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
                 >
                   <PlusCircle className="w-3.5 h-3.5" />
                   <span>Nạp Tiền</span>
@@ -415,7 +472,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
                 <button
                   type="button"
                   onClick={() => setIsAnnouncementModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs transition shadow-xs flex items-center gap-1.5 shrink-0 ml-auto cursor-pointer"
+                  className="h-9 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5 shrink-0 ml-auto cursor-pointer"
                   title="Quản lý và phát sóng banner thông báo phòng máy"
                 >
                   <Megaphone className="w-3.5 h-3.5" />
@@ -426,7 +483,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
                 <button
                   type="button"
                   onClick={() => setIsCreateCounterModalOpen(true)}
-                  className="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-extrabold text-xs transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
+                  className="h-9 px-3.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs transition shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
                 >
                   <ShoppingBag className="w-3.5 h-3.5" />
                   <span>Bán Món Tại Quầy</span>
@@ -440,16 +497,16 @@ export default function StaffDashboardPage({ user, onLogout }) {
                 <div className="flex items-center gap-2">
                   <Coffee className="w-5 h-5 text-cyan-600" />
                   <h3 className="text-base font-extrabold text-slate-900 tracking-tight">
-                    {activeTab === 'TICKETS' ? 'Yêu Cầu Hỗ Trợ & Khiếu Nại Phòng Máy' : 'Điều Phối Dịch Vụ F&B (Kitchen KDS)'}
+                    {activeTab === 'TICKETS' ? 'Hỗ Trợ & Khiếu Nại Phòng Máy' : 'Điều Phối Dịch Vụ F&B (Kitchen KDS)'}
                   </h3>
                 </div>
 
-                <div className="flex items-center gap-2">
-                   {activeTab === 'TICKETS' && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {activeTab === 'TICKETS' && (
                     <button
                       type="button"
                       onClick={() => setIsTicketHistoryOpen(true)}
-                      className="px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+                      className="h-9 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
                       title="Xem lịch sử các phiếu hỗ trợ và khiếu nại đã xử lý"
                     >
                       <History className="w-3.5 h-3.5 text-cyan-600" />
@@ -467,30 +524,27 @@ export default function StaffDashboardPage({ user, onLogout }) {
                       }
                     }}
                     disabled={loadingOrders || loadingTickets}
-                    className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+                    className="h-9 w-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition shadow-2xs flex items-center justify-center cursor-pointer"
                     title="Làm mới danh sách"
                   >
                     <RefreshCw className={`w-4 h-4 ${(loadingOrders || loadingTickets) ? 'animate-spin text-cyan-600' : ''}`} />
                   </button>
 
-                  <div className="flex p-1 rounded-xl bg-slate-100 font-mono text-xs font-bold">
+                  <div className="flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200/70 gap-1 font-sans text-xs">
                     {tabs.map((tab) => (
                       <button
                         key={tab.id}
                         type="button"
-                        onClick={() => {
-                          setActiveTab(tab.id);
-                          if (tab.id === 'TICKETS') fetchSupportTickets();
-                        }}
-                        className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer relative ${
+                        onClick={() => handleSelectTab(tab.id)}
+                        className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer relative flex items-center gap-1.5 whitespace-nowrap ${
                           activeTab === tab.id
-                            ? 'bg-white text-cyan-900 shadow-xs font-black'
-                            : 'text-slate-500 hover:text-slate-800'
+                            ? 'bg-white text-cyan-800 shadow-xs font-extrabold ring-1 ring-slate-200/80'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 font-bold'
                         }`}
                       >
-                        {tab.label}
+                        <span>{tab.label}</span>
                         {tab.badge > 0 && (
-                          <span className="ml-1.5 px-1.5 py-0.2 rounded-full bg-rose-600 text-white text-[10px] animate-pulse font-mono font-black">
+                          <span className="px-1.5 py-0.5 rounded-full bg-rose-600 text-white text-[10px] leading-none animate-pulse font-mono font-black">
                             {tab.badge}
                           </span>
                         )}
@@ -499,6 +553,39 @@ export default function StaffDashboardPage({ user, onLogout }) {
                   </div>
                 </div>
               </div>
+
+              {/* Thanh tìm kiếm nhanh trên tab Lịch Sử Đã Giao */}
+              {activeTab === 'COMPLETED' && (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-50/80 border border-slate-200/70 rounded-xl px-3.5 py-2.5">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={historySearchQuery}
+                      onChange={(e) => setHistorySearchQuery(e.target.value)}
+                      placeholder="Tìm nhanh theo mã đơn (#12), tên khách hoặc máy trạm (PC-01)..."
+                      className="w-full pl-9 pr-8 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-cyan-500/20 focus:border-cyan-500 outline-hidden transition"
+                    />
+                    {historySearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setHistorySearchQuery('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
+                        title="Xóa từ khóa tìm kiếm"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <span className="text-[11px] font-semibold text-slate-500 shrink-0">
+                    Hiển thị{' '}
+                    <strong className="font-mono font-extrabold text-slate-800">
+                      {displayedOrders.length}
+                    </strong>{' '}
+                    / {orders.length} đơn đã giao
+                  </span>
+                </div>
+              )}
 
               {/* 4. Nội dung Tab: Hiển thị Ticket hoặc Grid Đơn Hàng */}
               {activeTab === 'TICKETS' ? (
@@ -520,9 +607,23 @@ export default function StaffDashboardPage({ user, onLogout }) {
                     <div className="p-16 text-center text-slate-400 text-xs font-medium bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                       🎉 Không có đơn hàng nào trong mục này!
                     </div>
+                  ) : displayedOrders.length === 0 ? (
+                    <div className="p-12 text-center text-slate-500 text-xs font-medium bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                      <p>
+                        Không tìm thấy đơn đã giao nào khớp với{' '}
+                        <span className="font-bold text-slate-800">"{historySearchQuery.trim()}"</span>.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setHistorySearchQuery('')}
+                        className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold text-xs transition cursor-pointer"
+                      >
+                        Xóa bộ lọc tìm kiếm
+                      </button>
+                    </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                      {orders.map((order) => (
+                      {displayedOrders.map((order) => (
                         <StaffOrderCard
                           key={order.order_id}
                           order={order}
@@ -535,8 +636,12 @@ export default function StaffDashboardPage({ user, onLogout }) {
                             setCancelReason('');
                           }}
                           onOpenRefundModal={(ord) => {
+                            const remaining =
+                              ord.remaining_refundable !== undefined
+                                ? parseFloat(ord.remaining_refundable)
+                                : parseFloat(ord.total_amount || 0);
                             setRefundModalOrder(ord);
-                            setRefundAmount(String(ord.total_amount));
+                            setRefundAmount(remaining > 0 ? String(remaining) : '');
                             setRefundReason('');
                           }}
                         />
