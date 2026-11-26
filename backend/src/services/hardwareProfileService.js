@@ -224,11 +224,15 @@ class HardwareProfileService {
 
         if (persistenceData.zone_id) {
           const existingZoneProfile = await db.HardwareProfile.findOne({
-            where: { zone_id: persistenceData.zone_id, is_deleted: false }
+            where: {
+              zone_id: persistenceData.zone_id,
+              is_active: true,
+              is_deleted: false
+            }
           });
           if (existingZoneProfile) {
             throw createHttpError(
-              `Phân khu này đã được gán cho mẫu cấu hình '${existingZoneProfile.profile_name}'. Mỗi phân khu chỉ được có 1 cấu hình chuẩn.`,
+              `Phân khu này đã được gán cho mẫu cấu hình '${existingZoneProfile.profile_name}' đang hoạt động. Mỗi phân khu chỉ được có 1 cấu hình chuẩn hoạt động. Vui lòng ngừng sử dụng cấu hình cũ trước khi tạo cấu hình mới.`,
               409
             );
           }
@@ -310,13 +314,14 @@ class HardwareProfileService {
               where: {
                 zone_id: persistenceData.zone_id,
                 profile_id: { [Op.ne]: profile.profile_id },
+                is_active: true,
                 is_deleted: false
               },
               transaction: t
             });
             if (existingZoneProfile) {
               throw createHttpError(
-                `Phân khu này đã được gán cho mẫu cấu hình '${existingZoneProfile.profile_name}'. Mỗi phân khu chỉ được có 1 cấu hình chuẩn.`,
+                `Phân khu này đã được gán cho mẫu cấu hình '${existingZoneProfile.profile_name}' đang hoạt động. Mỗi phân khu chỉ được có 1 cấu hình chuẩn hoạt động. Vui lòng ngừng sử dụng cấu hình cũ trước khi chuyển phân khu.`,
                 409
               );
             }
@@ -343,6 +348,7 @@ class HardwareProfileService {
 
   /**
    * Delete hardware profile directly from MySQL with Transaction safety
+   * Phương án A: Chỉ cho phép xóa mềm khi 0 máy trạm liên kết. Đang có máy trạm -> Chặn xóa.
    */
   async deleteHardwareSpec(specId) {
     try {
@@ -360,11 +366,23 @@ class HardwareProfileService {
             t
           );
 
-          await db.Computer.update(
-            { hardware_profile_id: null },
-            { where: { hardware_profile_id: profile.profile_id }, transaction: t }
-          );
-          // Xóa mềm cấu hình phần cứng (Soft Delete)
+          // Kiểm tra xem có máy trạm nào đang sử dụng cấu hình này không
+          let assignedCount = 0;
+          if (db.Computer && typeof db.Computer.count === 'function') {
+            assignedCount = await db.Computer.count({
+              where: { hardware_profile_id: profile.profile_id, is_deleted: false },
+              transaction: t
+            });
+          }
+
+          if (assignedCount > 0) {
+            throw createHttpError(
+              `Không thể xóa mẫu cấu hình '${profile.profile_name}' vì đang có ${assignedCount} máy trạm liên kết. Vui lòng chuyển các máy sang cấu hình khác hoặc chọn Ngừng sử dụng.`,
+              400
+            );
+          }
+
+          // Xóa mềm cấu hình phần cứng (Soft Delete) khi 0 máy liên kết
           if (typeof profile.softDelete === 'function') {
             await profile.softDelete({ transaction: t });
           } else {
@@ -373,7 +391,10 @@ class HardwareProfileService {
             profile.is_active = false;
             await profile.save({ transaction: t });
           }
-          console.info(`[HardwareProfile] Soft-deleted profile '${profile.profile_name}' (ID: ${profile.profile_id})`);
+          profile.zone_id = null; // Giải phóng liên kết phân khu
+          await profile.save({ transaction: t });
+
+          console.info(`[HardwareProfile] Soft-deleted unassigned profile '${profile.profile_name}' (ID: ${profile.profile_id})`);
           return true;
         });
       });
@@ -384,16 +405,38 @@ class HardwareProfileService {
 
   /**
    * Bật / Tắt trạng thái kích hoạt cấu hình máy (Toggle Switch)
+   * Khi kích hoạt lại: Kiểm tra Zone đã có cấu hình active nào khác chưa để bảo toàn quy tắc 1 Zone = 1 Profile.
    */
   async toggleHardwareSpec(specId, isActive) {
     try {
+      const db = this.models;
       const profile = await this.findProfileOrFail(
         specId,
         'Mã định danh cấu hình không hợp lệ',
         `Không tìm thấy mẫu cấu hình phần cứng: ${specId}`
       );
 
-      profile.is_active = isActive !== undefined ? Boolean(isActive) : !profile.is_active;
+      const nextActive = isActive !== undefined ? Boolean(isActive) : !profile.is_active;
+
+      // Khi kích hoạt lại (nextActive = true), kiểm tra xem Zone đã có cấu hình active nào khác chưa
+      if (nextActive && profile.zone_id && db.HardwareProfile) {
+        const activeZoneProfile = await db.HardwareProfile.findOne({
+          where: {
+            zone_id: profile.zone_id,
+            profile_id: { [Op.ne]: profile.profile_id },
+            is_active: true,
+            is_deleted: false
+          }
+        });
+        if (activeZoneProfile) {
+          throw createHttpError(
+            `Không thể kích hoạt lại vì phân khu này hiện đã có mẫu cấu hình chuẩn '${activeZoneProfile.profile_name}' đang hoạt động. Vui lòng ngừng sử dụng cấu hình đó trước.`,
+            409
+          );
+        }
+      }
+
+      profile.is_active = nextActive;
       await profile.save();
       console.info(`[HardwareProfile] Toggled profile '${profile.profile_name}' (ID: ${profile.profile_id}) -> is_active=${profile.is_active}`);
       return profile;

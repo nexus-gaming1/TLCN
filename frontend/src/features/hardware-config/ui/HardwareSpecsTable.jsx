@@ -5,8 +5,7 @@ import {
   Gamepad2,
   HardDrive,
   Activity,
-  Edit,
-  Trash2
+  Edit
 } from 'lucide-react';
 import Pagination from '../../../shared/ui/Pagination';
 
@@ -70,7 +69,7 @@ function StatusToggle({ item, isToggling, onToggleActive }) {
   );
 }
 
-function RowActions({ item, onOpenTelemetry, onEdit, onDelete }) {
+function RowActions({ item, onOpenTelemetry, onEdit }) {
   return (
     <div className="flex items-center justify-end gap-1">
       <button
@@ -90,17 +89,6 @@ function RowActions({ item, onOpenTelemetry, onEdit, onDelete }) {
       >
         <Edit className="w-4 h-4" />
       </button>
-
-      {onDelete && item.profile_id > 0 && (
-        <button
-          type="button"
-          onClick={() => onDelete(item)}
-          className="w-8 h-8 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
-          title="Xóa mẫu cấu hình"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      )}
     </div>
   );
 }
@@ -142,8 +130,7 @@ export default function HardwareSpecsTable({
   onResetFilters,
   onOpenTelemetry,
   onEdit,
-  onToggleActive,
-  onDelete
+  onToggleActive
 }) {
   const [selectedIds, setSelectedIds] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -246,7 +233,6 @@ export default function HardwareSpecsTable({
                   item={item}
                   onOpenTelemetry={onOpenTelemetry}
                   onEdit={onEdit}
-                  onDelete={onDelete}
                 />
               </div>
             </div>
@@ -351,7 +337,6 @@ export default function HardwareSpecsTable({
                         item={item}
                         onOpenTelemetry={onOpenTelemetry}
                         onEdit={onEdit}
-                        onDelete={onDelete}
                       />
                     </td>
                   </tr>

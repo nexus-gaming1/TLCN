@@ -194,7 +194,7 @@ test('HardwareProfileService Unit - retries ER_LOCK_DEADLOCK, maps SequelizeUniq
         throw err;
       }
     },
-    Computer: { update: async () => [0] },
+    Computer: { update: async () => [0], count: async () => 0 },
     sequelize: { transaction: async (cb) => cb({}) }
   };
   const svcUnique = new HardwareProfileService(uniqueErrDb);
@@ -215,7 +215,7 @@ test('HardwareProfileService Unit - retries ER_LOCK_DEADLOCK, maps SequelizeUniq
       findByPk: async () => savedProfile,
       findOne: async () => ({ profile_id: 11, profile_name: 'Taken Name' })
     },
-    Computer: { update: async () => [0] },
+    Computer: { update: async () => [0], count: async () => 0 },
     sequelize: { transaction: async (cb) => cb({}) }
   };
   const svcConflict = new HardwareProfileService(conflictDb);

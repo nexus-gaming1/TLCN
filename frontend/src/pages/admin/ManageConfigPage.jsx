@@ -228,37 +228,14 @@ export default function ManageConfigPage({ user, onLogout }) {
       setSpecs((prev) =>
         prev.map((s) => (s.id === item.id ? { ...s, is_active: prevActiveState } : s))
       );
+      const errorMsg = err.response?.data?.message || err.message || 'Không thể thay đổi trạng thái cấu hình máy';
       showToast({
         type: 'error',
         title: 'Lỗi cập nhật trạng thái',
-        message: err.message || 'Không thể thay đổi trạng thái cấu hình máy'
+        message: errorMsg
       });
     } finally {
       setTogglingId(null);
-    }
-  };
-
-  const handleDeleteSpec = async (item) => {
-    const profileName = item.profileName || item.id;
-    const targetId = item.profile_id || item.id;
-    if (!window.confirm(`Bạn có chắc chắn muốn xóa mẫu cấu hình "${profileName}"? Các máy trạm đang gán sẽ được gỡ liên kết an toàn.`)) {
-      return;
-    }
-    try {
-      await hardwareService.deleteHardwareSpec(targetId);
-      showToast({
-        type: 'success',
-        title: 'Đã xóa mẫu cấu hình',
-        message: `Mẫu cấu hình "${profileName}" đã được chuyển vào thùng rác.`
-      });
-      await fetchHardwareData();
-    } catch (err) {
-      console.error('Lỗi khi xóa mẫu cấu hình máy:', err);
-      showToast({
-        type: 'error',
-        title: 'Lỗi khi xóa cấu hình',
-        message: err.message || 'Không thể xóa mẫu cấu hình máy.'
-      });
     }
   };
 
@@ -415,7 +392,6 @@ export default function ManageConfigPage({ user, onLogout }) {
                 onOpenTelemetry={handleOpenTelemetry}
                 onEdit={handleEdit}
                 onToggleActive={handleToggleActive}
-                onDelete={handleDeleteSpec}
               />
             )}
           </div>

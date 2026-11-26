@@ -305,12 +305,12 @@ const seedData = async (db) => {
 
     // 4. Seed Computer Zones (Đồng bộ code_prefix và cấu hình khớp với HardwareProfile)
     await safeSeed(db.ComputerZone, [
-      { zone_id: 1, zone_name: 'Zone 1: Esports Pro Arena', description: 'Máy thi đấu 240Hz Fast-IPS BenQ ZOWIE, CPU i9 14900K, RTX 4080 Super', tier_level: 2, code_prefix: 'ESP-' },
-      { zone_id: 2, zone_name: 'Zone 2: VIP Gaming Suite', description: 'Phòng VIP riêng biệt, ghế da cao cấp, RTX 4070 Ti Super', tier_level: 2, code_prefix: 'VIP-' },
-      { zone_id: 3, zone_name: 'Zone 3: Tiêu Chuẩn Combat', description: 'Khu vực phổ thông i5 13400F, RTX 4060, Màn 180Hz ViewSonic Gaming', tier_level: 1, code_prefix: 'STD-' },
-      { zone_id: 4, zone_name: 'Zone 4: Stream Studio', description: 'Phòng Studio cách âm, Cam 4K, Ryzen 9 7950X, RTX 4090 24GB, Màn 360Hz BenQ', tier_level: 3, code_prefix: 'STR-' },
-      { zone_id: 5, zone_name: 'Zone 5: Cloud Remote Nodes', description: 'Cụm Cloud vGPU stream WebRTC 1.1ms AV1 Dual EPYC', tier_level: 4, code_prefix: 'CLOUD-' }
-    ], ['zone_name', 'description', 'tier_level', 'code_prefix']);
+      { zone_id: 1, zone_name: 'Zone 1: Esports Pro Arena', description: 'Máy thi đấu 240Hz Fast-IPS BenQ ZOWIE, CPU i9 14900K, RTX 4080 Super', tier_level: 2, code_prefix: 'ESP-', is_deleted: false, deleted_at: null },
+      { zone_id: 2, zone_name: 'Zone 2: VIP Gaming Suite', description: 'Phòng VIP riêng biệt, ghế da cao cấp, RTX 4070 Ti Super', tier_level: 2, code_prefix: 'VIP-', is_deleted: false, deleted_at: null },
+      { zone_id: 3, zone_name: 'Zone 3: Tiêu Chuẩn Combat', description: 'Khu vực phổ thông i5 13400F, RTX 4060, Màn 180Hz ViewSonic Gaming', tier_level: 1, code_prefix: 'STD-', is_deleted: false, deleted_at: null },
+      { zone_id: 4, zone_name: 'Zone 4: Stream Studio', description: 'Phòng Studio cách âm, Cam 4K, Ryzen 9 7950X, RTX 4090 24GB, Màn 360Hz BenQ', tier_level: 3, code_prefix: 'STR-', is_deleted: false, deleted_at: null },
+      { zone_id: 5, zone_name: 'Zone 5: Cloud Remote Nodes', description: 'Cụm Cloud vGPU stream WebRTC 1.1ms AV1 Dual EPYC', tier_level: 4, code_prefix: 'CLOUD-', is_deleted: false, deleted_at: null }
+    ], ['zone_name', 'description', 'tier_level', 'code_prefix', 'is_deleted', 'deleted_at']);
 
     // 4.1 Liên kết bảng giá cho từng Phân khu
     if (db.ZonePricingPlan) {
@@ -338,6 +338,16 @@ const seedData = async (db) => {
 
     // 4.5. Seed Hardware Profiles into MySQL CSDL (Khớp 100% với mô tả phân khu)
     if (db.HardwareProfile) {
+      // Dọn dẹp profile rác sinh ra từ test tự động (ID > 5)
+      await db.Computer.update(
+        { hardware_profile_id: null },
+        { where: { hardware_profile_id: { [db.Sequelize.Op.gt]: 5 } } }
+      ).catch(() => {});
+      await db.HardwareProfile.destroy({
+        where: { profile_id: { [db.Sequelize.Op.gt]: 5 } },
+        force: true
+      }).catch(() => {});
+
       await safeSeed(
         db.HardwareProfile,
         [
@@ -351,7 +361,10 @@ const seedData = async (db) => {
             storage_type: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)',
             monitor: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)',
             gear: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II',
-            zone_id: 1
+            zone_id: 1,
+            is_active: true,
+            is_deleted: false,
+            deleted_at: null
           },
           {
             profile_id: 2,
@@ -363,7 +376,10 @@ const seedData = async (db) => {
             storage_type: 'High Throughput Cache 1TB SAN Boot',
             monitor: '27" 2K OLED 240Hz (ASUS ROG Swift PG27AQDM)',
             gear: 'Chuột Razer DeathAdder V3 + Phím Huntsman + Tai Kraken',
-            zone_id: 2
+            zone_id: 2,
+            is_active: true,
+            is_deleted: false,
+            deleted_at: null
           },
           {
             profile_id: 3,
@@ -375,7 +391,10 @@ const seedData = async (db) => {
             storage_type: 'SAN NVMe 10Gbps (iSCSI Boot + 2TB Writeback RAM)',
             monitor: '24" Full HD 180Hz (ViewSonic Gaming)',
             gear: 'Bộ Peripherals Standard Cyber Gaming',
-            zone_id: 3
+            zone_id: 3,
+            is_active: true,
+            is_deleted: false,
+            deleted_at: null
           },
           {
             profile_id: 4,
@@ -387,7 +406,10 @@ const seedData = async (db) => {
             storage_type: 'Dual NVMe 2TB PCIe 4.0 Direct Capture',
             monitor: '25" 360Hz BenQ ZOWIE XL2566K',
             gear: 'Chuột Logitech G Pro X Superlight + Phím Cơ Custom + Tai Cloud II',
-            zone_id: 4
+            zone_id: 4,
+            is_active: true,
+            is_deleted: false,
+            deleted_at: null
           },
           {
             profile_id: 5,
@@ -399,10 +421,13 @@ const seedData = async (db) => {
             storage_type: '40Gbps Fiber SAN (Direct RDMA Ultra-low Latency)',
             monitor: '25" Fast-IPS 240Hz (BenQ ZOWIE XL2546K)',
             gear: 'Bộ Peripherals Standard Cyber Gaming',
-            zone_id: 5
+            zone_id: 5,
+            is_active: true,
+            is_deleted: false,
+            deleted_at: null
           }
         ],
-        ['profile_name', 'description', 'cpu_model', 'gpu_model', 'ram_capacity', 'storage_type', 'monitor', 'gear', 'zone_id']
+        ['profile_name', 'description', 'cpu_model', 'gpu_model', 'ram_capacity', 'storage_type', 'monitor', 'gear', 'zone_id', 'is_active', 'is_deleted', 'deleted_at']
       );
     }
 
@@ -452,53 +477,67 @@ const seedData = async (db) => {
     // 6. Seed Computers (36 trạm máy - Trạng thái máy khớp với RentalSession & StatusLog)
     // Các máy Stream (STR-01..04) hoạt động tại chỗ (LOCAL) nên is_remote_enabled: false.
     // Các máy Cloud (CLOUD-01..06) hoạt động từ xa nên is_remote_enabled: true.
+    // Dọn dẹp máy trạm rác sinh ra từ test tự động (ID > 36)
+    if (db.Computer) {
+      await db.ComputerStatusLog.destroy({
+        where: { computer_id: { [db.Sequelize.Op.gt]: 36 } }
+      }).catch(() => {});
+      await db.ComputerGame.destroy({
+        where: { computer_id: { [db.Sequelize.Op.gt]: 36 } }
+      }).catch(() => {});
+      await db.Computer.destroy({
+        where: { computer_id: { [db.Sequelize.Op.gt]: 36 } },
+        force: true
+      }).catch(() => {});
+    }
+
     await safeSeed(db.Computer, [
       // Zone 1: Esports Pro Arena (8 trạm: ESP-01 đến ESP-08)
-      { computer_id: 1, computer_name: 'ESP-01', ip_address: '192.168.1.101', mac_address: 'F4:D4:88:5A:01:01', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 2, computer_name: 'ESP-02', ip_address: '192.168.1.102', mac_address: 'F4:D4:88:5A:01:02', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 3, computer_name: 'ESP-03', ip_address: '192.168.1.103', mac_address: 'F4:D4:88:5A:01:03', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 4, computer_name: 'ESP-04', ip_address: '192.168.1.104', mac_address: 'F4:D4:88:5A:01:04', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 5, computer_name: 'ESP-05', ip_address: '192.168.1.105', mac_address: 'F4:D4:88:5A:01:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 6, computer_name: 'ESP-06', ip_address: '192.168.1.106', mac_address: 'F4:D4:88:5A:01:06', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 7, computer_name: 'ESP-07', ip_address: '192.168.1.107', mac_address: 'F4:D4:88:5A:01:07', status: ComputerStatus.MAINTENANCE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
-      { computer_id: 8, computer_name: 'ESP-08', ip_address: '192.168.1.108', mac_address: 'F4:D4:88:5A:01:08', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1 },
+      { computer_id: 1, computer_name: 'ESP-01', ip_address: '192.168.1.101', mac_address: 'F4:D4:88:5A:01:01', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 2, computer_name: 'ESP-02', ip_address: '192.168.1.102', mac_address: 'F4:D4:88:5A:01:02', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 3, computer_name: 'ESP-03', ip_address: '192.168.1.103', mac_address: 'F4:D4:88:5A:01:03', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 4, computer_name: 'ESP-04', ip_address: '192.168.1.104', mac_address: 'F4:D4:88:5A:01:04', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 5, computer_name: 'ESP-05', ip_address: '192.168.1.105', mac_address: 'F4:D4:88:5A:01:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 6, computer_name: 'ESP-06', ip_address: '192.168.1.106', mac_address: 'F4:D4:88:5A:01:06', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 7, computer_name: 'ESP-07', ip_address: '192.168.1.107', mac_address: 'F4:D4:88:5A:01:07', status: ComputerStatus.MAINTENANCE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
+      { computer_id: 8, computer_name: 'ESP-08', ip_address: '192.168.1.108', mac_address: 'F4:D4:88:5A:01:08', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 1, hardware_profile_id: 1, is_deleted: false, deleted_at: null },
 
       // Zone 2: VIP Gaming Suite (8 trạm: VIP-01 đến VIP-08)
-      { computer_id: 9, computer_name: 'VIP-01', ip_address: '192.168.1.201', mac_address: 'F4:D4:88:5A:02:01', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 10, computer_name: 'VIP-02', ip_address: '192.168.1.202', mac_address: 'F4:D4:88:5A:02:02', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 11, computer_name: 'VIP-03', ip_address: '192.168.1.203', mac_address: 'F4:D4:88:5A:02:03', status: ComputerStatus.LOCKED, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 12, computer_name: 'VIP-04', ip_address: '192.168.1.204', mac_address: 'F4:D4:88:5A:02:04', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 13, computer_name: 'VIP-05', ip_address: '192.168.1.205', mac_address: 'F4:D4:88:5A:02:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 14, computer_name: 'VIP-06', ip_address: '192.168.1.206', mac_address: 'F4:D4:88:5A:02:06', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 15, computer_name: 'VIP-07', ip_address: '192.168.1.207', mac_address: 'F4:D4:88:5A:02:07', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
-      { computer_id: 16, computer_name: 'VIP-08', ip_address: '192.168.1.208', mac_address: 'F4:D4:88:5A:02:08', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2 },
+      { computer_id: 9, computer_name: 'VIP-01', ip_address: '192.168.1.201', mac_address: 'F4:D4:88:5A:02:01', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 10, computer_name: 'VIP-02', ip_address: '192.168.1.202', mac_address: 'F4:D4:88:5A:02:02', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 11, computer_name: 'VIP-03', ip_address: '192.168.1.203', mac_address: 'F4:D4:88:5A:02:03', status: ComputerStatus.LOCKED, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 12, computer_name: 'VIP-04', ip_address: '192.168.1.204', mac_address: 'F4:D4:88:5A:02:04', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 13, computer_name: 'VIP-05', ip_address: '192.168.1.205', mac_address: 'F4:D4:88:5A:02:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 14, computer_name: 'VIP-06', ip_address: '192.168.1.206', mac_address: 'F4:D4:88:5A:02:06', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 15, computer_name: 'VIP-07', ip_address: '192.168.1.207', mac_address: 'F4:D4:88:5A:02:07', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
+      { computer_id: 16, computer_name: 'VIP-08', ip_address: '192.168.1.208', mac_address: 'F4:D4:88:5A:02:08', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 2, hardware_profile_id: 2, is_deleted: false, deleted_at: null },
 
       // Zone 3: Tiêu Chuẩn Combat (10 trạm: STD-01 đến STD-10; dải IP: 192.168.1.111 - 192.168.1.120)
-      { computer_id: 17, computer_name: 'STD-01', ip_address: '192.168.1.111', mac_address: 'F4:D4:88:5A:03:01', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 18, computer_name: 'STD-02', ip_address: '192.168.1.112', mac_address: 'F4:D4:88:5A:03:02', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 19, computer_name: 'STD-03', ip_address: '192.168.1.113', mac_address: 'F4:D4:88:5A:03:03', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 20, computer_name: 'STD-04', ip_address: '192.168.1.114', mac_address: 'F4:D4:88:5A:03:04', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 21, computer_name: 'STD-05', ip_address: '192.168.1.115', mac_address: 'F4:D4:88:5A:03:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 22, computer_name: 'STD-06', ip_address: '192.168.1.116', mac_address: 'F4:D4:88:5A:03:06', status: ComputerStatus.MAINTENANCE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 23, computer_name: 'STD-07', ip_address: '192.168.1.117', mac_address: 'F4:D4:88:5A:03:07', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 24, computer_name: 'STD-08', ip_address: '192.168.1.118', mac_address: 'F4:D4:88:5A:03:08', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 25, computer_name: 'STD-09', ip_address: '192.168.1.119', mac_address: 'F4:D4:88:5A:03:09', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
-      { computer_id: 26, computer_name: 'STD-10', ip_address: '192.168.1.120', mac_address: 'F4:D4:88:5A:03:10', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3 },
+      { computer_id: 17, computer_name: 'STD-01', ip_address: '192.168.1.111', mac_address: 'F4:D4:88:5A:03:01', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 18, computer_name: 'STD-02', ip_address: '192.168.1.112', mac_address: 'F4:D4:88:5A:03:02', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 19, computer_name: 'STD-03', ip_address: '192.168.1.113', mac_address: 'F4:D4:88:5A:03:03', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 20, computer_name: 'STD-04', ip_address: '192.168.1.114', mac_address: 'F4:D4:88:5A:03:04', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 21, computer_name: 'STD-05', ip_address: '192.168.1.115', mac_address: 'F4:D4:88:5A:03:05', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 22, computer_name: 'STD-06', ip_address: '192.168.1.116', mac_address: 'F4:D4:88:5A:03:06', status: ComputerStatus.MAINTENANCE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 23, computer_name: 'STD-07', ip_address: '192.168.1.117', mac_address: 'F4:D4:88:5A:03:07', status: ComputerStatus.OFFLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 24, computer_name: 'STD-08', ip_address: '192.168.1.118', mac_address: 'F4:D4:88:5A:03:08', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 25, computer_name: 'STD-09', ip_address: '192.168.1.119', mac_address: 'F4:D4:88:5A:03:09', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
+      { computer_id: 26, computer_name: 'STD-10', ip_address: '192.168.1.120', mac_address: 'F4:D4:88:5A:03:10', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 3, hardware_profile_id: 3, is_deleted: false, deleted_at: null },
 
       // Zone 4: Stream Studio (4 trạm: STR-01 đến STR-04; dải IP: 192.168.1.141 - 192.168.1.144)
-      { computer_id: 27, computer_name: 'STR-01', ip_address: '192.168.1.141', mac_address: 'F4:D4:88:5A:04:01', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4 },
-      { computer_id: 28, computer_name: 'STR-02', ip_address: '192.168.1.142', mac_address: 'F4:D4:88:5A:04:02', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4 },
-      { computer_id: 29, computer_name: 'STR-03', ip_address: '192.168.1.143', mac_address: 'F4:D4:88:5A:04:03', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4 },
-      { computer_id: 30, computer_name: 'STR-04', ip_address: '192.168.1.144', mac_address: 'F4:D4:88:5A:04:04', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4 },
+      { computer_id: 27, computer_name: 'STR-01', ip_address: '192.168.1.141', mac_address: 'F4:D4:88:5A:04:01', status: ComputerStatus.IN_USE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4, is_deleted: false, deleted_at: null },
+      { computer_id: 28, computer_name: 'STR-02', ip_address: '192.168.1.142', mac_address: 'F4:D4:88:5A:04:02', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4, is_deleted: false, deleted_at: null },
+      { computer_id: 29, computer_name: 'STR-03', ip_address: '192.168.1.143', mac_address: 'F4:D4:88:5A:04:03', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4, is_deleted: false, deleted_at: null },
+      { computer_id: 30, computer_name: 'STR-04', ip_address: '192.168.1.144', mac_address: 'F4:D4:88:5A:04:04', status: ComputerStatus.ONLINE, is_remote_enabled: false, zone_id: 4, hardware_profile_id: 4, is_deleted: false, deleted_at: null },
 
       // Zone 5: Cloud Remote Nodes (6 trạm: CLOUD-01 đến CLOUD-06; dải IP: 192.168.1.151 - 192.168.1.156)
-      { computer_id: 31, computer_name: 'CLOUD-01', ip_address: '192.168.1.151', mac_address: 'F4:D4:88:5A:05:01', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 },
-      { computer_id: 32, computer_name: 'CLOUD-02', ip_address: '192.168.1.152', mac_address: 'F4:D4:88:5A:05:02', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 },
-      { computer_id: 33, computer_name: 'CLOUD-03', ip_address: '192.168.1.153', mac_address: 'F4:D4:88:5A:05:03', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 },
-      { computer_id: 34, computer_name: 'CLOUD-04', ip_address: '192.168.1.154', mac_address: 'F4:D4:88:5A:05:04', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 },
-      { computer_id: 35, computer_name: 'CLOUD-05', ip_address: '192.168.1.155', mac_address: 'F4:D4:88:5A:05:05', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 },
-      { computer_id: 36, computer_name: 'CLOUD-06', ip_address: '192.168.1.156', mac_address: 'F4:D4:88:5A:05:06', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5 }
-    ], ['computer_name', 'ip_address', 'mac_address', 'status', 'is_remote_enabled', 'zone_id', 'hardware_profile_id']);
+      { computer_id: 31, computer_name: 'CLOUD-01', ip_address: '192.168.1.151', mac_address: 'F4:D4:88:5A:05:01', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null },
+      { computer_id: 32, computer_name: 'CLOUD-02', ip_address: '192.168.1.152', mac_address: 'F4:D4:88:5A:05:02', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null },
+      { computer_id: 33, computer_name: 'CLOUD-03', ip_address: '192.168.1.153', mac_address: 'F4:D4:88:5A:05:03', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null },
+      { computer_id: 34, computer_name: 'CLOUD-04', ip_address: '192.168.1.154', mac_address: 'F4:D4:88:5A:05:04', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null },
+      { computer_id: 35, computer_name: 'CLOUD-05', ip_address: '192.168.1.155', mac_address: 'F4:D4:88:5A:05:05', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null },
+      { computer_id: 36, computer_name: 'CLOUD-06', ip_address: '192.168.1.156', mac_address: 'F4:D4:88:5A:05:06', status: ComputerStatus.ONLINE, is_remote_enabled: true, zone_id: 5, hardware_profile_id: 5, is_deleted: false, deleted_at: null }
+    ], ['computer_name', 'ip_address', 'mac_address', 'status', 'is_remote_enabled', 'zone_id', 'hardware_profile_id', 'is_deleted', 'deleted_at']);
 
     // Seed Status Logs cho 8 máy trạm đang IN_USE (Phân bổ chuẩn: 1 hội viên chỉ đăng nhập 1 máy tại 1 thời điểm)
     await safeSeed(db.ComputerStatusLog, [

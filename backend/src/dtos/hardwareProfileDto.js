@@ -41,6 +41,7 @@ class HardwareProfileDto {
       description: profile.description || '',
       zoneId: profile.zone_id ? String(profile.zone_id) : '1',
       zoneName: zone.zone_name || 'Phân Khu',
+      is_active: profile.is_active !== undefined ? Boolean(profile.is_active) : true,
       status: 'online',
       statusLabel: 'Online',
       cpu: {
