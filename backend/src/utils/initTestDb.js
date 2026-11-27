@@ -23,4 +23,7 @@ async function initTestDb() {
   }
 }
 
-initTestDb();
+initTestDb().catch((err) => {
+  console.error('❌ Lỗi không xác định khi khởi tạo CSDL:', err);
+  process.exit(1);
+});
