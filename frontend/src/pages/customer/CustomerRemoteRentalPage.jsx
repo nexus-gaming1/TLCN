@@ -1,8 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Monitor, RefreshCw, Search } from 'lucide-react';
 
 import { useStations } from '../../shared/hooks/useRemoteMachine';
+import { findPricingPlan } from '../../shared/utils/pricing';
+import { socket, connectSocket } from '../../shared/socket/socket';
 import UserStationCard from '../../entities/station/ui/UserStationCard';
 import RentalModal from '../../entities/station/ui/RentalModal';
 import CustomerLayout from '../../widgets/layouts/customer/CustomerLayout';
@@ -19,16 +21,34 @@ export default function RentalPage() {
 
     const [selectedStation, setSelectedStation] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
-    console.log('stations', stations);
+
+    // Lắng nghe socket để cập nhật trạng thái máy realtime
+    useEffect(() => {
+        connectSocket();
+
+        const handleRealtimeUpdate = () => {
+            refetch();
+        };
+
+        socket.on('machine:updated', handleRealtimeUpdate);
+        socket.on('machine:status', handleRealtimeUpdate);
+        socket.on('remote:pairing:cancelled', handleRealtimeUpdate);
+        socket.on('remote:pairing:started', handleRealtimeUpdate);
+
+        return () => {
+            socket.off('machine:updated', handleRealtimeUpdate);
+            socket.off('machine:status', handleRealtimeUpdate);
+            socket.off('remote:pairing:cancelled', handleRealtimeUpdate);
+            socket.off('remote:pairing:started', handleRealtimeUpdate);
+        };
+    }, [refetch]);
+
     // Select station for rental
     const handleSelectStation = (station) => {
         if (station.status !== 'ONLINE') return;
 
-        const hasRemotePricing = station.ComputerZone?.PricingPlans?.some(
-            (plan) => plan.plan_type === 'REMOTE' && plan.is_active
-        );
-
-        if (!hasRemotePricing) return;
+        const applicablePlan = findPricingPlan(station, new Date(), 'REMOTE');
+        if (!applicablePlan) return;
 
         setSelectedStation(station);
     };
@@ -156,7 +176,10 @@ export default function RentalPage() {
                     <RentalModal
                         station={selectedStation}
                         isOpen={!!selectedStation}
-                        onClose={() => setSelectedStation(null)}
+                        onClose={() => {
+                            setSelectedStation(null);
+                            refetch();
+                        }}
                     />
 
                 </div>

@@ -18,6 +18,7 @@ public class SessionService
     public int? CurrentMemberId { get; private set; }
     public DateTime? CurrentSessionStartedAt { get; private set; }
     public string? Password { get; private set; }
+    public bool IsRemoteSession { get; set; }
 
     public string MachineId { get; }
     public string Hostname { get; }
@@ -55,6 +56,7 @@ public class SessionService
                 MachineId = MachineId,
                 Hostname = Hostname,
                 LocalIp = GetLocalIpAddress(),
+                Ipv6 = GetLocalIpv6(),
                 MacAddress = GetMacAddress(),
                 WindowsUser = Environment.UserName,
                 Status = CurrentStatus.ToString()
@@ -62,7 +64,9 @@ public class SessionService
         }
     }
 
-    public bool Login(string username, int? memberId = null)
+    public string? GetLocalIpv6() => GetLocalIpv6Address();
+
+    public bool Login(string username, int? memberId = null, bool isRemote = false)
     {
         lock (_lock)
         {
@@ -77,8 +81,9 @@ public class SessionService
             CurrentMemberId = memberId;
             CurrentSessionStartedAt ??= DateTime.UtcNow;
             CurrentStatus = MachineStatus.IN_USE;
+            IsRemoteSession = isRemote;
 
-            _logger.LogInformation("User logged in: {User}. Status changed from {Old} to {New}", CurrentUser, oldStatus, CurrentStatus);
+            _logger.LogInformation("User logged in: {User} (IsRemote: {IsRemote}). Status changed from {Old} to {New}", CurrentUser, IsRemoteSession, oldStatus, CurrentStatus);
 
             UserLoggedIn?.Invoke(CurrentUser);
             StatusChanged?.Invoke(CurrentStatus, oldStatus);
@@ -96,6 +101,7 @@ public class SessionService
             CurrentMemberId = null;
             CurrentSessionStartedAt = null;
             CurrentStatus = MachineStatus.ONLINE;
+            IsRemoteSession = false;
 
             _logger.LogInformation("User logged out (was {User}). Status changed from {Old} to {New}", prevUser, oldStatus, CurrentStatus);
 
@@ -146,6 +152,102 @@ public class SessionService
         }
 
         return "127.0.0.1";
+    }
+private static bool IsUsableGlobalIpv6(IPAddress ip)
+{
+    if (ip.AddressFamily != AddressFamily.InterNetworkV6)
+        return false;
+
+    if (IPAddress.IsLoopback(ip) ||
+        ip.IsIPv6LinkLocal ||
+        ip.IsIPv6SiteLocal ||
+        ip.Equals(IPAddress.IPv6Any) ||
+        ip.IsIPv6Multicast ||
+        ip.IsIPv4MappedToIPv6)
+    {
+        return false;
+    }
+
+    // Loại bỏ Unique Local Address: fc00::/7
+    byte[] bytes = ip.GetAddressBytes();
+
+    if ((bytes[0] & 0xFE) == 0xFC)
+        return false;
+
+    return true;
+}
+    private static string? GetLocalIpv6Address()
+    {
+        try
+        {
+            // Thử kết nối socket UDP tới địa chỉ IPv6 DNS công cộng để xác định interface ưu tiên
+            using var socket = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, 0);
+            socket.Connect("2001:4860:4860::8888", 65530);
+            if (socket.LocalEndPoint is IPEndPoint endPoint)
+            {
+                var addr = endPoint.Address;
+                if (addr.AddressFamily == AddressFamily.InterNetworkV6 &&
+                    !IPAddress.IsLoopback(addr) &&
+                    !addr.IsIPv6LinkLocal &&
+                    !addr.IsIPv6SiteLocal)
+                {
+                    return addr.ToString();
+                }
+            }
+        }
+        catch
+        {
+            // Mạng có thể chưa có global IPv6 route hoặc socket connect lỗi, fallback qua NetworkInterface
+        }
+
+        try
+        {
+            // Ưu tiên Global IPv6 unicast
+            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nic.OperationalStatus != OperationalStatus.Up ||
+                    nic.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                {
+                    continue;
+                }
+
+                var ipProps = nic.GetIPProperties();
+                foreach (var unicast in ipProps.UnicastAddresses)
+                {
+                    var ip = unicast.Address;
+                    if (ip.AddressFamily == AddressFamily.InterNetworkV6 &&
+                        !IPAddress.IsLoopback(ip) &&
+                        !ip.IsIPv6LinkLocal &&
+                        !ip.IsIPv6SiteLocal)
+                    {
+                        return ip.ToString();
+                    }
+                }
+            }
+
+            // Nếu không có Global IPv6, lấy Link-Local IPv6 (fe80::)
+            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nic.OperationalStatus != OperationalStatus.Up ||
+                    nic.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                {
+                    continue;
+                }
+
+                var ipProps = nic.GetIPProperties();
+                foreach (var unicast in ipProps.UnicastAddresses)
+                {
+                    var ip = unicast.Address;
+                    if (ip.AddressFamily == AddressFamily.InterNetworkV6 && !IPAddress.IsLoopback(ip))
+                    {
+                        return ip.ToString();
+                    }
+                }
+            }
+        }
+        catch { }
+
+        return null;
     }
 
     private static string? GetMacAddress()

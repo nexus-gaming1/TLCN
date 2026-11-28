@@ -11,18 +11,34 @@ function money(value) {
 }
 
 class BillingService {
-  async findPricingPlan(computer, at = new Date()) {
-    const zone = computer.ComputerZone || await db.ComputerZone.findByPk(computer.zone_id);
-    if (!zone) throw new Error(`Không tìm thấy khu vực của máy ${computer.computer_id}`);
+  async findPricingPlan(computer, at = new Date(), sessionType = null) {
+    let zone = computer.ComputerZone;
+    let plans = [];
 
-    const plans = await zone.getPricingPlans({
-      where: { is_active: true },
-      order: [['priority', 'DESC'], ['pricing_plan_id', 'ASC']]
-    });
+    if (zone && typeof zone.getPricingPlans === 'function') {
+      plans = await zone.getPricingPlans({
+        where: { is_active: true },
+        order: [['priority', 'DESC'], ['pricing_plan_id', 'ASC']]
+      });
+    } else {
+      const zoneInstance = await db.ComputerZone.findByPk(computer.zone_id || zone?.zone_id);
+      if (!zoneInstance) throw new Error(`Không tìm thấy khu vực của máy ${computer.computer_id}`);
+      plans = await zoneInstance.getPricingPlans({
+        where: { is_active: true },
+        order: [['priority', 'DESC'], ['pricing_plan_id', 'ASC']]
+      });
+    }
+
     const time = at.toTimeString().slice(0, 8);
     const date = at.toISOString().slice(0, 10);
+    const targetType = sessionType || (computer.is_remote_enabled ? 'REMOTE' : 'LOCAL');
     const applicable = plans.filter((plan) => {
-      if (!plan.isApplicable('LOCAL', time, zone.zone_id)) return false;
+      if (!plan.isApplicable(targetType, time, zone?.zone_id)) {
+        if (targetType === 'REMOTE' && plan.isApplicable('LOCAL', time, zone?.zone_id)) {
+          return !plan.apply_date || String(plan.apply_date).slice(0, 10) === date;
+        }
+        return false;
+      }
       return !plan.apply_date || String(plan.apply_date).slice(0, 10) === date;
     });
     return applicable[0] || null;

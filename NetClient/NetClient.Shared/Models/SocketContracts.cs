@@ -13,6 +13,9 @@ public class RegisterPayload
     [JsonPropertyName("localIp")]
     public string LocalIp { get; set; } = string.Empty;
 
+    [JsonPropertyName("ipv6")]
+    public string? Ipv6 { get; set; }
+
     [JsonPropertyName("macAddress")]
     public string? MacAddress { get; set; }
 
@@ -48,6 +51,9 @@ public class HeartbeatPayload
 
     [JsonPropertyName("timestamp")]
     public string Timestamp { get; set; } = string.Empty;
+
+    [JsonPropertyName("ipv6")]
+    public string? Ipv6 { get; set; }
 
     [JsonPropertyName("performance")]
     public PerformanceData? Performance { get; set; }
@@ -102,6 +108,9 @@ public class LoginPayload
 
     [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
+
+    [JsonPropertyName("isRemote")]
+    public bool IsRemote { get; set; }
 }
 
 public class LoginAck

@@ -18,6 +18,7 @@ public class SocketService : BackgroundService
     private readonly AuthApiService _authApiService;
     private readonly SunshinePairingManager _pairingManager;
     private readonly SunshineService _sunshineService;
+    private readonly MoonlightStreamMonitor _moonlightMonitor;
 
     private SocketIO? _client;
     private System.Threading.Timer? _heartbeatTimer;
@@ -40,7 +41,8 @@ public class SocketService : BackgroundService
         IpcServerService ipcServerService,
         AuthApiService authApiService,
         SunshinePairingManager pairingManager,
-        SunshineService sunshineService)
+        SunshineService sunshineService,
+        MoonlightStreamMonitor moonlightMonitor)
     {
         _logger = logger;
         _configuration = configuration;
@@ -51,6 +53,7 @@ public class SocketService : BackgroundService
         _authApiService = authApiService;
         _pairingManager = pairingManager;
         _sunshineService = sunshineService;
+        _moonlightMonitor = moonlightMonitor;
 
         _serverUrl = _configuration["Server:Url"] ?? "http://127.0.0.1:3000";
         if (!int.TryParse(_configuration["Client:HeartbeatIntervalSeconds"], out _heartbeatIntervalSeconds) || _heartbeatIntervalSeconds <= 0)
@@ -66,6 +69,7 @@ public class SocketService : BackgroundService
         _sessionService.StatusChanged += OnLocalStatusChanged;
         _ipcServerService.LoginRequested += AuthenticateLocalLoginAsync;
         _ipcServerService.LogoutRequested += HandleLocalLogoutAsync;
+        _moonlightMonitor.StreamDisconnected += HandleStreamDisconnectedAsync;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -270,14 +274,20 @@ public class SocketService : BackgroundService
             {
                 var loginData = ctx.GetValue<LoginPayload>(0);
                 var username = loginData?.Username;
+                var isRemote = loginData?.IsRemote ?? false;
 
-                _logger.LogInformation("Received 'session:login' event for user: {User}", username);
+                _logger.LogInformation("Received 'session:login' event for user: {User}, IsRemote: {IsRemote}", username, isRemote);
 
                 if (!string.IsNullOrWhiteSpace(username))
                 {
-                    bool ok = _sessionService.Login(username);
+                    bool ok = _sessionService.Login(username, null, isRemote);
                     if (ok)
                     {
+                        if (isRemote)
+                        {
+                            _moonlightMonitor.NotifyRemoteSessionStarted();
+                        }
+
                         await _ipcServerService.SetUsernameAsync(username);
                         await _ipcServerService.HideOverlayAsync();
 
@@ -471,6 +481,11 @@ public class SocketService : BackgroundService
                         payload.Pin,
                         payload.DeviceName);
 
+                    if (success)
+                    {
+                        _moonlightMonitor.NotifyRemoteSessionStarted();
+                    }
+
                     await _client.EmitAsync("remote:pairing:ack", [new PairingAck
                     {
                         IntentId = payload.IntentId,
@@ -516,7 +531,8 @@ public class SocketService : BackgroundService
                 Status = info.Status,
                 Username = _sessionService.CurrentUser,
                 MemberId = _sessionService.CurrentMemberId,
-                SessionStartedAt = _sessionService.CurrentSessionStartedAt
+                SessionStartedAt = _sessionService.CurrentSessionStartedAt,
+                Ipv6 = info.Ipv6
             };
 
             _logger.LogInformation("Registering machine with server: MachineId={Id}, IP={Ip}, Status={Status}",
@@ -572,7 +588,8 @@ public class SocketService : BackgroundService
                 Username = _sessionService.CurrentUser,
                 MemberId = _sessionService.CurrentMemberId,
                 Timestamp = DateTime.UtcNow.ToString("o"),
-                Performance = perf
+                Performance = perf,
+                Ipv6 = _sessionService.GetLocalIpv6()
             };
 
             await _client.EmitAsync("heartbeat", [payload]);
@@ -690,6 +707,12 @@ public class SocketService : BackgroundService
             _logger.LogError(ex, "Unexpected error while authenticating local login");
             await _ipcServerService.SendLoginResultAsync(false, "Đăng nhập thất bại.");
         }
+    }
+
+    private async Task HandleStreamDisconnectedAsync()
+    {
+        _logger.LogWarning("Handling stream disconnect event: user session lost Sunshine/Moonlight connection");
+        await HandleLocalLogoutAsync();
     }
 
     private async Task HandleLocalLogoutAsync()
