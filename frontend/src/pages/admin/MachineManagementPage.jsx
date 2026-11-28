@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
@@ -12,8 +12,10 @@ import MachineTable from '../../features/machines/ui/MachineTable';
 import Pagination from '../../shared/ui/Pagination';
 import CreateMachineModal from '../../features/machines/ui/CreateMachineModal';
 import EditMachineModal from '../../features/machines/ui/EditMachineModal';
+import ZoneManagementModal from '../../features/machines/ui/ZoneManagementModal';
+import BulkActionConfirmModal from '../../features/machines/ui/BulkActionConfirmModal';
+import BulkAssignZoneModal from '../../features/machines/ui/BulkAssignZoneModal';
 import { ComputerStatus } from '../../shared/constants/stationConstants';
-import StationCard from '../../entities/station/ui/StationCard';
 
 // Single Source of Truth for Status Grouping (DRY Resolver)
 const getStatusGroup = (status) => {
@@ -38,14 +40,18 @@ export default function MachineManagementPage({ user, onLogout }) {
   const [zoneFilter, setZoneFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [hardwareFilter, setHardwareFilter] = useState('all');
-  const [viewMode, setViewMode] = useState('table'); // 'table' | 'grid'
   const [selectedIds, setSelectedIds] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMachine, setEditingMachine] = useState(null);
+  const [isZoneModalOpen, setIsZoneModalOpen] = useState(false);
+  const [zoneModalMode, setZoneModalMode] = useState('list');
+  const [selectedZoneForEdit, setSelectedZoneForEdit] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [errorMessage, setErrorMessage] = useState(null);
   const [toast, setToast] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, actionType: 'reboot' });
+  const [isAssignZoneModalOpen, setIsAssignZoneModalOpen] = useState(false);
 
   // Thông báo toast nổi đa năng (Success, Warning, Error)
   const showToast = (payload, type = 'success') => {
@@ -203,6 +209,11 @@ export default function MachineManagementPage({ user, onLogout }) {
     return filteredMachines.slice(startIndex, startIndex + pageSize);
   }, [filteredMachines, currentPage, pageSize]);
 
+  // Selected machines object list
+  const selectedMachines = useMemo(() => {
+    return machines.filter((m) => selectedIds.includes(m.id));
+  }, [machines, selectedIds]);
+
   // Handle Multi-Selection
   const handleToggleSelect = (id) => {
     setSelectedIds((prev) =>
@@ -210,52 +221,119 @@ export default function MachineManagementPage({ user, onLogout }) {
     );
   };
 
+  // Toggle selection for current page
   const handleToggleSelectAll = () => {
-    if (selectedIds.length === filteredMachines.length) {
-      setSelectedIds([]);
+    const pageIds = paginatedMachines.map((m) => m.id);
+    const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
+
+    if (allPageSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !pageIds.includes(id)));
     } else {
-      setSelectedIds(filteredMachines.map((m) => m.id));
+      setSelectedIds((prev) => Array.from(new Set([...prev, ...pageIds])));
     }
   };
 
-  // Reusable Bulk Action Wrapper (DRY: handles selection check, Promise.all concurrency, refresh, and error handling)
-  const executeBulkAction = async (actionFn, errorMessage) => {
+  // Toggle selection for entire system (all filtered machines)
+  const handleSelectAllSystem = () => {
+    setSelectedIds(filteredMachines.map((m) => m.id));
+  };
+
+  // Open confirmation modal for reboot/shutdown/maintenance
+  const handleOpenRebootModal = () => {
     if (selectedIds.length === 0) return;
+    setConfirmModal({ isOpen: true, actionType: 'reboot' });
+  };
+
+  const handleOpenShutdownModal = () => {
+    if (selectedIds.length === 0) return;
+    setConfirmModal({ isOpen: true, actionType: 'shutdown' });
+  };
+
+  const handleOpenMaintenanceModal = () => {
+    if (selectedIds.length === 0) return;
+    setConfirmModal({ isOpen: true, actionType: 'maintenance' });
+  };
+
+  const handleOpenAssignZoneModal = () => {
+    if (selectedIds.length === 0) return;
+    setIsAssignZoneModalOpen(true);
+  };
+
+  // Execute confirmation action (Reboot / Shutdown / Maintenance)
+  const handleExecuteConfirmAction = async ({ forceAll }) => {
+    const actionType = confirmModal.actionType;
+    let targetStatus = ComputerStatus.ONLINE;
+    let actionLabel = 'khởi động lại';
+    let toastType = 'success';
+
+    if (actionType === 'shutdown') {
+      targetStatus = ComputerStatus.OFFLINE;
+      actionLabel = 'tắt nguồn';
+    } else if (actionType === 'maintenance') {
+      targetStatus = ComputerStatus.MAINTENANCE;
+      actionLabel = 'chuyển bảo trì';
+      toastType = 'warning';
+    }
+
+    const targets = selectedMachines.filter((m) => {
+      if (forceAll) return true;
+      const grp = getStatusGroup(m.status);
+      return grp !== ComputerStatus.IN_USE;
+    });
+
+    if (targets.length === 0) {
+      showToast('Không có máy trạm nào phù hợp để thực thi thao tác!', 'warning');
+      return;
+    }
+
     try {
       await Promise.all(
-        selectedIds.map((id) => {
-          const comp = machines.find((m) => m.id === id);
-          const computerId = comp?.computer_id || id;
-          return actionFn(computerId);
+        targets.map((m) => {
+          const computerId = m.computer_id || m.id;
+          return machineService.changeStatus(computerId, targetStatus);
         })
       );
+
+      const skippedCount = selectedMachines.length - targets.length;
+      let msg = `Đã gửi lệnh ${actionLabel} cho ${targets.length} máy trạm thành công!`;
+      if (skippedCount > 0) {
+        msg += ` (Đã bỏ qua ${skippedCount} máy đang có khách)`;
+      }
+
+      showToast(msg, toastType);
       setSelectedIds([]);
       await refreshMachineList(false);
     } catch (error) {
-      alert(error.message || errorMessage);
+      showToast(error.message || `Lỗi khi thực hiện ${actionLabel} hàng loạt`, 'error');
     }
   };
 
-  const handleRebootSelected = () => {
-    alert(`Đã gửi lệnh Reboot khởi động lại cho ${selectedIds.length} máy trạm!`);
-    setSelectedIds([]);
-  };
+  // Execute fast bulk zone assignment
+  const handleExecuteAssignZone = async ({ targetZoneId, targetZone, autoRenamePrefix }) => {
+    try {
+      await Promise.all(
+        selectedMachines.map((m) => {
+          const computerId = m.computer_id || m.id;
+          const updatePayload = { zone_id: targetZoneId };
 
-  const handleMaintenanceSelected = () =>
-    executeBulkAction(
-      (computerId) => machineService.changeStatus(computerId, ComputerStatus.MAINTENANCE),
-      'Lỗi khi chuyển trạng thái bảo trì trạm máy'
-    );
+          if (autoRenamePrefix && targetZone?.code_prefix) {
+            const rawPrefix = targetZone.code_prefix.trim();
+            const prefix = rawPrefix.endsWith('-') ? rawPrefix : `${rawPrefix}-`;
+            const numMatch = (m.computer_name || m.id || '').match(/\d+$/);
+            if (numMatch) {
+              updatePayload.computer_name = `${prefix}${numMatch[0]}`;
+            }
+          }
 
-  const handleAssignZoneSelected = async () => {
-    if (selectedIds.length === 0) return;
-    const newZoneInput = window.prompt('Nhập mã ID Phân khu mới (1: Esports, 2: VIP, 3: Tiêu chuẩn, 4: Studio, 5: Cloud):', '2');
-    if (newZoneInput) {
-      const zoneId = Number(newZoneInput.replace('zone-', '')) || 1;
-      await executeBulkAction(
-        (computerId) => machineService.updateMachine(computerId, { zone_id: zoneId }),
-        'Lỗi khi chuyển phân khu máy'
+          return machineService.updateMachine(computerId, updatePayload);
+        })
       );
+
+      showToast(`Đã gán ${selectedMachines.length} máy sang phân khu "${targetZone.zone_name}" thành công!`);
+      setSelectedIds([]);
+      await refreshMachineList(false);
+    } catch (error) {
+      showToast(error.message || 'Lỗi khi gán phân khu hàng loạt', 'error');
     }
   };
 
@@ -422,8 +500,6 @@ export default function MachineManagementPage({ user, onLogout }) {
               hardwareList={hardwareList}
               hardwareFilter={hardwareFilter}
               onHardwareChange={setHardwareFilter}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
               onOpenCreateModal={() => setIsModalOpen(true)}
               onExportReport={handleExportReport}
             />
@@ -431,18 +507,22 @@ export default function MachineManagementPage({ user, onLogout }) {
             {/* Bulk Action Bar */}
             <MachineBulkActionBar
               selectedCount={selectedIds.length}
-              onReboot={handleRebootSelected}
-              onMaintenance={handleMaintenanceSelected}
-              onAssignZone={handleAssignZoneSelected}
+              totalItems={filteredMachines.length}
+              isAllSystemSelected={selectedIds.length > 0 && selectedIds.length === filteredMachines.length}
+              onSelectAllSystem={handleSelectAllSystem}
               onClearSelection={() => setSelectedIds([])}
+              onAssignZone={handleOpenAssignZoneModal}
+              onMaintenance={handleOpenMaintenanceModal}
+              onReboot={handleOpenRebootModal}
+              onShutdown={handleOpenShutdownModal}
             />
 
-            {/* Content: Table View or Grid View with Loading Skeleton */}
+            {/* Content: Dedicated Professional Machine Table with Dynamic Pagination */}
             {loading ? (
               <div className="p-12 text-center text-slate-500 font-mono text-xs bg-white rounded-xl border border-slate-200 shadow-xs flex items-center justify-center gap-2">
                 <span className="animate-spin text-slate-700">⏳</span> Đang tải danh sách máy trạm...
               </div>
-            ) : viewMode === 'table' ? (
+            ) : (
               <div className="w-full bg-white rounded-xl shadow-xs border border-slate-200/90 overflow-hidden flex flex-col">
                 <MachineTable
                   machines={paginatedMachines}
@@ -466,58 +546,6 @@ export default function MachineManagementPage({ user, onLogout }) {
                   className="rounded-t-none border-t border-slate-200"
                 />
               </div>
-            ) : (
-              <>
-                {paginatedMachines.length === 0 ? (
-                  <div className="p-12 text-center text-slate-500 bg-white rounded-xl border border-slate-200 shadow-xs flex flex-col items-center justify-center gap-2">
-                    <span className="text-sm font-semibold text-slate-700">Không có máy trạm nào khớp với bộ lọc</span>
-                    <span className="text-xs text-slate-400">Vui lòng thử chọn lại phân khu hoặc trạng thái</span>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3.5 bg-white p-4 rounded-xl border border-slate-200">
-                    {paginatedMachines.map((m) => {
-                      const statusGroup = getStatusGroup(m.status);
-                      const stationType = m.type || (
-                        statusGroup === ComputerStatus.ONLINE
-                          ? 'ready'
-                          : statusGroup === ComputerStatus.MAINTENANCE
-                          ? 'maint'
-                          : statusGroup === ComputerStatus.IN_USE
-                          ? (m.is_remote_enabled ? 'cloud' : 'local')
-                          : statusGroup === ComputerStatus.LOCKED
-                          ? 'locked'
-                          : 'off'
-                      );
-
-                      return (
-                        <StationCard
-                          key={m.id}
-                          station={{
-                            id: m.id,
-                            user: m.userName,
-                            game: m.currentGame || m.cleanStatus,
-                            type: stationType,
-                            time: m.sessionTime ? m.sessionTime.split('/')[0].trim() : '00:00',
-                            latency: m.ip
-                          }}
-                          onClick={() => alert(`Chi tiết máy ${m.id}`)}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-                {/* Dynamic Pagination cho Grid view */}
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  pageSize={pageSize}
-                  totalItems={filteredMachines.length}
-                  selectedCount={selectedIds.length}
-                  onPageChange={setCurrentPage}
-                  onPageSizeChange={setPageSize}
-                  itemLabel="máy trạm"
-                />
-              </>
             )}
           </div>
 
@@ -531,6 +559,16 @@ export default function MachineManagementPage({ user, onLogout }) {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateMachine}
+        onOpenCreateZone={() => {
+          setZoneModalMode('create');
+          setSelectedZoneForEdit(null);
+          setIsZoneModalOpen(true);
+        }}
+        onOpenZoneManagement={(z) => {
+          setZoneModalMode('edit');
+          setSelectedZoneForEdit(z);
+          setIsZoneModalOpen(true);
+        }}
       />
 
       {/* Edit Machine Modal */}
@@ -539,6 +577,40 @@ export default function MachineManagementPage({ user, onLogout }) {
         machine={editingMachine}
         onClose={() => setEditingMachine(null)}
         onSubmit={handleUpdateMachine}
+      />
+
+      {/* Zone Management Modal */}
+      <ZoneManagementModal
+        isOpen={isZoneModalOpen}
+        onClose={() => {
+          setIsZoneModalOpen(false);
+          setSelectedZoneForEdit(null);
+          setZoneModalMode('list');
+        }}
+        initialMode={zoneModalMode}
+        initialEditZone={selectedZoneForEdit}
+        onSuccess={() => {
+          refreshMachineList(false);
+          showToast('Đã cập nhật danh sách phân khu & sức chứa phòng máy!');
+        }}
+      />
+
+      {/* Bulk Action Confirm Modal (Reboot / Shutdown / Maintenance) */}
+      <BulkActionConfirmModal
+        isOpen={confirmModal.isOpen}
+        actionType={confirmModal.actionType}
+        selectedMachines={selectedMachines}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
+        onConfirm={handleExecuteConfirmAction}
+      />
+
+      {/* Bulk Fast Assign Zone Modal */}
+      <BulkAssignZoneModal
+        isOpen={isAssignZoneModalOpen}
+        selectedMachines={selectedMachines}
+        zones={zones}
+        onClose={() => setIsAssignZoneModalOpen(false)}
+        onConfirm={handleExecuteAssignZone}
       />
     </div>
   );

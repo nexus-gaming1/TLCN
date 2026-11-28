@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import authService from '../api/auth.service';
 import useIdleTimer from '../hooks/useIdleTimer';
 import ReAuthModal from '../ui/ReAuthModal';
@@ -14,21 +14,36 @@ export const AuthProvider = ({ children }) => {
 
   // 1. Tự động kiểm tra HttpOnly Cookie khi tải ứng dụng (Duy trì đăng nhập 1–2 ngày)
   useEffect(() => {
+    let isMounted = true;
+
     const initAuth = async () => {
       try {
-        const user = await authService.refreshToken();
-        if (user) {
+        // Giới hạn thời gian xác thực ban đầu tối đa 3 giây để không bao giờ bị kẹt ở màn hình splash/loading
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Auth initialization timeout')), 3000);
+        });
+
+        const user = await Promise.race([authService.refreshToken(), timeoutPromise]);
+        if (isMounted && user) {
           setCurrentUser(user);
         }
       } catch (err) {
-        // Chưa đăng nhập hoặc phiên 2 ngày đã hết hạn
-        setCurrentUser(null);
+        // Chưa đăng nhập, hết hạn hoặc mất kết nối: hủy phiên và giải phóng loading
+        if (isMounted) {
+          setCurrentUser(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     initAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // 2. Theo dõi 30 phút không hoạt động (Inactivity Timeout Tracker)

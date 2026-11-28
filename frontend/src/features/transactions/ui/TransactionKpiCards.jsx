@@ -46,6 +46,8 @@ export default function TransactionKpiCards({ metrics, loading = false, dateRang
   const successRate = metrics?.successRate ?? 100.0;
   const successCount = metrics?.successCount || 0;
   const pendingCount = metrics?.pendingCount || 0;
+  const refundedCount = metrics?.refundedCount ?? Math.max(0, (metrics?.totalTxnCount || 0) - successCount - pendingCount);
+  const failedCount = metrics?.failedCount || 0;
   const totalTxnCount = metrics?.totalTxnCount || 0;
   const activeRange = metrics?.dateRange || dateRange || 'all';
   const revenueCardTitle = RANGE_TITLE_MAP[activeRange] || RANGE_TITLE_MAP.all;
@@ -171,10 +173,27 @@ export default function TransactionKpiCards({ metrics, loading = false, dateRang
           </div>
         </div>
         <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs gap-2">
-          <span className="text-slate-500 font-medium truncate">
-            <strong className="text-slate-800">{successCount}</strong> thành công /{' '}
-            <strong className="text-amber-700">{pendingCount}</strong> chờ soát
-          </span>
+          <div className="text-slate-500 font-medium truncate flex items-center gap-1.5 flex-wrap">
+            <span><strong className="text-emerald-700 font-bold">{successCount}</strong> thành công</span>
+            <span>/</span>
+            <span><strong className="text-amber-700 font-bold">{pendingCount}</strong> chờ soát</span>
+            {refundedCount > 0 && (
+              <>
+                <span>/</span>
+                <span className="text-purple-700 font-medium">
+                  <strong>{refundedCount}</strong> hoàn tiền
+                </span>
+              </>
+            )}
+            {failedCount > 0 && (
+              <>
+                <span>/</span>
+                <span className="text-rose-600 font-medium">
+                  <strong>{failedCount}</strong> thất bại
+                </span>
+              </>
+            )}
+          </div>
           <div className="flex items-center gap-1 shrink-0">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="font-mono text-[10px] font-bold text-emerald-700">SYNC OK</span>

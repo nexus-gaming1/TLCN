@@ -91,6 +91,7 @@ test('[Unit TC-02] [Service] createComputer - Tự động cấp phát Mã máy,
   assert.strictEqual(result.computer_name, 'PC-042', 'Tự động cấp phát tên PC-042');
   assert.strictEqual(result.ip_address, '192.168.1.43', 'Tự động cấp phát IP 192.168.1.43');
   assert.ok(result.mac_address.startsWith('F4:D4:88:5A:'), 'Tự động sinh MAC chuẩn PXE');
+  assert.match(result.mac_address, /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/, 'MAC tự động sinh phải đúng chuẩn PXE (12 ký tự hex)');
 });
 
 // ------------------------------------------------------------------------------
@@ -311,4 +312,108 @@ test('[Unit TC-10] [Service] deleteComputer - Xóa mềm thành công máy trạ
 
   assert.strictEqual(success, true);
   assert.strictEqual(computerSoftDeleted, true, 'Máy trạm phải được xóa mềm');
+});
+
+test('[Unit TC-11] [Capacity Guard] createComputer - Chặn tạo máy khi phân khu đạt giới hạn sức chứa', async () => {
+  const mockModels = {
+    ComputerZone: {
+      findByPk: async () => ({
+        zone_id: 2,
+        zone_name: 'Zone VIP',
+        max_capacity: 10
+      })
+    },
+    Computer: {
+      count: async () => 10,
+      findOne: async () => null
+    }
+  };
+
+  const service = new ComputerService(mockModels);
+  await assert.rejects(
+    async () => {
+      await service.createComputer({
+        computer_name: 'PC-VIP-11',
+        zone_id: 2
+      });
+    },
+    (err) => {
+      assert.strictEqual(err.statusCode, 400);
+      assert.strictEqual(err.code, 'ZONE_CAPACITY_EXCEEDED');
+      assert.match(err.message, /đã đạt giới hạn sức chứa/);
+      return true;
+    }
+  );
+});
+
+test('[Unit TC-12] [Zone CRUD] createZone & deleteZone - Kiểm tra tính toàn vẹn và chặn xóa khi còn máy', async () => {
+  let zoneSoftDeleted = false;
+  const mockModels = {
+    ComputerZone: {
+      create: async (data) => ({
+        zone_id: 10,
+        ...data
+      }),
+      findByPk: async (id) => ({
+        zone_id: id,
+        zone_name: 'Zone Esports',
+        is_deleted: false,
+        softDelete: async () => { zoneSoftDeleted = true; },
+        destroy: async () => { zoneSoftDeleted = true; }
+      }),
+      findOne: async () => ({
+        zone_id: 10,
+        zone_name: 'Zone Esports',
+        is_deleted: false,
+        softDelete: async () => { zoneSoftDeleted = true; },
+        destroy: async () => { zoneSoftDeleted = true; }
+      })
+    },
+    ZonePricingPlan: {
+      bulkCreate: async () => true,
+      destroy: async () => true
+    },
+    Computer: {
+      count: async ({ where }) => {
+        if (where && where.status === 'IN_USE') return 0;
+        return where && where.zone_id === 10 ? 3 : 0;
+      }
+    }
+  };
+
+  const service = new ComputerService(mockModels);
+
+  // 1. Bước 1 — Chặn xóa phân khu khi đang có 3 máy
+  await assert.rejects(
+    async () => {
+      await service.deleteZone(10);
+    },
+    (err) => {
+      assert.strictEqual(err.statusCode, 400);
+      assert.match(err.message, /Không thể xóa phân khu vì đang có 3 máy trạm/);
+      return true;
+    }
+  );
+
+  // 2. Bước 2 — Chặn xóa khi có máy trong khu vực đang được sử dụng (IN_USE)
+  mockModels.Computer.count = async ({ where }) => {
+    if (where && where.status === 'IN_USE') return 1;
+    return 1;
+  };
+  await assert.rejects(
+    async () => {
+      await service.deleteZone(10);
+    },
+    (err) => {
+      assert.strictEqual(err.statusCode, 400);
+      assert.match(err.message, /Không thể xóa phân khu vì đang có 1 máy trạm đang trong phiên sử dụng/);
+      return true;
+    }
+  );
+
+  // 3. Bước 3 — Thực thi xóa mềm thành công khi phân khu trống (0 máy)
+  mockModels.Computer.count = async () => 0;
+  const delSuccess = await service.deleteZone(10);
+  assert.strictEqual(delSuccess, true);
+  assert.strictEqual(zoneSoftDeleted, true);
 });

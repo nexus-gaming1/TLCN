@@ -5,7 +5,7 @@ using NetClient.Shared.Ipc;
 
 namespace NetClient.App.Services;
 
-public class IpcClientService
+public class IpcClientService : IDisposable
 {
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private NamedPipeClientStream? _pipeClient;
@@ -25,6 +25,8 @@ public class IpcClientService
 
     public void Start()
     {
+        _cts?.Cancel();
+        _cts?.Dispose();
         _cts = new CancellationTokenSource();
         Task.Run(() => ConnectionLoopAsync(_cts.Token));
     }
@@ -36,6 +38,8 @@ public class IpcClientService
         {
             _writer?.Dispose();
             _pipeClient?.Dispose();
+            _cts?.Dispose();
+            _cts = null;
         }
         catch { }
     }
@@ -204,4 +208,10 @@ public class IpcClientService
             Action = IpcAction.ClientLogout
         }, ct);
 
+    public void Dispose()
+    {
+        Stop();
+        _sendLock.Dispose();
+        GC.SuppressFinalize(this);
+    }
 }

@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Search, Download, PlusCircle, LayoutList, LayoutGrid, ChevronDown } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { Search, Download, PlusCircle, ChevronDown } from 'lucide-react';
 import { COMPUTER_STATUS_OPTIONS } from '../../../shared/constants/stationConstants';
 
 export default function MachineFilterBar({
@@ -13,8 +13,6 @@ export default function MachineFilterBar({
   hardwareList = [],
   hardwareFilter = 'all',
   onHardwareChange,
-  viewMode = 'table',
-  onViewModeChange,
   onOpenCreateModal,
   onExportReport
 }) {
@@ -56,7 +54,7 @@ export default function MachineFilterBar({
           </span>
         </div>
 
-        {/* Bên phải: Cụm Nút Hành Động + Chuyển Chế Độ Bảng/Lưới */}
+        {/* Bên phải: Cụm Nút Hành Động */}
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap self-end sm:self-center">
           {/* Nút Xuất Báo Cáo */}
           <button
@@ -75,38 +73,8 @@ export default function MachineFilterBar({
             className="flex items-center gap-1.5 px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-extrabold rounded-lg text-xs shadow-xs transition-all cursor-pointer whitespace-nowrap"
           >
             <PlusCircle className="w-4 h-4 text-white" />
-            <span>+ Thêm Máy Mới</span>
+            <span>Thêm Máy Mới</span>
           </button>
-
-          {/* Bộ Chuyển Đổi View: Bảng / Lưới */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-lg border border-slate-200/90">
-            <button
-              type="button"
-              onClick={() => onViewModeChange && onViewModeChange('table')}
-              className={`px-3 py-1 rounded-md flex items-center gap-1 text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'table'
-                  ? 'bg-white text-sky-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Xem dạng bảng chi tiết"
-            >
-              <LayoutList className="w-3.5 h-3.5" />
-              <span>Bảng</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onViewModeChange && onViewModeChange('grid')}
-              className={`px-3 py-1 rounded-md flex items-center gap-1 text-xs font-bold transition-all cursor-pointer ${
-                viewMode === 'grid'
-                  ? 'bg-white text-sky-700 shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Xem dạng lưới phòng"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>Lưới</span>
-            </button>
-          </div>
         </div>
       </div>
 

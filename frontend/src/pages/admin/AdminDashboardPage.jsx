@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -8,6 +8,7 @@ import ZoneSection from '../../widgets/station-grid/ZoneSection';
 import StationListView from '../../widgets/station-grid/StationListView';
 import StationDrawer from '../../features/station-drawer/ui/StationDrawer';
 import BootromLogModal from '../../features/bootrom/BootromLogModal';
+import ZoneManagementModal from '../../features/machines/ui/ZoneManagementModal';
 import AmountInputModal from '../../features/transactions/ui/AmountInputModal';
 import SendNotificationModal from '../../features/notifications/SendNotificationModal';
 import dashboardService from '../../shared/api/dashboard.service';
@@ -27,6 +28,9 @@ export default function AdminDashboardPage({ user, onLogout }) {
     const [allStationsList, setAllStationsList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isBootromModalOpen, setIsBootromModalOpen] = useState(false);
+    const [isZoneModalOpen, setIsZoneModalOpen] = useState(false);
+    const [zoneModalMode, setZoneModalMode] = useState('list');
+    const [selectedZoneForEdit, setSelectedZoneForEdit] = useState(null);
     const [notificationModal, setNotificationModal] = useState({ isOpen: false, station: null });
     const [toastMessage, setToastMessage] = useState(null);
     const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
@@ -38,7 +42,6 @@ export default function AdminDashboardPage({ user, onLogout }) {
         setToastMessage({ text, isError });
         setTimeout(() => setToastMessage(null), 3500);
     };
-
     const openBalanceModal = (action, station) => {
         if (!station) return;
         if (!station.user && !station.member_id) {
@@ -50,11 +53,7 @@ export default function AdminDashboardPage({ user, onLogout }) {
         setContextMenu(null);
     };
 
-    const {
-        data: machines = {},
-        isLoading,
-        isError,
-    } = useMachines();
+    const { data: machines = {} } = useMachines();
     const loadDashboardData = useCallback(async (showLoading = true) => {
         if (showLoading) setLoading(true);
         const data = await dashboardService.getOverview();
@@ -415,8 +414,8 @@ export default function AdminDashboardPage({ user, onLogout }) {
             {toastMessage && (
                 <div
                     className={`fixed top-20 right-6 z-50 p-4 rounded-xl border font-bold text-xs flex items-center gap-2.5 shadow-xl animate-in slide-in-from-right duration-200 ${toastMessage.isError
-                            ? 'bg-rose-50 border-rose-200 text-rose-800'
-                            : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                        ? 'bg-rose-50 border-rose-200 text-rose-800'
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-800'
                         }`}
                 >
                     {toastMessage.isError ? (
@@ -499,6 +498,11 @@ export default function AdminDashboardPage({ user, onLogout }) {
                                         filter={filter}
                                         searchQuery={searchQuery}
                                         onSelectStation={(st) => setSelectedStation(st)}
+                                        onEditZone={(z) => {
+                                            setZoneModalMode('edit');
+                                            setSelectedZoneForEdit(z);
+                                            setIsZoneModalOpen(true);
+                                        }}
                                         onContextMenu={(event, station) => {
                                             event.preventDefault();
                                             setContextMenu({ x: event.clientX, y: event.clientY, station });
@@ -534,6 +538,21 @@ export default function AdminDashboardPage({ user, onLogout }) {
                 onClose={() => setIsBootromModalOpen(false)}
             />
 
+            {/* ZONE & CAPACITY MANAGEMENT MODAL */}
+            <ZoneManagementModal
+                isOpen={isZoneModalOpen}
+                onClose={() => {
+                    setIsZoneModalOpen(false);
+                    setSelectedZoneForEdit(null);
+                    setZoneModalMode('list');
+                }}
+                initialMode={zoneModalMode}
+                initialEditZone={selectedZoneForEdit}
+                onSuccess={() => {
+                    loadDashboardData(false);
+                    showGlobalToast('Đã cập nhật danh sách phân khu & sức chứa phòng máy!');
+                }}
+            />
             {/* ANNOUNCEMENT MANAGEMENT MODAL */}
             <AnnouncementManagementModal
                 isOpen={isAnnouncementModalOpen}

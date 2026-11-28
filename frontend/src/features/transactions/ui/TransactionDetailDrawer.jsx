@@ -9,7 +9,8 @@ export default function TransactionDetailDrawer({ transaction, onClose, onRefund
   const statusUpper = String(transaction.status || '').toUpperCase();
   const categoryUpper = String(transaction.category || '').toUpperCase();
   const typeUpper = String(transaction.type || '').toUpperCase();
-  const isNegative = typeUpper === 'EXPENSE' || categoryUpper === 'REFUND';
+  const isRefunded = statusUpper === 'REFUNDED' || statusUpper === 'HOÀN TIỀN' || categoryUpper === 'REFUND';
+  const isNegative = typeUpper === 'EXPENSE' || categoryUpper === 'REFUND' || isRefunded;
   const canRefund = statusUpper === 'COMPLETED' && categoryUpper !== 'REFUND' && typeUpper !== 'EXPENSE';
 
   const d = new Date(transaction.createdAt || transaction.created_at || Date.now());

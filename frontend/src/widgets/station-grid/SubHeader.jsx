@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ArrowUpDown, Zap, Gauge, Grid, LayoutList, ChevronDown, Check, Bell } from 'lucide-react';
 
 export default function SubHeader({

@@ -119,8 +119,9 @@ class PricingPlanService {
         ]
       });
 
-      // Lấy danh sách các zone để frontend tiện chọn khi tạo/sửa
+      // Lấy danh sách các zone đang hoạt động để frontend tiện chọn khi tạo/sửa
       const zones = await db.ComputerZone.findAll({
+        where: { is_deleted: false },
         attributes: ['zone_id', 'zone_name', 'tier_level'],
         order: [['zone_id', 'ASC']]
       });

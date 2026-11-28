@@ -16,8 +16,18 @@ async function requestJson(url, options = {}) {
 
 test('Hardware Config Integration - getHardwareSpecs visibility & 409 rename conflict in MySQL', async () => {
   const ts = Date.now();
-  const zone = await db.ComputerZone.findOne();
-  assert.ok(zone, 'Database must have at least one ComputerZone');
+  const zoneA = await db.ComputerZone.create({
+    zone_name: `Integration Zone A ${ts}`,
+    description: 'Zone A',
+    tier_level: 1,
+    is_deleted: false
+  });
+  const zoneB = await db.ComputerZone.create({
+    zone_name: `Integration Zone B ${ts}`,
+    description: 'Zone B',
+    tier_level: 1,
+    is_deleted: false
+  });
 
   let p1Id = null;
   let p2Id = null;
@@ -25,13 +35,13 @@ test('Hardware Config Integration - getHardwareSpecs visibility & 409 rename con
   try {
     const p1 = await computerService.createHardwareSpec({
       profileName: `IT_Spec_A_${ts}`,
-      zoneId: zone.zone_id,
+      zoneId: zoneA.zone_id,
       cpu: 'Core i5-14600K',
       gpu: 'RTX 4060 Ti'
     });
     const p2 = await computerService.createHardwareSpec({
       profileName: `IT_Spec_B_${ts}`,
-      zoneId: zone.zone_id,
+      zoneId: zoneB.zone_id,
       cpu: 'Core i7-14700K',
       gpu: 'RTX 4070 Super'
     });
@@ -51,7 +61,7 @@ test('Hardware Config Integration - getHardwareSpecs visibility & 409 rename con
 
     // Update p2 zone & description without losing cpu_model
     const updated = await computerService.updateHardwareSpec(p2Id, {
-      zoneId: zone.zone_id,
+      zoneId: zoneB.zone_id,
       description: 'Updated description in MySQL'
     });
     assert.strictEqual(updated.profile.cpu_model, 'Core i7-14700K');
@@ -59,6 +69,8 @@ test('Hardware Config Integration - getHardwareSpecs visibility & 409 rename con
   } finally {
     if (p1Id) await db.HardwareProfile.destroy({ where: { profile_id: p1Id } });
     if (p2Id) await db.HardwareProfile.destroy({ where: { profile_id: p2Id } });
+    await zoneA.destroy().catch(() => {});
+    await zoneB.destroy().catch(() => {});
   }
 });
 
@@ -74,7 +86,12 @@ test('Hardware Config API - Complete RBAC matrix & HTTP edge cases across all /s
   const adminToken = generateToken({ user_id: 1, role: UserRole.ADMIN || 'ADMIN' });
   const employeeToken = generateToken({ user_id: 2, role: UserRole.EMPLOYEE || 'EMPLOYEE' });
   const memberToken = generateToken({ user_id: 3, role: UserRole.MEMBER || 'MEMBER' });
-  const zone = await db.ComputerZone.findOne();
+  const zone = await db.ComputerZone.create({
+    zone_name: `API Test Zone ${Date.now()}`,
+    description: 'Zone for API test matrix',
+    tier_level: 1,
+    is_deleted: false
+  });
   let createdId = null;
 
   try {
@@ -177,6 +194,7 @@ test('Hardware Config API - Complete RBAC matrix & HTTP edge cases across all /s
     if (createdId) {
       await db.HardwareProfile.destroy({ where: { profile_id: createdId } });
     }
+    await zone.destroy().catch(() => {});
     server.close();
   }
 });

@@ -35,10 +35,15 @@ test('[Machine Fleet Module] MySQL Database & Sequelize ORM Integration Suite', 
   // Đảm bảo kết nối CSDL sẵn sàng
   await db.sequelize.authenticate();
 
+  // Dọn dẹp trước các bản ghi test cũ nếu có
+  await db.Computer.destroy({
+    where: { computer_name: { [db.Sequelize.Op.like]: 'PC-IT-%' } }
+  }).catch(() => {});
+
   const timestamp = Date.now();
   const testPcName = `PC-IT-${String(timestamp).slice(-4)}`;
-  const testIp = `192.168.12.${(timestamp % 200) + 1}`;
-  const testMac = `00:11:22:33:44:${(timestamp % 90 + 10).toString(16).toUpperCase()}`;
+  const testIp = `192.168.12.${Math.floor(Math.random() * 150) + 50}`;
+  const testMac = `00:11:22:33:44:${Math.floor(Math.random() * 89 + 10).toString(16).toUpperCase()}`;
 
   let createdComputerId = null;
 
@@ -52,8 +57,8 @@ test('[Machine Fleet Module] MySQL Database & Sequelize ORM Integration Suite', 
   // [INT-01] Tạo bản ghi máy trạm thực tế trong MySQL
   // ----------------------------------------------------------------------------
   await suite.test('[INT-01] [MySQL Persistence] Tạo mới máy trạm lưu vào bảng computer trong MySQL', async () => {
-    // Lấy 1 zone có sẵn trong database
-    const zone = await db.ComputerZone.findOne();
+    // Lấy 1 zone có sẵn trong database đang hoạt động
+    const zone = await db.ComputerZone.findOne({ where: { is_deleted: false } });
     assert.ok(zone, 'Database phải có ít nhất 1 ComputerZone để test');
 
     const newComputer = await computerService.createComputer({

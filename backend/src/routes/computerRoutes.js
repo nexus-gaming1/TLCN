@@ -23,6 +23,10 @@ router.post('/remote/pairing/cancel', authenticateToken, computerController.canc
 // Computer management
 router.get('/grid', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getRoomLayoutGrid);
 router.get('/zones', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getZones);
+router.post('/zones', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.createZone);
+router.put('/zones/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.updateZone);
+router.delete('/zones/:id', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.deleteZone);
+router.patch('/zones/:id/restore', authenticateToken, authorizeRoles(UserRole.ADMIN), computerController.restoreZone);
 router.get('/bootrom-logs', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getBootromLogs);
 router.post('/wake-on-lan', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.wakeOnLan);
 router.get('/overview', authenticateToken, authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE), computerController.getComputerOverview);

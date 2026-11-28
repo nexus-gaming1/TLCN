@@ -1,4 +1,3 @@
-import React from 'react';
 import { Monitor, Eye, Edit, HardDrive, Cpu, CheckCircle, PowerOff, Wrench } from 'lucide-react';
 
 /**
@@ -13,7 +12,8 @@ export default function MachineTable({
   onEdit,
   onToggleStatus
 }) {
-  const isAllSelected = machines.length > 0 && selectedIds.length === machines.length;
+  const isAllSelected = machines.length > 0 && machines.every((m) => selectedIds.includes(m.id));
+  const isPartiallySelected = machines.some((m) => selectedIds.includes(m.id)) && !isAllSelected;
 
   return (
     <div className="w-full flex flex-col">
@@ -48,6 +48,9 @@ export default function MachineTable({
                 <input
                   type="checkbox"
                   checked={isAllSelected}
+                  ref={(el) => {
+                    if (el) el.indeterminate = isPartiallySelected;
+                  }}
                   onChange={onToggleSelectAll}
                   className="rounded w-4 h-4 text-sky-600 accent-sky-600 focus:ring-0 cursor-pointer"
                   id="selectAllCheckbox"
@@ -211,8 +214,8 @@ export default function MachineTable({
                       <div className="flex items-center gap-1.5 text-emerald-800">
                         <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
                         <div className="flex flex-col">
-                          <span className="text-xs font-bold text-slate-900">Sẵn sàng nạp khách</span>
-                          <span className="text-[11px] text-slate-600">{m.cleanStatus}</span>
+                          <span className="text-xs font-bold text-slate-900">Sẵn sàng nhận khách</span>
+                          <span className="text-[11px] text-slate-600">{m.cleanStatus || 'Chưa có phiên chơi'}</span>
                         </div>
                       </div>
                     ) : statusUpper === 'OFFLINE' || m.status === 'offline' ? (

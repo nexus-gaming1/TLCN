@@ -33,10 +33,7 @@ class TransactionController {
 
   async createTopUp(req, res, next) {
     try {
-      const payload = {
-        ...req.body,
-        processed_by: req.user ? req.user.user_id : req.body.processed_by
-      };
+      const payload = buildCounterPayload(req);
       const newTxn = await transactionService.createTopUpTransaction(payload);
       if (payload.member_id) {
         await computerSocketService.syncMemberSessionTime(payload.member_id);
@@ -53,10 +50,7 @@ class TransactionController {
 
   async createWithdraw(req, res, next) {
       try {
-        const payload = {
-          ...req.body,
-          processed_by: req.user ? req.user.user_id : req.body.processed_by
-        };
+        const payload = buildCounterPayload(req);
         const newTxn = await transactionService.createWithdrawTransaction(payload);
         if (payload.member_id) {
           await computerSocketService.syncMemberSessionTime(payload.member_id);
@@ -73,10 +67,7 @@ class TransactionController {
 
   async createBonusTopUp(req, res, next) {
       try {
-        const payload = {
-          ...req.body,
-          processed_by: req.user ? req.user.user_id : req.body.processed_by
-        };
+        const payload = buildCounterPayload(req);
         const newTxn = await transactionService.createBonusTopUpTransaction(payload);
         if (payload.member_id) {
           await computerSocketService.syncMemberSessionTime(payload.member_id);
@@ -93,10 +84,7 @@ class TransactionController {
 
   async createBonusWithdraw(req, res, next) {
       try {
-        const payload = {
-          ...req.body,
-          processed_by: req.user ? req.user.user_id : req.body.processed_by
-        };
+        const payload = buildCounterPayload(req);
         const newTxn = await transactionService.createBonusWithdrawTransaction(payload);
         if (payload.member_id) {
           await computerSocketService.syncMemberSessionTime(payload.member_id);
