@@ -260,7 +260,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
     setActionLoadingId(orderId);
     try {
       await orderService.updateOrderStatus(orderId, 'PREPARING');
-      setToast({ type: 'success', title: 'Đã nhận đơn vào bếp', message: `Đơn #${orderId} đang được nấu!` });
+      setToast({ type: 'success', title: 'Đã tiếp nhận đơn hàng', message: `Đơn #${orderId} đang được chuẩn bị!` });
       fetchOrders(true);
     } catch (error) {
       setToast({ type: 'error', title: 'Thao tác thất bại', message: error.message });
@@ -349,7 +349,7 @@ export default function StaffDashboardPage({ user, onLogout }) {
   const pendingTicketsCount = supportTickets.filter((t) => t.status === 'PENDING').length;
   const tabs = [
     { id: 'PENDING', label: 'Chờ Xử Lý' },
-    { id: 'PREPARING', label: 'Đang Nấu' },
+    { id: 'PREPARING', label: 'Đang Chuẩn Bị' },
     { id: 'COMPLETED', label: 'Lịch Sử Đã Giao' },
     {
       id: 'TICKETS',

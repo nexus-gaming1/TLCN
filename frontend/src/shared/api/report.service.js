@@ -3,14 +3,27 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_A
 
 //ReportService-> kết nối và lấy dữ liệu báo cáo thống kê từ backend API /api/reports
 class ReportService {
-  
-   //Lấy báo cáo thống kê doanh thu theo số ngày
-   // @param {number} days - Số ngày cần xem (7, 14, 30...)
-   // @returns {Promise<{ summary: Object, chartData: Array }>}
-   
-  async getRevenueReport(days = 7) {
+  // Helper đóng gói query params (hỗ trợ cả số ngày days lẫn { startDate, endDate })
+  buildQueryParams(params = 7) {
+    const query = new URLSearchParams();
+    if (typeof params === 'object' && params !== null) {
+      if (params.startDate && params.endDate) {
+        query.set('startDate', params.startDate);
+        query.set('endDate', params.endDate);
+      } else if (params.days) {
+        query.set('days', params.days);
+      }
+    } else if (params) {
+      query.set('days', params);
+    }
+    return query.toString();
+  }
+
+  // Lấy báo cáo thống kê doanh thu
+  async getRevenueReport(params = 7) {
     try {
-      const response = await apiClient.get(`/reports/revenue?days=${days}`);
+      const qs = this.buildQueryParams(params);
+      const response = await apiClient.get(`/reports/revenue?${qs}`);
       if (response && response.status === 'success') {
         return response.data;
       }
@@ -21,24 +34,34 @@ class ReportService {
     }
   }
 
-  
-  //Gọi API tải file Excel báo cáo doanh thu (Xử lý dạng Binary Blob)
-  // @param {number} days - Số ngày cần xuất
-  // @returns {Promise<{ blob: Blob, filename: string }>}
-    async exportRevenueExcel(days = 7) {
+  // Gọi API tải file Excel báo cáo doanh thu (Binary Blob + hỗ trợ AbortSignal)
+  async exportRevenueExcel(params = 7, signal) {
     try {
       const token = apiClient.getToken();
-      const response = await fetch(`${API_BASE_URL}/reports/revenue/export?days=${days}`, {
+      const qs = this.buildQueryParams(params);
+      const response = await fetch(`${API_BASE_URL}/reports/revenue/export?${qs}`, {
         method: 'GET',
+        signal,
         headers: {
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         }
       });
       if (!response.ok) {
-        throw new Error(`Xuất báo cáo thất bại (Mã lỗi: ${response.status})`);
+        let errMessage = `Xuất báo cáo thất bại (Mã lỗi: ${response.status})`;
+        try {
+          const errJson = await response.json();
+          if (errJson?.message) errMessage = errJson.message;
+        } catch {
+          // Bỏ qua nếu response không phải JSON
+        }
+        throw new Error(errMessage);
       }
-      // Trích xuất tên file từ header Content-Disposition (nếu có)
-      let filename = `Bao_Cao_Doanh_Thu_NEXUS_${days}_ngay.xlsx`;
+      // Tên file dự phòng nếu trình duyệt không đọc được header Content-Disposition
+      let filename =
+        typeof params === 'object' && params?.startDate && params?.endDate
+          ? `Bao_Cao_Doanh_Thu_NEXUS_${params.startDate}_den_${params.endDate}.xlsx`
+          : `Bao_Cao_Doanh_Thu_NEXUS_${params}_ngay.xlsx`;
+
       const disposition = response.headers.get('Content-Disposition');
       if (disposition && disposition.includes('filename=')) {
         const matches = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
@@ -46,7 +69,6 @@ class ReportService {
           filename = matches[1].replace(/['"]/g, '');
         }
       }
-      // Đọc response dưới dạng Blob nhị phân
       const blob = await response.blob();
       return { blob, filename };
     } catch (error) {

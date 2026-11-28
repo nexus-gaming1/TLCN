@@ -141,11 +141,11 @@ export default function CustomerFoodPage({ user, onLogout }) {
         title: isCancelled ? 'Đơn hàng đã bị hủy' : 'Trạng thái đơn hàng cập nhật!',
         message: `Đơn #${updatedOrder.order_id} hiện tại: ${
           updatedOrder.status === 'PREPARING'
-            ? 'Đang nấu trong bếp 🍳'
+            ? 'Đang chuẩn bị'
             : updatedOrder.status === 'COMPLETED'
-            ? 'Đã phục vụ hoàn tất 🎉'
+            ? 'Đã phục vụ hoàn tất'
             : isCancelled
-            ? `Đã hủy đơn ❌${cancelReasonSuffix}`
+            ? `Đã hủy đơn ${cancelReasonSuffix}`
             : updatedOrder.status
         }`,
       });

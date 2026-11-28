@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
@@ -7,7 +7,7 @@ import catalogService from '../../shared/api/catalog.service';
 import CatalogTable from '../../features/catalog/ui/CatalogTable';
 import CreateItemModal from '../../features/catalog/ui/CreateItemModal';
 import ComboManagementSection from '../../features/catalog/ui/ComboManagementSection';
-import { Utensils, Plus, FolderPlus, Search, RefreshCw, Clock } from 'lucide-react';
+import { Utensils, Plus, FolderPlus, RefreshCw, Clock } from 'lucide-react';
 
 export default function ServiceCatalogPage({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState('fnb'); // 'fnb' | 'combo'
@@ -164,18 +164,11 @@ export default function ServiceCatalogPage({ user, onLogout }) {
             {/* Page Header Strip */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex flex-col">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="font-mono text-[11px] uppercase text-sky-700 font-extrabold tracking-wider bg-sky-50 px-2 py-0.5 rounded border border-sky-200">
-                    F&amp;B Engine v3.0
-                  </span>
-                  <span className="text-slate-400 font-bold">•</span>
-                  <span className="text-slate-500 font-semibold">Service &amp; Combo Catalog</span>
-                </div>
-                <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-1">
-                  Quản Lý Dịch Vụ &amp; Gói Combo Time
+                <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                  Quản Lý Dịch Vụ &amp; Thực Đơn
                 </h1>
                 <p className="text-xs text-slate-500 font-medium max-w-2xl mt-0.5">
-                  Thiết lập danh mục đồ ăn, nước uống, gói combo thời gian chơi kèm dịch vụ phục vụ tại phòng máy.
+                  Thiết lập thực đơn F&amp;B, mặt hàng bán lẻ, tồn kho và các gói Combo giờ chơi tại phòng máy.
                 </p>
               </div>
 

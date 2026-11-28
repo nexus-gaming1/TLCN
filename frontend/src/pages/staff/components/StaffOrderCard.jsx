@@ -120,7 +120,7 @@ export default function StaffOrderCard({
               className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <DollarSign className="w-3.5 h-3.5" />
-              <span>{isLoading ? 'Đang xử lý...' : 'Thu Tiền & Nấu'}</span>
+              <span>{isLoading ? 'Đang xử lý...' : 'Thu Tiền & Chuẩn Bị'}</span>
             </button>
           )}
 
@@ -132,7 +132,7 @@ export default function StaffOrderCard({
               className="flex-1 py-1.5 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-extrabold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <ChefHat className="w-3.5 h-3.5" />
-              <span>{isLoading ? 'Đang nhận...' : 'Bắt đầu nấu'}</span>
+              <span>{isLoading ? 'Đang nhận...' : 'Nhận & Chuẩn Bị'}</span>
             </button>
           )}
 
@@ -144,7 +144,7 @@ export default function StaffOrderCard({
               className="flex-1 py-1.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <CheckCheck className="w-3.5 h-3.5" />
-              <span>{isLoading ? 'Đang cập nhật...' : 'Giao món và xong'}</span>
+              <span>{isLoading ? 'Đang cập nhật...' : 'Hoàn tất đơn'}</span>
             </button>
           )}
 

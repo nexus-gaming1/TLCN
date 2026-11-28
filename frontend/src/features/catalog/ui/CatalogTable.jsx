@@ -252,14 +252,6 @@ export default function CatalogTable({
                             )}
                           </td>
 
-                          {/* Trạng Thái Phục Vụ */}
-                          <td className="py-3 px-4">
-                            <ItemStatusBadge
-                              isAvailable={item.is_available}
-                              stockQuantity={item.stock_quantity}
-                            />
-                          </td>
-
                           {/* Trạng Thái Phục Vụ (Bấm trực tiếp để bật/tắt nhanh) */}
                           <td className="py-3 px-4">
                             <ItemStatusBadge

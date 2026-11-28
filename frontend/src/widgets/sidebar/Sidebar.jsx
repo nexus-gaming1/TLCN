@@ -24,7 +24,7 @@ export default function Sidebar({ activeNav, setActiveNav, role: propRole }) {
         { id: 'pos', label: 'Quầy nhân viên', icon: Store, path: '/staff' },
         { id: 'members', label: 'Quản lý hội viên', icon: UserCheck, path: '/admin/members' },
         { id: 'transactions', label: 'Sổ cái giao dịch', icon: Receipt, path: '/admin/transactions' },
-        { id: 'reports', label: 'Báo cáo doanh thu', icon: BarChart3, path: '/admin/reports' },
+        { id: 'reports', label: 'Báo cáo thống Kê', icon: BarChart3, path: '/admin/reports' },
     ];
 
     // 2. Menu cho Quản Trị Viên (ADMIN): Đầy đủ toàn quyền
@@ -36,9 +36,9 @@ export default function Sidebar({ activeNav, setActiveNav, role: propRole }) {
         { id: 'config', label: 'Cấu hình máy', icon: Sliders, path: '/admin/config' },
         { id: 'promotions', label: 'Bảng giá & Giờ vàng', icon: Tag, path: '/admin/pricing-plans' },
         { id: 'transactions', label: 'Giao dịch', icon: Receipt, path: '/admin/transactions' },
-        { id: 'catalog', label: 'Quản lý dịch vụ F&B', icon: Coffee, path: '/admin/catalog' },
+        { id: 'catalog', label: 'Quản lý dịch vụ & thực đơn', icon: Coffee, path: '/admin/catalog' },
         { id: 'games', label: 'Kho game & BootROM', icon: Gamepad2, path: '/admin/games' },
-        { id: 'reports', label: 'Báo cáo doanh thu', icon: BarChart3, path: '/admin/reports' },
+        { id: 'reports', label: 'Báo cáo thống Kê', icon: BarChart3, path: '/admin/reports' },
     ];
     
     const navItems = isStaff ? staffNavItems : adminNavItems;

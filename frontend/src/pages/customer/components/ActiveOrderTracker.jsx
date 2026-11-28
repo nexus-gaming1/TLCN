@@ -43,13 +43,13 @@ export default function ActiveOrderTracker({
     switch (status) {
       case 'PENDING':
         return {
-          label: paymentStatus === 'UNPAID' ? 'Chờ thu tiền mặt' : 'Chờ bếp xác nhận',
+          label: paymentStatus === 'UNPAID' ? 'Chờ thu tiền mặt' : 'Chờ xác nhận',
           color: 'bg-amber-100 text-amber-800 border-amber-200',
           icon: Clock,
         };
       case 'PREPARING':
         return {
-          label: 'Đang nấu trong bếp',
+          label: 'Đang chuẩn bị',
           color: 'bg-sky-100 text-sky-800 border-sky-200',
           icon: ChefHat,
         };
@@ -173,7 +173,7 @@ export default function ActiveOrderTracker({
                     <div className="grid grid-cols-3 gap-2 relative text-center">
                       {[
                         { step: 1, label: 'Tiếp nhận' },
-                        { step: 2, label: 'Đang nấu' },
+                        { step: 2, label: 'Đang chuẩn bị' },
                         { step: 3, label: 'Hoàn tất' },
                       ].map((s) => {
                         const isDone = stepIndex >= s.step;

@@ -15,12 +15,68 @@ import supportService from '../../shared/api/support.service';
 import {
   Gamepad2,Utensils,RefreshCw,
   Loader2,TrendingUp,Download,Star, 
-  MessageSquare,RotateCcw, ShieldCheck, BellRing
+  MessageSquare,RotateCcw, ShieldCheck, BellRing, Calendar
 } from 'lucide-react';
+
+
+// Chuyển đối tượng Date sang chuỗi YYYY-MM-DD theo giờ địa phương (không dùng toISOString vì bị lệch UTC)
+const toLocalDateStr = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+
+// Tính cặp { startDate, endDate } cho 5 nút chọn nhanh
+const getPresetRange = (presetId) => {
+  const today = new Date();
+  const endDate = toLocalDateStr(today);
+
+  if (presetId === 'today') {
+    return { startDate: endDate, endDate };
+  }
+  if (presetId === 'this_week') {
+    // getDay(): 0 = Chủ Nhật, 1 = Thứ 2 ... 6 = Thứ 7 -> quy về số ngày cần lùi về Thứ 2
+    const dayOfWeek = today.getDay();
+    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - diffToMonday);
+    return { startDate: toLocalDateStr(monday), endDate };
+  }
+  if (presetId === 'this_month') {
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    return { startDate: toLocalDateStr(firstDay), endDate };
+  }
+  if (presetId === '30d') {
+    const start = new Date(today);
+    start.setDate(today.getDate() - 29);
+    return { startDate: toLocalDateStr(start), endDate };
+  }
+  // Mặc định 7 ngày gần nhất tính cả hôm nay (lùi 6 ngày)
+  const start = new Date(today);
+  start.setDate(today.getDate() - 6);
+  return { startDate: toLocalDateStr(start), endDate };
+};
+
+const DATE_PRESETS = [
+  { id: 'today', label: 'Hôm nay' },
+  { id: 'this_week', label: 'Tuần này' },
+  { id: 'this_month', label: 'Tháng này' },
+  { id: '7d', label: '7 ngày' },
+  { id: '30d', label: '30 ngày' },
+];
+
 
 export default function RevenueReportPage({ user, onLogout }) {
   const navigate = useNavigate();
-  const [daysFilter, setDaysFilter] = useState(7); // Mặc định 7 ngày gần nhất
+  
+  const initialRange = getPresetRange('7d');
+  const [activePreset, setActivePreset] = useState('7d'); // 'today' | 'this_week' | 'this_month' | '7d' | '30d' | 'custom'
+  const [startDate, setStartDate] = useState(initialRange.startDate);
+  const [endDate, setEndDate] = useState(initialRange.endDate);
+  const [filterError, setFilterError] = useState('');
+
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -33,32 +89,48 @@ export default function RevenueReportPage({ user, onLogout }) {
   const [allFeedbacks, setAllFeedbacks] = useState([]);
   const [isAllFeedbacksModalOpen, setIsAllFeedbacksModalOpen] = useState(false);
 
+
+    const handleSelectPreset = (presetId) => {
+    const range = getPresetRange(presetId);
+    setFilterError('');
+    setActivePreset(presetId);
+    setStartDate(range.startDate);
+    setEndDate(range.endDate);
+  };
+
   // Hàm tải dữ liệu báo cáo từ Backend API (fix lỗi Race Condition)
   useEffect(() => {
-    let ignore = false; // Cờ theo dõi trạng thái vòng đời của request
+    if (!startDate || !endDate) return;
+    if (startDate > endDate) {
+      setFilterError('Ngày bắt đầu không được lớn hơn ngày kết thúc.');
+      return;
+    }
+
+    let ignore = false;
+    setFilterError('');
 
     const fetchReportData = async () => {
       setLoading(true);
       try {
-        const data = await reportService.getRevenueReport(daysFilter);
-        // Chỉ cập nhật UI nếu người dùng chưa bấm sang filter khác
+        const data = await reportService.getRevenueReport({ startDate, endDate });
         if (!ignore) {
           setReportData(data);
         }
       } catch (err) {
-        if (!ignore) console.error('Lỗi khi nạp dữ liệu báo cáo doanh thu:', err);
+        if (!ignore) {
+          console.error('Lỗi khi nạp dữ liệu báo cáo doanh thu:', err);
+          setFilterError(err.response?.data?.message || err.message || 'Không thể tải báo cáo thống kê.');
+        }
       } finally {
         if (!ignore) setLoading(false);
       }
     };
 
     fetchReportData();
-
-    // Cleanup function: Kích hoạt khi daysFilter bị thay đổi (user bấm nút khác)
     return () => {
-      ignore = true; // Bật cờ ignore lên để hủy bỏ kết quả của request cũ
+      ignore = true;
     };
-  }, [daysFilter, refreshKey]); // Thêm refreshKey vào dependency để kích hoạt reload khi bấm nút Refresh
+  }, [startDate, endDate, refreshKey]); // Thêm refreshKey để kích hoạt reload khi bấm nút Refresh
 
   // Hàm gắn vào nút Làm mới
   const handleRefresh = () => {
@@ -73,7 +145,9 @@ export default function RevenueReportPage({ user, onLogout }) {
     refundCount: 0,
     netRevenue: 0,
     pendingSupportRequests: 0,
-    days: daysFilter
+    days: 0,
+    startDate,
+    endDate
   };
 
   const chartData = reportData?.chartData || [];
@@ -114,15 +188,24 @@ export default function RevenueReportPage({ user, onLogout }) {
   }, [refreshKey]);
 
   
-const handleExportExcel = async () => {
+  const handleExportExcel = async () => {
     if (isExporting) return;
+    if (!startDate || !endDate || startDate > endDate) {
+      setFilterError('Khoảng ngày không hợp lệ. Vui lòng kiểm tra lại trước khi xuất Excel.');
+      return;
+    }
+
     setIsExporting(true);
-    
+    setFilterError('');
+
     const controller = new AbortController();
     exportAbortRef.current = controller;
 
     try {
-      const { blob, filename } = await reportService.exportRevenueExcel(daysFilter, controller.signal);
+      const { blob, filename } = await reportService.exportRevenueExcel(
+        { startDate, endDate },
+        controller.signal
+      );
 
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -136,7 +219,7 @@ const handleExportExcel = async () => {
     } catch (err) {
       if (err.name !== 'AbortError') {
         console.error('Lỗi khi xuất file báo cáo Excel:', err);
-        alert(err.message || 'Có lỗi xảy ra khi xuất file báo cáo Excel');
+        setFilterError(err.message || 'Có lỗi xảy ra khi xuất file báo cáo Excel');
       }
     } finally {
       if (!controller.signal.aborted) {
@@ -144,6 +227,7 @@ const handleExportExcel = async () => {
       }
     }
   };
+
 
   return (
     <div className="bg-background font-sans text-on-surface antialiased min-h-screen">
@@ -163,51 +247,28 @@ const handleExportExcel = async () => {
         <main className="relative pt-16 pb-20 min-h-screen bg-[#F8F9FA] w-full px-8 py-6 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
             
-            {/* Lọc theo thời gian*/}
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-              <div className="flex flex-col">
+          {/* Tiêu đề và Thanh lọc kỳ báo cáo */}
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                  Báo Cáo &amp; Thống Kê Doanh Thu
+                  Báo Cáo &amp; Thống Kê
                 </h1>
-              </div>
 
-              {/* Bộ lọc thời gian gợi ý sẵn */}
-              <div className="flex items-center gap-2.5 self-start lg:self-center">
-                <div className="bg-white p-1 rounded-xl border border-slate-200 shadow-2xs flex items-center gap-1">
-                  {[
-                    { label: '7 ngày qua', value: 7 },
-                    { label: '14 ngày qua', value: 14 },
-                    { label: '30 ngày qua', value: 30 }
-                  ].map((preset) => (
-                    <button
-                      key={preset.value}
-                      type="button"
-                      onClick={() => setDaysFilter(preset.value)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                        daysFilter === preset.value
-                          ? 'bg-emerald-600 text-white shadow-xs'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      }`}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
-                </div>
+                {/* Nút Làm mới + Xuất Excel (Mở cho cả Admin và Staff) */}
+                <div className="flex items-center gap-2 self-start sm:self-center">
+                  <button
+                    type="button"
+                    onClick={handleRefresh}
+                    className="bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs p-2.5 rounded-xl border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+                    title="Làm mới dữ liệu"
+                  >
+                    <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  className="bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs p-2.5 rounded-xl border border-slate-200 shadow-2xs transition-colors cursor-pointer"
-                  title="Làm mới dữ liệu"
-                >
-                  <RefreshCw className={`w-4 h-4 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-                </button>
-
-                {user?.role !== 'EMPLOYEE' && user?.role !== 'STAFF' && (
                   <button
                     type="button"
                     onClick={handleExportExcel}
-                    disabled={isExporting}
+                    disabled={isExporting || Boolean(filterError)}
                     className="bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer disabled:cursor-not-allowed"
                     title="Xuất file báo cáo Excel (.xlsx)"
                   >
@@ -223,8 +284,67 @@ const handleExportExcel = async () => {
                       </>
                     )}
                   </button>
-                )}
+                </div>
               </div>
+
+              {/* Dải nút chọn nhanh + 2 ô Từ ngày - Đến ngày (Light Theme) */}
+              <div className="bg-white p-2 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-2.5">
+                <div className="flex flex-wrap items-center gap-1">
+                  {DATE_PRESETS.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleSelectPreset(preset.id)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        activePreset === preset.id
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="text-[11px] font-bold text-slate-500">Từ</span>
+                    <input
+                      type="date"
+                      value={startDate}
+                      max={endDate || undefined}
+                      onChange={(e) => {
+                        setActivePreset('custom');
+                        setStartDate(e.target.value);
+                      }}
+                      className="bg-transparent font-mono text-xs font-bold text-slate-800 outline-none cursor-pointer"
+                    />
+                  </div>
+                  <span className="text-slate-400 font-bold">➔</span>
+                  <div className="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    <span className="text-[11px] font-bold text-slate-500">Đến</span>
+                    <input
+                      type="date"
+                      value={endDate}
+                      min={startDate || undefined}
+                      max={toLocalDateStr(new Date())}
+                      onChange={(e) => {
+                        setActivePreset('custom');
+                        setEndDate(e.target.value);
+                      }}
+                      className="bg-transparent font-mono text-xs font-bold text-slate-800 outline-none cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {filterError && (
+                <div className="px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
+                  {filterError}
+                </div>
+              )}
             </div>
 
             {/* 3 Thẻ thống kê */}
@@ -244,9 +364,9 @@ const handleExportExcel = async () => {
                     <TrendingUp className="w-5 h-5" />
                   </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-medium text-slate-500">
-                  <span>Chu kỳ: {summary.days} ngày gần nhất</span>
-                </div>
+                 <span>
+                    Kỳ: {summary.startDate || startDate} ➔ {summary.endDate || endDate} ({summary.days} ngày)
+                  </span>
               </div>
 
               {/* Thẻ 2: Doanh thu nạp giờ */}
