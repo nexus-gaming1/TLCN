@@ -284,15 +284,19 @@ class ServiceCatalogService {
         item.min_discount_rank = min_discount_rank || null;
       }
 
-      if (is_available !== undefined) {
-        item.is_available = Boolean(is_available);
+      if (track_inventory !== undefined) {
+        item.track_inventory = toBoolean(track_inventory, true);
+        if (!item.track_inventory) {
+          item.stock_quantity = 0;
+        }
       }
-
-      // Tự động hiện hết hàng nếu số lượng tồn bằng 0
-      if (item.stock_quantity <= 0) {
+      if (is_available !== undefined) {
+        item.is_available = toBoolean(is_available, true);
+      }
+      // Chỉ tự động ép hết hàng nếu món CÓ quản lý tồn kho và số lượng tồn <= 0
+      if (item.track_inventory && item.stock_quantity <= 0) {
         item.is_available = false;
       }
-
       return await this.repository.updateItem(item, item.dataValues);
     } catch (error) {
       console.error('Lỗi khi cập nhật món dịch vụ:', error);
@@ -305,6 +309,11 @@ class ServiceCatalogService {
   async adjustStock(itemId, { quantity }) {
     try {
       const item = await this.repository.findItemById(itemId);
+      if (!item) {
+        const err = new Error('Không tìm thấy món dịch vụ');
+        err.statusCode = 404;
+        throw err;
+      }
       if (!item.track_inventory) {
         const err = new Error('Món chế biến không quản lý số lượng tồn kho. Vui lòng bật/tắt trạng thái phục vụ thay thế.');
         err.statusCode = 400;

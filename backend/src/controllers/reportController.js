@@ -6,11 +6,11 @@ class ReportController {
   }
 
   
-   //GET /api/reports/revenue?days=7
+  //GET /api/reports/revenue?days=7 hoặc ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
   async getRevenueReport(req, res, next) {
     try {
-      const { days } = req.query;
-      const data = await this.reportService.getRevenueReport(days);
+      const { days, startDate, endDate } = req.query;
+      const data = await this.reportService.getRevenueReport(days, startDate, endDate);
 
       return res.json({
         status: 'success',
@@ -23,12 +23,12 @@ class ReportController {
   }
 
   
-  //GET /api/reports/revenue/export?days=7
+  //GET /api/reports/revenue/export?days=7  hoặc ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
   //Xuất file Excel báo cáo doanh thu dạng Binary Stream
   async exportRevenueReport(req, res, next) {
     try {
-      const { days } = req.query;
-      const { workbook, summary } = await this.reportService.exportRevenueExcel(days);
+      const { days, startDate, endDate } = req.query;
+      const { workbook, summary } = await this.reportService.exportRevenueExcel(days, startDate, endDate);
 
       // Tạo tên file kèm mốc thời gian rõ ràng
       const filename = `Bao_Cao_Doanh_Thu_NEXUS_${summary.startDate}_den_${summary.endDate}.xlsx`;

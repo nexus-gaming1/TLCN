@@ -7,11 +7,11 @@ const { UserRole } = require('../constants/enums');
 //Định tuyến tab báo cáo doanh thu (chỉ admin)
 //Prefix: /api/reports
 
-// 1. Route Xuất file Excel báo cáo
+// 1. Route Xuất file Excel báo cáo ( cả admin và nhân viên)
 router.get(
   '/revenue/export',
   authenticateToken,
-  authorizeRoles(UserRole.ADMIN),
+  authorizeRoles(UserRole.ADMIN, UserRole.EMPLOYEE),
   reportController.exportRevenueReport.bind(reportController)
 );
 

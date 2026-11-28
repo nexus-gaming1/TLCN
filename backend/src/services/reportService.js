@@ -1,6 +1,7 @@
 const reportRepository = require('../repositories/reportRepository');
 const supportService = require('./supportService');
 const ExcelJS = require('exceljs');
+const { ValidationError } = require('../utils/errors');
 
 class ReportService {
   constructor(repository = reportRepository, supportSvc = supportService) {
@@ -27,26 +28,76 @@ class ReportService {
     return `${day}/${month}`;
   }
 
-  
+  // Chuẩn hóa khoảng ngày thống kê theo múi giờ Việt Nam
+  // Hỗ trợ đồng thời: (startDate, endDate) dạng YYYY-MM-DD hoặc fallback về days cũ
+  resolveDateRange(days = 7, startDateStr = null, endDateStr = null) {
+    const hasStart = Boolean(startDateStr && String(startDateStr).trim());
+    const hasEnd = Boolean(endDateStr && String(endDateStr).trim());
+
+    if (hasStart || hasEnd) {
+      if (!hasStart || !hasEnd) {
+        throw new ValidationError('Vui lòng chọn đầy đủ cả ngày bắt đầu (startDate) và ngày kết thúc (endDate).');
+      }
+
+      const startText = String(startDateStr).trim();
+      const endText = String(endDateStr).trim();
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(startText) || !dateRegex.test(endText)) {
+        throw new ValidationError('Định dạng ngày không hợp lệ. Vui lòng dùng chuẩn YYYY-MM-DD.');
+      }
+
+      // Ép rõ múi giờ để Server ở bất kỳ múi giờ nào cũng hiểu đúng giờ VN
+      const startDate = new Date(`${startText}T00:00:00.000+07:00`);
+      const endDate = new Date(`${endText}T23:59:59.999+07:00`);
+
+      if (
+        isNaN(startDate.getTime()) ||
+        isNaN(endDate.getTime()) ||
+        this.formatDateVN(startDate) !== startText ||
+        this.formatDateVN(endDate) !== endText
+      ) {
+        throw new ValidationError('Ngày bắt đầu hoặc ngày kết thúc không tồn tại trên lịch.');
+      }
+
+      if (startDate > endDate) {
+        throw new ValidationError('Ngày bắt đầu không được lớn hơn ngày kết thúc.');
+      }
+
+      const startNoon = new Date(`${startText}T12:00:00.000+07:00`);
+      const endNoon = new Date(`${endText}T12:00:00.000+07:00`);
+      const parsedDays = Math.round((endNoon - startNoon) / (24 * 60 * 60 * 1000)) + 1;
+
+      if (parsedDays > 366) {
+        throw new ValidationError('Khoảng thời gian thống kê tối đa là 366 ngày.');
+      }
+
+      return { startDate, endDate, parsedDays };
+    }
+
+    // Không truyền startDate/endDate -> tính theo days như cũ
+    const parsedDays = Math.min(Math.max(1, parseInt(days, 10) || 7), 365);
+    const todayVN = this.formatDateVN(new Date());
+    const endDate = new Date(`${todayVN}T23:59:59.999+07:00`);
+    const startNoon = new Date(`${todayVN}T12:00:00.000+07:00`);
+    startNoon.setDate(startNoon.getDate() - (parsedDays - 1));
+    const startText = this.formatDateVN(startNoon);
+    const startDate = new Date(`${startText}T00:00:00.000+07:00`);
+
+    return { startDate, endDate, parsedDays };
+  }
+
+
   //Lấy báo cáo doanh thu theo khoảng thời gian (days)
   //@param {number} days (mặc định là 7)
-  async getRevenueReport(days = 7) {
-    const parsedDays = Math.min(Math.max(1, parseInt(days, 10) || 7), 365);
-    // 1. Xác định mốc thời gian theo giờ Việt Nam bất chấp múi giờ của Server
-    const vnTimeStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" });
-    const now = new Date(vnTimeStr);
-    // Mốc kết thúc: Cuối ngày hôm nay (23:59)
-    const endDate = new Date(now);
-    endDate.setHours(23, 59, 59, 999);
-    // Mốc bắt đầu: 00:00:00 của (days - 1) ngày trước
-    const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - (parsedDays - 1));
-    startDate.setHours(0, 0, 0, 0);
-    // 2. Tạo khung thời gian rỗng để lấp đầy ngày trống cho biểu đồ
+   async getRevenueReport(days = 7, startDateParam = null, endDateParam = null) {
+    // 1. Xác định mốc thời gian chuẩn giờ Việt Nam 
+    const { startDate, endDate, parsedDays } = this.resolveDateRange(days, startDateParam, endDateParam);
+
+    // 2. Tạo khung ngày liên tục từ startDate đến endDate để lấp đầy ngày không có doanh thu trên biểu đồ
     const dateMap = {};
-    for (let i = parsedDays - 1; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
+    const startNoon = new Date(`${this.formatDateVN(startDate)}T12:00:00.000+07:00`);
+    for (let i = 0; i < parsedDays; i++) {
+      const d = new Date(startNoon.getTime() + i * 24 * 60 * 60 * 1000);
       const dateKey = this.formatDateVN(d);
       dateMap[dateKey] = {
         date: dateKey,
@@ -170,9 +221,9 @@ class ReportService {
    // Tạo Workbook Excel báo cáo doanh thu chuyên nghiệp
    // @param {number} days - Số ngày thống kê
    // @returns {Promise<ExcelJS.Workbook>}
-  async exportRevenueExcel(days = 7) {
-    // 1. Tận dụng dữ liệu chuẩn đã tính toán
-    const reportData = await this.getRevenueReport(days);
+  async exportRevenueExcel(days = 7,  startDateParam = null, endDateParam = null) {
+    // 1. Tận dụng dữ liệu chuẩn đã tính toán (dùng chung logic ngày với getRevenueReport)
+    const reportData = await this.getRevenueReport(days, startDateParam, endDateParam);
     const { summary, chartData, analytics } = reportData;
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'NEXUS Cloud Cyber OS';
@@ -213,7 +264,7 @@ class ReportService {
     // Dòng 3, 4: Metadata (Thời gian & Kỳ báo cáo)
     sheet1.getCell('B3').value = `Thời gian xuất: ${new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}`;
     sheet1.getCell('B3').font = { italic: true, size: 10, color: { argb: 'FF64748B' } };
-    sheet1.getCell('B4').value = `Kỳ báo cáo: ${summary.startDate} đến ${summary.endDate} (${summary.days} ngày gần nhất)`;
+    sheet1.getCell('B4').value = `Kỳ báo cáo: ${summary.startDate} đến ${summary.endDate} (${summary.days} ngày)`;
     sheet1.getCell('B4').font = { bold: true, size: 10, color: { argb: 'FF334155' } };
     // Dòng 6: Khối Tóm tắt KPI
     sheet1.getCell('B6').value = 'TỔNG TIỀN NẠP VÍ:';
