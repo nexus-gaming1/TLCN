@@ -541,7 +541,7 @@ class ComputerController {
     }
   }
 
-      
+
   async deleteHardwareSpec(req, res, next) {
     try {
       const { id } = req.params;

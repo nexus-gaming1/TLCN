@@ -168,14 +168,15 @@ class ComputerSocketService {
     /**
      * Gửi lệnh đăng nhập đến PC Agent
      */
-    login(machineId, username) {
+    login(machineId, username, isRemote = false) {
         this.ensureInitialized();
 
         this.io
             .to(`machine:${machineId}`)
             .emit('session:login', {
                 command: 'LOGIN',
-                username
+                username,
+                isRemote: Boolean(isRemote)
             });
     }
 
@@ -330,6 +331,22 @@ class ComputerSocketService {
     broadcastPairingEvent(eventName, payload) {
         if (!this.io) return;
         this.io.emit(eventName, payload);
+    }
+
+    /**
+     * Phát cập nhật trạng thái máy trạm đến Web Admin và Client
+     */
+    broadcastMachineStatus(computerId, status) {
+        if (!this.io) return;
+        this.io.emit('machine:status', { computerId, status });
+    }
+
+    /**
+     * Phát cập nhật thông tin máy trạm đến Web Admin và Client
+     */
+    broadcastMachineUpdate(machineData) {
+        if (!this.io) return;
+        this.io.emit('machine:updated', machineData);
     }
 }
 

@@ -28,6 +28,7 @@ class MachineStore {
             machineId: data.machineId,
             hostname: data.hostname || existing.hostname || 'Unknown',
             localIp: data.localIp || existing.localIp || '127.0.0.1',
+            ipv6: data.ipv6 || existing.ipv6 || null,
             macAddress: data.macAddress || existing.macAddress || null,
             windowsUser: data.windowsUser || existing.windowsUser || null,
             status: data.status || 'ONLINE',
@@ -82,6 +83,10 @@ class MachineStore {
                 data.memberId !== undefined
                     ? (data.memberId || null)
                     : machine.memberId;
+        }
+
+        if (data.ipv6 !== undefined) {
+            machine.ipv6 = data.ipv6 || null;
         }
 
         machine.performance =

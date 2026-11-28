@@ -91,6 +91,9 @@ public class Program
 
                 services.AddSingleton<SunshineService>();
                 services.AddSingleton<SunshinePairingManager>();
+                services.AddSingleton<MoonlightStreamMonitor>();
+                services.AddHostedService(
+                    sp => sp.GetRequiredService<MoonlightStreamMonitor>());
                 // IPC Server
                 services.AddSingleton<IpcServerService>();
                 services.AddHostedService(

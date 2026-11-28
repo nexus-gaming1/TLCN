@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { Monitor, Power, Wrench, Lock, MapPin } from 'lucide-react';
+import { Monitor, Power, Wrench, Lock, MapPin, Tag } from 'lucide-react';
+import { findPricingPlan, formatCurrency } from '../../../shared/utils/pricing';
 
 const STATUS_CONFIG = {
     ONLINE: {
@@ -25,7 +26,7 @@ const STATUS_CONFIG = {
         canRent: false
     },
     LOCKED: {
-        label: 'Tạm khóa',
+        label: 'Đang giữ chỗ',
         color: 'text-amber-600',
         dot: 'bg-amber-500',
         icon: Lock,
@@ -48,13 +49,11 @@ export default function StationCard({ station, onClick }) {
     const name = station.computer_name || `PC-${id}`;
     const zoneName = station.ComputerZone?.zone_name || 'Khu vực thường';
 
-    // Find active remote pricing plan
-    const remotePricing = station.ComputerZone?.PricingPlans?.find(
-        (plan) => plan.plan_type === 'REMOTE' && plan.is_active
-    );
+    // Áp dụng logic findPricingPlan trong billingService.js
+    const activePricingPlan = findPricingPlan(station, new Date(), 'REMOTE');
 
-    const pricePerHour = remotePricing
-        ? Number(remotePricing.price_per_hour)
+    const pricePerHour = activePricingPlan?.price_per_hour != null
+        ? Number(activePricingPlan.price_per_hour)
         : null;
 
     const status = String(station.status || 'OFFLINE').toUpperCase();
@@ -110,10 +109,10 @@ export default function StationCard({ station, onClick }) {
                     {pricePerHour !== null ? (
                         <>
                             <span className="text-lg font-black text-slate-900">
-                                {pricePerHour.toLocaleString('vi-VN')}đ
+                                {formatCurrency(pricePerHour)}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-medium">
-                                / giờ
+                            <span className="text-[10px] text-slate-400 font-medium truncate" title={activePricingPlan?.name || 'Theo giờ'}>
+                                {activePricingPlan?.name ? `${activePricingPlan.name} • / giờ` : '/ giờ'}
                             </span>
                         </>
                     ) : (

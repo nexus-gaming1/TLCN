@@ -123,8 +123,8 @@ class PairingManagementService {
           combo: authorization.combo
         }, transaction);
 
-        // Update computer status to IN_USE
-        computer.status = ComputerStatus.IN_USE;
+        // Update computer status to LOCKED (tạm giữ chỗ để người khác không thuê trùng)
+        computer.status = ComputerStatus.LOCKED;
         await computer.save({ transaction });
       }
 
@@ -180,7 +180,19 @@ class PairingManagementService {
         });
       }
 
-      // 7. Emit socket event remote:pairing:started
+      // 7. Cập nhật machineStore & phát socket trạng thái LOCKED đến toàn bộ khách khác (Khách B)
+      if (connectedMachine && connectedMachine.machineId) {
+        machineStore.updateStatus(connectedMachine.machineId, ComputerStatus.LOCKED);
+      }
+      computerSocketService.broadcastMachineStatus(computer.computer_id, ComputerStatus.LOCKED);
+      computerSocketService.broadcastMachineUpdate({
+        machineId: connectedMachine?.machineId || computer.computer_name,
+        computerId: computer.computer_id,
+        status: ComputerStatus.LOCKED,
+        currentUser: member.userInfo?.username || null
+      });
+
+      // Emit socket event remote:pairing:started
       computerSocketService.broadcastPairingEvent('remote:pairing:started', {
         intentId: newIntent.id,
         computerId: computer.computer_id,
@@ -196,12 +208,20 @@ class PairingManagementService {
           computerId: newIntent.computer_id,
           status: newIntent.status,
           expiresAt: newIntent.expires_at,
-          createdAt: newIntent.created_at
+          createdAt: newIntent.created_at,
+          ipAddress: connectedMachine?.localIp || computer.ip_address,
+          ipv6: connectedMachine?.ipv6 || null
         },
         session: {
           rentalSessionId: rentalSession.rental_session_id,
           status: rentalSession.status,
           startedAt: rentalSession.started_at
+        },
+        computer: {
+          computerId: computer.computer_id,
+          computerName: computer.computer_name,
+          ipAddress: connectedMachine?.localIp || computer.ip_address,
+          ipv6: connectedMachine?.ipv6 || null
         }
       };
     } catch (err) {
@@ -250,6 +270,40 @@ class PairingManagementService {
       intent.failure_reason = 'Hết hạn thời gian ghép nối';
       await intent.save();
 
+      if (intent.rental_session_id) {
+        await db.RentalSession.update(
+          {
+            status: db.RentalSession.Status.ENDED,
+            ended_at: new Date(),
+            total_amount: 0
+          },
+          {
+            where: {
+              rental_session_id: intent.rental_session_id,
+              status: db.RentalSession.Status.ACTIVE
+            }
+          }
+        );
+      }
+
+      if (intent.computer_id) {
+        await db.Computer.update(
+          { status: ComputerStatus.ONLINE },
+          { where: { computer_id: intent.computer_id } }
+        );
+        const connMachine = this.findConnectedMachine(intent.computer);
+        if (connMachine && connMachine.machineId) {
+          machineStore.updateStatus(connMachine.machineId, ComputerStatus.ONLINE);
+        }
+        computerSocketService.broadcastMachineStatus(intent.computer_id, ComputerStatus.ONLINE);
+        computerSocketService.broadcastMachineUpdate({
+          machineId: connMachine?.machineId || intent.computer?.computer_name,
+          computerId: intent.computer_id,
+          status: ComputerStatus.ONLINE,
+          currentUser: null
+        });
+      }
+
       computerSocketService.broadcastPairingEvent('remote:pairing:failed', {
         intentId: intent.id,
         computerId: intent.computer_id,
@@ -258,6 +312,8 @@ class PairingManagementService {
         reason: 'Hết hạn thời gian ghép nối'
       });
     }
+
+    const connectedMachine = this.findConnectedMachine(intent.computer);
 
     return {
       id: intent.id,
@@ -269,7 +325,9 @@ class PairingManagementService {
       expiresAt: intent.expires_at,
       createdAt: intent.created_at,
       completedAt: intent.completed_at,
-      failureReason: intent.failure_reason
+      failureReason: intent.failure_reason,
+      ipAddress: connectedMachine?.localIp || intent.computer?.ip_address,
+      ipv6: connectedMachine?.ipv6 || null
     };
   }
 
@@ -362,7 +420,19 @@ class PairingManagementService {
     try {
       intent = await db.RemotePairing.findByPk(intentId, {
         include: [
-          { model: db.RentalSession, as: 'rentalSession' },
+          {
+            model: db.RentalSession,
+            as: 'rentalSession',
+            include: [{
+              model: db.Member,
+              as: 'member',
+              include: [{
+                model: db.User,
+                as: 'userInfo',
+                attributes: ['user_id', 'username', 'full_name']
+              }]
+            }]
+          },
           { model: db.Computer, as: 'computer' }
         ],
         transaction,
@@ -485,6 +555,22 @@ class PairingManagementService {
           failure_reason: null
         });
 
+        // Ghép nối thành công -> chính thức chuyển trạng thái máy sang IN_USE
+        await db.Computer.update(
+          { status: ComputerStatus.IN_USE },
+          { where: { computer_id: intent.computer_id } }
+        );
+        if (connectedMachine && connectedMachine.machineId) {
+          machineStore.updateStatus(connectedMachine.machineId, ComputerStatus.IN_USE);
+        }
+        computerSocketService.broadcastMachineStatus(intent.computer_id, ComputerStatus.IN_USE);
+        computerSocketService.broadcastMachineUpdate({
+          machineId: connectedMachine?.machineId || intent.computer?.computer_name,
+          computerId: intent.computer_id,
+          status: ComputerStatus.IN_USE,
+          currentUser: intent.rentalSession?.member?.userInfo?.username || null
+        });
+
         computerSocketService.broadcastPairingEvent('remote:pairing:completed', {
           intentId: intent.id,
           computerId: intent.computer_id,
@@ -492,6 +578,26 @@ class PairingManagementService {
           status: RemotePairingStatus.PAIRED,
           completedAt: intent.completed_at
         });
+
+        // Tự động đăng nhập (Auto-login) cho khách thuê từ xa trên máy trạm
+        try {
+          let username = intent.rentalSession?.member?.userInfo?.username;
+          if (!username && intent.rentalSession?.member_id) {
+            const member = await db.Member.findByPk(intent.rentalSession.member_id, {
+              include: [{ model: db.User, as: 'userInfo', attributes: ['username'] }]
+            });
+            username = member?.userInfo?.username;
+          }
+
+          if (username && connectedMachine.machineId) {
+            computerSocketService.login(connectedMachine.machineId, username, true);
+            console.log(`[PairingManagement] Auto-login triggered for remote user '${username}' on machine '${connectedMachine.machineId}'`);
+          } else {
+            console.warn(`[PairingManagement] Cannot trigger auto-login: username=${username}, machineId=${connectedMachine?.machineId}`);
+          }
+        } catch (autoLoginErr) {
+          console.error('[PairingManagement] Error triggering auto-login after pairing:', autoLoginErr);
+        }
 
         return {
           success: true,
@@ -507,6 +613,28 @@ class PairingManagementService {
         await intent.update({
           status: RemotePairingStatus.FAILED,
           failure_reason: failureReason
+        });
+
+        // Ghép nối thất bại -> hoàn trả trạng thái máy về ONLINE và hủy session
+        await db.Computer.update(
+          { status: ComputerStatus.ONLINE },
+          { where: { computer_id: intent.computer_id } }
+        );
+        if (intent.rental_session_id) {
+          await db.RentalSession.update(
+            { status: db.RentalSession.Status.ENDED, ended_at: new Date(), total_amount: 0 },
+            { where: { rental_session_id: intent.rental_session_id, status: db.RentalSession.Status.ACTIVE } }
+          );
+        }
+        if (connectedMachine && connectedMachine.machineId) {
+          machineStore.updateStatus(connectedMachine.machineId, ComputerStatus.ONLINE);
+        }
+        computerSocketService.broadcastMachineStatus(intent.computer_id, ComputerStatus.ONLINE);
+        computerSocketService.broadcastMachineUpdate({
+          machineId: connectedMachine?.machineId || intent.computer?.computer_name,
+          computerId: intent.computer_id,
+          status: ComputerStatus.ONLINE,
+          currentUser: null
         });
 
         computerSocketService.broadcastPairingEvent('remote:pairing:failed', {
@@ -527,6 +655,28 @@ class PairingManagementService {
         status: RemotePairingStatus.FAILED,
         failure_reason: errorMsg
       }).catch(() => {});
+
+      // Hoàn trả trạng thái máy về ONLINE và hủy session khi lỗi ngoại lệ
+      await db.Computer.update(
+        { status: ComputerStatus.ONLINE },
+        { where: { computer_id: intent.computer_id } }
+      ).catch(() => {});
+      if (intent.rental_session_id) {
+        await db.RentalSession.update(
+          { status: db.RentalSession.Status.ENDED, ended_at: new Date(), total_amount: 0 },
+          { where: { rental_session_id: intent.rental_session_id, status: db.RentalSession.Status.ACTIVE } }
+        ).catch(() => {});
+      }
+      if (connectedMachine && connectedMachine.machineId) {
+        machineStore.updateStatus(connectedMachine.machineId, ComputerStatus.ONLINE);
+      }
+      computerSocketService.broadcastMachineStatus(intent.computer_id, ComputerStatus.ONLINE);
+      computerSocketService.broadcastMachineUpdate({
+        machineId: connectedMachine?.machineId || intent.computer?.computer_name,
+        computerId: intent.computer_id,
+        status: ComputerStatus.ONLINE,
+        currentUser: null
+      });
 
       computerSocketService.broadcastPairingEvent('remote:pairing:failed', {
         intentId: intent.id,
@@ -566,7 +716,15 @@ class PairingManagementService {
 
     // Authorization
     if (role !== 'ADMIN' && role !== 'EMPLOYEE') {
-      if (Number(intent.rentalSession?.member_id) !== Number(memberId)) {
+      const sessionMemberId = intent.rentalSession?.member_id;
+      let isOwner = sessionMemberId && (Number(sessionMemberId) === Number(memberId));
+      if (!isOwner && sessionMemberId) {
+        const memberRec = await db.Member.findByPk(sessionMemberId);
+        if (memberRec && Number(memberRec.user_id || memberRec.member_id) === Number(memberId)) {
+          isOwner = true;
+        }
+      }
+      if (!isOwner) {
         const err = new Error('Bạn không có quyền hủy yêu cầu ghép nối này.');
         err.statusCode = 403;
         throw err;
@@ -574,9 +732,63 @@ class PairingManagementService {
     }
 
     if (intent.status === RemotePairingStatus.PAIRED) {
-      const err = new Error('Không thể hủy yêu cầu ghép nối đã hoàn tất.');
-      err.statusCode = 400;
-      throw err;
+      // Hủy phiên thuê từ xa đã ghép nối: kết thúc session và logout máy trạm
+      intent.status = RemotePairingStatus.CANCELLED;
+      intent.completed_at = new Date();
+      intent.failure_reason = 'Người dùng đã hủy phiên thuê từ xa';
+      await intent.save();
+
+      if (intent.rental_session_id) {
+        await db.RentalSession.update(
+          {
+            status: db.RentalSession.Status.LOGGED_OUT,
+            ended_at: new Date()
+          },
+          {
+            where: {
+              rental_session_id: intent.rental_session_id,
+              status: db.RentalSession.Status.ACTIVE
+            }
+          }
+        );
+      }
+
+      // Đặt lại trạng thái máy trạm về ONLINE
+      if (intent.computer_id) {
+        await db.Computer.update(
+          { status: ComputerStatus.ONLINE },
+          { where: { computer_id: intent.computer_id } }
+        );
+        const connMachine = this.findConnectedMachine(intent.computer);
+        if (connMachine && connMachine.machineId) {
+          machineStore.updateStatus(connMachine.machineId, ComputerStatus.ONLINE);
+        }
+        computerSocketService.broadcastMachineStatus(intent.computer_id, ComputerStatus.ONLINE);
+        computerSocketService.broadcastMachineUpdate({
+          machineId: connMachine?.machineId || intent.computer?.computer_name,
+          computerId: intent.computer_id,
+          status: ComputerStatus.ONLINE,
+          currentUser: null
+        });
+      }
+
+      const connectedMachine = this.findConnectedMachine(intent.computer);
+      if (connectedMachine && connectedMachine.machineId) {
+        computerSocketService.logout(connectedMachine.machineId);
+      }
+
+      computerSocketService.broadcastPairingEvent('remote:pairing:cancelled', {
+        intentId: intent.id,
+        computerId: intent.computer_id,
+        rentalSessionId: intent.rental_session_id,
+        status: RemotePairingStatus.CANCELLED,
+        reason: 'Người dùng đã hủy phiên thuê từ xa'
+      });
+
+      return {
+        success: true,
+        message: 'Đã hủy phiên thuê từ xa thành công.'
+      };
     }
 
     if (intent.status !== RemotePairingStatus.CANCELLED) {
@@ -584,6 +796,42 @@ class PairingManagementService {
       intent.completed_at = new Date();
       intent.failure_reason = 'Người dùng đã hủy';
       await intent.save();
+
+      // Hủy RentalSession tương ứng (nếu chưa hoàn tất) để không trừ tiền
+      if (intent.rental_session_id) {
+        await db.RentalSession.update(
+          {
+            status: db.RentalSession.Status.ENDED,
+            ended_at: new Date(),
+            total_amount: 0
+          },
+          {
+            where: {
+              rental_session_id: intent.rental_session_id,
+              status: db.RentalSession.Status.ACTIVE
+            }
+          }
+        );
+      }
+
+      // Đặt lại trạng thái máy trạm về ONLINE vì chưa hoàn tất thuê
+      if (intent.computer_id) {
+        await db.Computer.update(
+          { status: ComputerStatus.ONLINE },
+          { where: { computer_id: intent.computer_id } }
+        );
+        const connMachine = this.findConnectedMachine(intent.computer);
+        if (connMachine && connMachine.machineId) {
+          machineStore.updateStatus(connMachine.machineId, ComputerStatus.ONLINE);
+        }
+        computerSocketService.broadcastMachineStatus(intent.computer_id, ComputerStatus.ONLINE);
+        computerSocketService.broadcastMachineUpdate({
+          machineId: connMachine?.machineId || intent.computer?.computer_name,
+          computerId: intent.computer_id,
+          status: ComputerStatus.ONLINE,
+          currentUser: null
+        });
+      }
 
       // Notify NetClient to stop detection
       const connectedMachine = this.findConnectedMachine(intent.computer);
@@ -597,7 +845,8 @@ class PairingManagementService {
         intentId: intent.id,
         computerId: intent.computer_id,
         rentalSessionId: intent.rental_session_id,
-        status: RemotePairingStatus.CANCELLED
+        status: RemotePairingStatus.CANCELLED,
+        reason: 'Người dùng đã hủy'
       });
     }
 

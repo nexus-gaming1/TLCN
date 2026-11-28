@@ -400,6 +400,7 @@ class ComputerService {
         attributes: [
           'computer_id',
           'computer_name',
+          'ip_address',
           'status'
         ],
         include: [
@@ -418,15 +419,48 @@ class ComputerService {
                   'name',
                   'price_per_hour',
                   'plan_type',
+                  'priority',
+                  'start_time',
+                  'end_time',
+                  'apply_date',
                   'is_active'
                 ]
               }
+            ]
+          },
+          {
+            model: db.HardwareProfile,
+            required: false,
+            attributes: [
+              'profile_id',
+              'profile_name',
+              'description',
+              'cpu_model',
+              'gpu_model',
+              'ram_capacity',
+              'storage_type',
+              'monitor',
+              'gear'
             ]
           }
         ],
         order: [['computer_id', 'ASC']]
       });
-      return remoteComputers;
+      const machineStore = require('../stores/machineStore');
+      const allMachines = Object.values(machineStore.getAll() || {});
+      return remoteComputers.map(comp => {
+        const plain = comp.toJSON ? comp.toJSON() : { ...comp };
+        const machine = machineStore.get(comp.computer_name) ||
+          allMachines.find(m =>
+            m && (m.localIp === comp.ip_address || String(m.machineId) === String(comp.computer_id))
+          );
+        return {
+          ...plain,
+          ip_address: comp.ip_address,
+          localIp: machine?.localIp || comp.ip_address,
+          ipv6: machine?.ipv6 || null
+        };
+      });
     } catch (error) {
       if (!error.statusCode) error.statusCode = 500;
       throw error;

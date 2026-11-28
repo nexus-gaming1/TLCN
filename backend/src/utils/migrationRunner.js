@@ -136,6 +136,14 @@ const runMigrations = async () => {
       // Ignored if table does not exist yet or already up to date
     }
 
+    // 9. hardware_profile: cpu_model, gpu_model, ram_capacity, storage_type, monitor, gear
+    await ensureColumn('hardware_profile', null, 'cpu_model', 'VARCHAR(255) NULL');
+    await ensureColumn('hardware_profile', null, 'gpu_model', 'VARCHAR(255) NULL');
+    await ensureColumn('hardware_profile', null, 'ram_capacity', 'VARCHAR(100) NULL');
+    await ensureColumn('hardware_profile', null, 'storage_type', 'VARCHAR(255) NULL');
+    await ensureColumn('hardware_profile', null, 'monitor', 'VARCHAR(255) NULL');
+    await ensureColumn('hardware_profile', null, 'gear', 'VARCHAR(255) NULL');
+
     // Perform Sequelize sync with alter fallback
     await db.sequelize.sync({ alter: true }).catch((err) => {
       console.warn('[Migration Warning] Sync alter notice:', err.message);

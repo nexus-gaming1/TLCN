@@ -94,6 +94,48 @@ function registerMachineSocket(io) {
                 }
             }
         );
+        await cancelActiveRemotePairings(computerId, 'Máy trạm offline hoặc mất kết nối');
+    }
+
+    async function cancelActiveRemotePairings(computerId, reason = 'Phiên sử dụng máy đã đăng xuất') {
+        if (!computerId) return;
+        try {
+            const activePairings = await db.RemotePairing.findAll({
+                where: {
+                    computer_id: computerId,
+                    status: ['PENDING', 'CONFIRMING', 'PAIRED']
+                }
+            });
+
+            if (activePairings.length > 0) {
+                await db.RemotePairing.update(
+                    {
+                        status: 'CANCELLED',
+                        completed_at: new Date(),
+                        failure_reason: reason
+                    },
+                    {
+                        where: {
+                            computer_id: computerId,
+                            status: ['PENDING', 'CONFIRMING', 'PAIRED']
+                        }
+                    }
+                );
+
+                const computerSocketService = require('../services/computerSocketService');
+                for (const pairing of activePairings) {
+                    computerSocketService.broadcastPairingEvent('remote:pairing:cancelled', {
+                        intentId: pairing.id,
+                        computerId: computerId,
+                        rentalSessionId: pairing.rental_session_id,
+                        status: 'CANCELLED',
+                        reason
+                    });
+                }
+            }
+        } catch (err) {
+            console.error('[Socket.IO] Error cancelling active remote pairings:', err);
+        }
     }
 
     io.on('connection', (socket) => {
@@ -258,6 +300,7 @@ function registerMachineSocket(io) {
                     {
                         machineId: machine.machineId,
                         localIp: machine.localIp,
+                        ipv6: machine.ipv6,
                         macAddress: machine.macAddress,
                         performance: machine.performance
                     }
@@ -476,6 +519,7 @@ function registerMachineSocket(io) {
                             );
                         }
 
+                        await cancelActiveRemotePairings(computer.computer_id, 'Người dùng đã đăng xuất');
                         await syncComputerStatus(computer, ComputerStatus.ONLINE, memberId);
                     }
                     machine.status = ComputerStatus.ONLINE;
