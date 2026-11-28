@@ -1,5 +1,4 @@
-import { Eye, Edit, Lock, LockOpen, Award, Phone } from 'lucide-react';
-import { USER_STATUS_LABELS } from '../../../shared/constants/userConstants';
+import { Eye, Edit, Award, Phone } from 'lucide-react';
 
 /**
  * Tier configurations mapping
@@ -31,28 +30,6 @@ function TierBadge({ rankName, tier }) {
 }
 
 /**
- * Helper to render Account Status Badge strictly based on USER_STATUS_LABELS
- */
-function AccountStatusBadge({ status }) {
-  const normalized = (status || '').toUpperCase();
-  const config = USER_STATUS_LABELS[normalized];
-
-  if (config) {
-    return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-mono text-[11px] font-extrabold border ${config.badgeClass}`}>
-        <span className={`h-2 w-2 rounded-full ${config.dotClass}`}></span>
-        {config.label}
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-100 text-slate-700 border border-slate-200 rounded-full font-mono text-[11px] font-bold">
-      {status || 'Không rõ'}
-    </span>
-  );
-}
-
-/**
  * MemberTable component optimized for high contrast, right-aligned numbers, and overflow prevention
  */
 export default function MemberTable({
@@ -65,6 +42,20 @@ export default function MemberTable({
   onChangeStatus
 }) {
   const isAllSelected = members.length > 0 && selectedIds.length === members.length;
+
+  if (members.length === 0) {
+    return (
+      <div className="w-full bg-white rounded-lg shadow-flat border border-slate-200 p-12 flex flex-col items-center justify-center text-center min-h-[360px]">
+        <div className="w-16 h-16 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center mb-4">
+          <Award className="w-8 h-8 text-sky-600" />
+        </div>
+        <h3 className="text-base font-bold text-slate-800">Không tìm thấy hội viên phù hợp</h3>
+        <p className="text-xs text-slate-500 mt-1 max-w-sm">
+          Vui lòng thử thay đổi từ khóa tìm kiếm (Tên, UID, SĐT, Email) hoặc làm mới bộ lọc phân hạng, trạng thái.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full bg-white rounded-lg shadow-flat border border-slate-200 flex flex-col">
@@ -190,9 +181,33 @@ export default function MemberTable({
                     </div>
                   </td>
 
-                  {/* Account Status Badge */}
+                  {/* Account Status Toggle Switch */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
-                    <AccountStatusBadge status={m.status} />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onChangeStatus && onChangeStatus(m.id, isLocked ? 'ACTIVE' : 'LOCKED')}
+                        role="switch"
+                        aria-checked={!isLocked}
+                        className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500/20 ${
+                          !isLocked ? 'bg-emerald-500' : 'bg-slate-300'
+                        }`}
+                        title={!isLocked ? 'Hoạt động - Click để tạm khóa' : 'Tạm khóa - Click để kích hoạt'}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                            !isLocked ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                      <span
+                        className={`text-[11px] font-bold select-none ${
+                          !isLocked ? 'text-emerald-700' : 'text-slate-400'
+                        }`}
+                      >
+                        {!isLocked ? 'Hoạt động' : 'Tạm khóa'}
+                      </span>
+                    </div>
                   </td>
 
                   {/* Last Login */}
@@ -207,7 +222,7 @@ export default function MemberTable({
                       <button
                         type="button"
                         onClick={() => onViewDetail && onViewDetail(m)}
-                        className="w-8 h-8 rounded-lg text-slate-600 hover:text-sky-600 hover:bg-sky-50 flex items-center justify-center transition-colors"
+                        className="w-8 h-8 rounded-lg text-slate-600 hover:text-sky-600 hover:bg-sky-50 flex items-center justify-center transition-colors cursor-pointer"
                         title="Xem chi tiết hồ sơ hội viên"
                       >
                         <Eye className="w-4 h-4" />
@@ -217,32 +232,11 @@ export default function MemberTable({
                       <button
                         type="button"
                         onClick={() => onEditInfo && onEditInfo(m)}
-                        className="w-8 h-8 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center transition-colors"
+                        className="w-8 h-8 rounded-lg text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 flex items-center justify-center transition-colors cursor-pointer"
                         title="Sửa thông tin hồ sơ (Họ tên, SĐT, Email)"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-
-                      {/* Status Change Buttons: Khóa hoặc Mở khóa */}
-                      {isLocked || m.status === 'BANNED' ? (
-                        <button
-                          type="button"
-                          onClick={() => onChangeStatus && onChangeStatus(m.id, 'ACTIVE')}
-                          className="w-8 h-8 rounded-lg text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                          title="Kích hoạt lại tài khoản"
-                        >
-                          <LockOpen className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => onChangeStatus && onChangeStatus(m.id, 'LOCKED')}
-                          className="w-8 h-8 rounded-lg text-amber-600 hover:bg-amber-50 hover:text-amber-700 flex items-center justify-center transition-all cursor-pointer shadow-2xs"
-                          title="Tạm khóa tài khoản"
-                        >
-                          <Lock className="w-4 h-4" />
-                        </button>
-                      )}
                     </div>
                   </td>
                 </tr>

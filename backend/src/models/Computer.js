@@ -55,6 +55,20 @@ class Computer extends Model {
   isAvailable() {
     return this.status === ComputerStatus.OFFLINE;
   }
+
+  softDelete() {
+    this.is_deleted = true;
+    this.deleted_at = new Date();
+    this.status = ComputerStatus.MAINTENANCE;
+    return this.save();
+  }
+
+  restore() {
+    this.is_deleted = false;
+    this.deleted_at = null;
+    this.status = ComputerStatus.OFFLINE;
+    return this.save();
+  }
 }
 
 module.exports = (sequelize) => {
@@ -67,7 +81,9 @@ module.exports = (sequelize) => {
 
     is_remote_enabled: { type: DataTypes.BOOLEAN, defaultValue: false },
     zone_id: { type: DataTypes.INTEGER, allowNull: false },
-    hardware_profile_id: { type: DataTypes.INTEGER, allowNull: true }
+    hardware_profile_id: { type: DataTypes.INTEGER, allowNull: true },
+    is_deleted: { type: DataTypes.BOOLEAN, defaultValue: false, allowNull: false },
+    deleted_at: { type: DataTypes.DATE, allowNull: true, defaultValue: null }
   }, {
     sequelize,
     modelName: 'Computer',

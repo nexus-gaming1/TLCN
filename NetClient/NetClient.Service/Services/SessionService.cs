@@ -153,7 +153,29 @@ public class SessionService
 
         return "127.0.0.1";
     }
+private static bool IsUsableGlobalIpv6(IPAddress ip)
+{
+    if (ip.AddressFamily != AddressFamily.InterNetworkV6)
+        return false;
 
+    if (IPAddress.IsLoopback(ip) ||
+        ip.IsIPv6LinkLocal ||
+        ip.IsIPv6SiteLocal ||
+        ip.Equals(IPAddress.IPv6Any) ||
+        ip.IsIPv6Multicast ||
+        ip.IsIPv4MappedToIPv6)
+    {
+        return false;
+    }
+
+    // Loại bỏ Unique Local Address: fc00::/7
+    byte[] bytes = ip.GetAddressBytes();
+
+    if ((bytes[0] & 0xFE) == 0xFC)
+        return false;
+
+    return true;
+}
     private static string? GetLocalIpv6Address()
     {
         try

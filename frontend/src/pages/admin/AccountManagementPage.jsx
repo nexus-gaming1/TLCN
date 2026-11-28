@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
+import { AlertCircle } from 'lucide-react';
 import Header from '../../widgets/header/Header';
 import Sidebar from '../../widgets/sidebar/Sidebar';
 import Footer from '../../widgets/footer/Footer';
+import FloatingToast from '../../shared/ui/FloatingToast';
 
 // Member Service & FSD UI Components
 import memberService from '../../shared/api/member.service';
@@ -24,6 +26,7 @@ import MemberPrintView from '../../features/members/ui/MemberPrintView';
 export default function AccountManagementPage({ user, onLogout }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -34,6 +37,27 @@ export default function AccountManagementPage({ user, onLogout }) {
   const [viewingMember, setViewingMember] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [toast, setToast] = useState(null);
+
+  // Thông báo toast nổi đa năng (Success, Warning, Error)
+  const showToast = (payload, type = 'success') => {
+    if (typeof payload === 'string') {
+      setToast({
+        type,
+        title: type === 'warning' ? 'Đã tạm khóa' : type === 'error' ? 'Lỗi' : 'Thành công',
+        message: payload
+      });
+    } else {
+      setToast(payload);
+    }
+  };
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Tính toán KPI thực tế từ danh sách hội viên, không hardcode giá trị giả lập
   const metrics = useMemo(() => {
@@ -67,6 +91,7 @@ export default function AccountManagementPage({ user, onLogout }) {
   // Auto-fetch members from Backend Service on mount
   const fetchMemberData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await memberService.getMembers();
       if (data) {
@@ -74,6 +99,7 @@ export default function AccountManagementPage({ user, onLogout }) {
       }
     } catch (err) {
       console.error('Lỗi khi tải danh sách hội viên:', err);
+      setError('Không thể kết nối máy chủ hoặc cơ sở dữ liệu để tải danh sách hội viên. Vui lòng thử lại.');
     } finally {
       setLoading(false);
     }
@@ -174,16 +200,35 @@ export default function AccountManagementPage({ user, onLogout }) {
 
   // Action: Đổi trạng thái tài khoản (ACTIVE / LOCKED / SUSPENDED)
   const handleChangeStatus = async (memberId, newStatus) => {
+    const member = members.find((m) => m.id === memberId);
+    const memberName = member?.name || member?.username || 'Hội viên';
     try {
       // Optimistic update để giao diện phản hồi trạng thái mới ngay lập tức
       setMembers((prev) =>
         prev.map((m) => (m.id === memberId ? { ...m, status: newStatus } : m))
       );
       await memberService.updateAccountStatus(memberId, newStatus);
+      if (newStatus === 'ACTIVE') {
+        showToast({
+          type: 'success',
+          title: 'Đã kích hoạt tài khoản',
+          message: `Tài khoản "${memberName}" đã được kích hoạt thành công.`
+        });
+      } else {
+        showToast({
+          type: 'warning',
+          title: 'Đã tạm khóa tài khoản',
+          message: `Tài khoản "${memberName}" đã được tạm khóa.`
+        });
+      }
       await fetchMemberData();
     } catch (err) {
       console.error('Lỗi khi đổi trạng thái tài khoản:', err);
-      alert('Có lỗi xảy ra khi cập nhật trạng thái tài khoản: ' + (err.message || ''));
+      showToast({
+        type: 'error',
+        title: 'Lỗi cập nhật trạng thái',
+        message: err.message || 'Có lỗi xảy ra khi cập nhật trạng thái tài khoản'
+      });
       await fetchMemberData();
     }
   };
@@ -196,10 +241,19 @@ export default function AccountManagementPage({ user, onLogout }) {
       await Promise.all(
         selectedIds.map((id) => memberService.updateAccountStatus(id, newStatus))
       );
+      showToast({
+        type: newStatus === 'ACTIVE' ? 'success' : 'warning',
+        title: newStatus === 'ACTIVE' ? 'Đã mở khóa hàng loạt' : 'Đã khóa hàng loạt',
+        message: `Đã cập nhật trạng thái cho ${selectedIds.length} hội viên.`
+      });
       setSelectedIds([]);
       await fetchMemberData();
     } catch (err) {
-      alert('Có lỗi xảy ra khi cập nhật trạng thái hàng loạt');
+      showToast({
+        type: 'error',
+        title: 'Lỗi thao tác hàng loạt',
+        message: err.message || 'Có lỗi xảy ra khi cập nhật trạng thái hàng loạt'
+      });
     } finally {
       setLoading(false);
     }
@@ -235,10 +289,30 @@ export default function AccountManagementPage({ user, onLogout }) {
         <Sidebar activeNav="members" bootromStatus="ONLINE" role="ADMIN" />
       </div>
 
+      {/* Floating Toast Notification (0ms Layout Shift) */}
+      <FloatingToast toast={toast} onClose={() => setToast(null)} />
+
       {/* Main Content Area: ẩn khi in để nhường chỗ cho bản in A4 */}
-      <div className="pl-[240px] print:hidden">
+      <div className="lg:pl-[240px] print:hidden">
         <main className="relative pt-16 min-h-screen bg-slate-50/50 w-full px-6 py-6 pb-24 flex flex-col justify-between">
           <div className="flex flex-col w-full gap-6">
+
+            {/* Error Banner khi mất kết nối backend / timeout */}
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+                  <span>{error}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchMemberData}
+                  className="px-3 py-1.5 bg-red-600 text-white rounded-lg text-xs font-bold hover:bg-red-700 transition-colors shrink-0"
+                >
+                  Thử lại
+                </button>
+              </div>
+            )}
 
             {/* KPI Summary Cards */}
             <MemberKpiCards {...metrics} />

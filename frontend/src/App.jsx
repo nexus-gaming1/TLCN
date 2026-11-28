@@ -1,4 +1,4 @@
-import React from 'react';
+//import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './shared/context/AuthContext';
 
@@ -14,6 +14,7 @@ import StaffDashboardPage from './pages/staff/StaffDashboardPage';
 import CustomerDashboardPage from './pages/customer/CustomerDashboardPage';
 import CustomerProfilePage from './pages/customer/CustomerProfilePage';
 import CustomerComboPage from './pages/customer/CustomerComboPage';
+import CustomerFoodPage from './pages/customer/CustomerFoodPage';
 import ServiceCatalogPage from './pages/admin/ServiceCatalogPage';
 import RevenueReportPage from './pages/admin/RevenueReportPage';
 import GameManagementPage from './pages/admin/GameManagementPage';
@@ -66,7 +67,7 @@ const RoleRedirect = () => {
 
 // Login Page Wrapper with Auth Context
 const LoginWrapper = () => {
-  const { currentUser, role, login } = useAuth();
+  const { currentUser, role } = useAuth();
   const navigate = useNavigate();
 
   if (currentUser) {
@@ -140,6 +141,10 @@ const CustomerRemoteRentalWrapper = () => {
   const { currentUser, logout } = useAuth();
   return <CustomerRemoteRentalPage user={currentUser} onLogout={logout} />;
 };
+const CustomerFoodWrapper = () => {
+  const { currentUser, logout } = useAuth();
+  return <CustomerFoodPage user={currentUser} onLogout={logout} />;
+};
 
 const ServiceCatalogWrapper = () => {
   const { currentUser, logout } = useAuth();
@@ -168,7 +173,7 @@ function App() {
           <Route
             path="/admin/members"
             element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}>
                 <AccountMembersWrapper />
               </ProtectedRoute>
             }
@@ -213,7 +218,7 @@ function App() {
           <Route
             path="/admin/transactions"
             element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}>
                 <TransactionManagementWrapper />
               </ProtectedRoute>
             }
@@ -230,7 +235,7 @@ function App() {
           <Route
             path="/admin/reports"
             element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}>
                 <RevenueReportWrapper />
               </ProtectedRoute>
             }
@@ -248,7 +253,7 @@ function App() {
           <Route
             path="/admin/*"
             element={
-              <ProtectedRoute allowedRoles={['ADMIN']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'STAFF']}>
                 <AdminWrapper />
               </ProtectedRoute>
             }
@@ -277,6 +282,24 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['CUSTOMER', 'MEMBER']}>
                 <CustomerComboWrapper />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/customer/orders"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'MEMBER']}>
+                <CustomerFoodWrapper />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/customer/food"
+            element={
+              <ProtectedRoute allowedRoles={['CUSTOMER', 'MEMBER']}>
+                <CustomerFoodWrapper />
               </ProtectedRoute>
             }
           />

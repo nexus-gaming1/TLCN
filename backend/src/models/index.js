@@ -10,6 +10,7 @@ const sequelize = new Sequelize(config.database, config.username, config.passwor
   port: config.port || 3306,
   dialect: 'mysql',
   logging: false,
+  dialectOptions: config.dialectOptions || {} // <-- để nhận SSL từ config nếu có
 });
 
 const db = {};

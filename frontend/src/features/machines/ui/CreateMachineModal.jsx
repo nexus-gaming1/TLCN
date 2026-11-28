@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Monitor, X, Check, Cpu, Network } from 'lucide-react';
+import { Monitor, X, Check, Network } from 'lucide-react';
 import machineService from '../../../shared/api/machine.service';
+import MachineZoneSelect from './MachineZoneSelect';
 
 /**
  * CreateMachineModal Component
@@ -106,28 +107,29 @@ export default function CreateMachineModal({ isOpen = false, onClose, onSubmit }
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95 duration-150 border border-slate-200">
         {/* Header */}
-        <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+        <header className="px-5 py-4 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-400 flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 rounded-xl bg-sky-500/15 border border-sky-400/25 text-sky-400 flex items-center justify-center">
               <Monitor className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold tracking-tight text-white leading-tight">
-                Khai Báo Máy Trạm Mới
+              <h3 className="text-sm font-bold tracking-tight text-white leading-tight">
+                Thêm máy trạm mới
               </h3>
-              <p className="text-xs text-slate-400">
-                Tự động cấp phát Mã máy, Địa chỉ IP &amp; MAC
+              <p className="text-[11px] text-slate-400">
+                Tự động cấp phát Mã máy, IP mạng LAN và MAC bootrom
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
+            aria-label="Đóng"
             className="w-8 h-8 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
-        </div>
+        </header>
 
         {/* Form Body */}
         <form onSubmit={handleSubmit}>
@@ -202,44 +204,15 @@ export default function CreateMachineModal({ isOpen = false, onClose, onSubmit }
               </div>
             </div>
 
-            {/* Row 2: Dynamic Zone Selection */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] uppercase font-mono font-bold text-slate-600">
-                Phân Khu &amp; Cấu Hình Phần Cứng *
-              </label>
-
-              {loadingZones ? (
-                <div className="px-3 py-2 bg-slate-100 rounded-xl text-slate-500 font-mono text-xs flex items-center gap-2">
-                  <span className="animate-spin">⏳</span> Đang tải danh sách phân khu...
-                </div>
-              ) : (
-                <select
-                  name="zoneId"
-                  value={formData.zoneId}
-                  onChange={handleChange}
-                  className="px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs text-slate-900 font-bold focus:bg-white focus:ring-2 focus:ring-sky-500/30 focus:outline-none cursor-pointer"
-                >
-                  {zones.map((z) => (
-                    <option key={z.zone_id} value={z.zone_id}>
-                      {z.zone_name} (Tier #{z.tier_level})
-                    </option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {/* Hardware Description Card (Inherited directly from CSDL ComputerZone description) */}
-            {selectedZone && (
-              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-3">
-                <Cpu className="w-5 h-5 text-sky-600 shrink-0" />
-                <div className="flex flex-col text-[11px]">
-                  <span className="font-extrabold text-slate-900">{selectedZone.zone_name}</span>
-                  <span className="text-slate-600 font-medium leading-relaxed">
-                    {selectedZone.description || 'Cấu hình phần cứng mặc định của khu vực.'}
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* Row 2: Dynamic Zone Selection & Hardware Preview */}
+            <MachineZoneSelect
+              zones={zones}
+              selectedZoneId={formData.zoneId}
+              loadingZones={loadingZones}
+              onChange={handleChange}
+              name="zoneId"
+              accentColor="sky"
+            />
 
             {/* Row 3: IP & MAC Allocation (Auto by default) */}
             <div className="p-3.5 bg-slate-50 border border-slate-200/90 rounded-xl flex flex-col gap-3">
@@ -322,22 +295,25 @@ export default function CreateMachineModal({ isOpen = false, onClose, onSubmit }
           </div>
 
           {/* Footer Action Buttons */}
-          <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-slate-200 hover:bg-slate-300/80 text-slate-800 font-bold rounded-xl text-xs transition-colors cursor-pointer"
-            >
-              Hủy Bỏ
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-extrabold rounded-xl text-xs shadow-md transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <Check className="w-4 h-4" />
-              <span>Xác Nhận Tạo Máy</span>
-            </button>
-          </div>
+          <footer className="px-5 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-[11px] text-slate-400 font-medium">Trạng thái mặc định: OFFLINE</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Đóng
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold rounded-xl text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                <span>Hoàn tất thêm máy</span>
+              </button>
+            </div>
+          </footer>
         </form>
       </div>
     </div>
